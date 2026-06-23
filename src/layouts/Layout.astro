@@ -1,5 +1,5 @@
 ---
-import { ClientRouter } from 'astro:transitions';
+import { ViewTransitions } from 'astro:transitions';
 import '../styles/global.css';
 import InkCanvas from '../components/InkCanvas.astro';
 import AudioPlayer from '../components/AudioPlayer.astro';
@@ -31,7 +31,7 @@ const {
     <meta property="og:type" content="website" />
     
     <!-- 啟用 Astro 的客戶端路由（前身為 ViewTransitions）以達成無縫音樂與動畫 -->
-    <ClientRouter />
+    <ViewTransitions />
   </head>
   <body>
     <!-- 寫意水墨 Canvas 背景 -->

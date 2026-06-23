@@ -1,0 +1,351 @@
+---
+import { getCollection } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+
+// 定義靜態路由路徑
+export async function getStaticPaths() {
+  const posts = await getCollection('blog');
+  return posts.map((post) => ({
+    params: { slug: post.slug },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+const { Content } = await post.render();
+
+// 格式化日期
+const formatDate = (date: Date) => {
+  return date.toLocaleDateString('zh-Hant', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+};
+---
+
+<Layout title={`${post.data.title} | 賽博山莊`} description={post.data.description}>
+  <article class="post-detail-container">
+    
+    <!-- 返回列表按鈕 -->
+    <div class="back-link-wrapper ink-fade-in">
+      <a href="/blog" class="ink-link back-link">
+        ← 返回觀其文
+      </a>
+    </div>
+
+    <!-- 宣紙文章主體 -->
+    <div class="paper-card post-content-card ink-fade-in" style="animation-delay: 0.15s;">
+      
+      <!-- 文章標題資訊 -->
+      <header class="post-detail-header">
+        <h1 class="post-detail-title">{post.data.title}</h1>
+        
+        <div class="post-detail-meta">
+          <time datetime={post.data.pubDate.toISOString()}>
+            撰於 {formatDate(post.data.pubDate)}
+          </time>
+          
+          {post.data.tags && post.data.tags.length > 0 && (
+            <div class="post-detail-tags">
+              {post.data.tags.map((tag) => (
+                <span class="detail-tag"># {tag}</span>
+              ))}
+            </div>
+          )}
+        </div>
+        
+        <div class="mountain-line"></div>
+      </header>
+
+      <!-- 文章本文渲染區 -->
+      <div class="post-markdown-body">
+        <Content />
+      </div>
+
+    </div>
+
+    <!-- Giscus 留言板區域 (宣紙半透明容器) -->
+    <div class="paper-card comments-card ink-fade-in" style="animation-delay: 0.3s;">
+      <h3 class="comments-title cursive-title">寄錦書 (留言區)</h3>
+      <div class="mountain-line" style="margin: 1rem 0 2rem 0;"></div>
+      
+      <!-- Giscus 容器 -->
+      <div id="giscus-container">
+        <!-- 提醒使用者配置 Giscus 的提示訊息 -->
+        <div class="giscus-setup-tip" id="giscus-placeholder">
+          <p>⏳ 留言載入中，或請先配置您的 Giscus 帳戶資訊...</p>
+          <div class="setup-guide">
+            <p><strong>【Giscus 配置指引】</strong></p>
+            <ol>
+              <li>將您的 GitHub Pages 儲存庫設為 <strong>Public</strong> 並開啟 <strong>Discussions</strong> 功能。</li>
+              <li>前往 <a href="https://giscus.app/zh-TW" target="_blank">giscus.app</a> 填入您的 Repo 獲取對應的屬性值。</li>
+              <li>修改 <code>src/pages/blog/[...slug].astro</code> 下方 script 中的 <code>GISCUS_CONFIG</code> 配置。</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </article>
+</Layout>
+
+<style>
+  .post-detail-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .back-link-wrapper {
+    padding-bottom: 0.5rem;
+  }
+
+  .back-link {
+    font-family: var(--font-serif);
+    font-weight: 600;
+    color: var(--color-ink-grey);
+    font-size: 0.95rem;
+  }
+
+  .back-link:hover {
+    color: var(--color-mountain-cyan);
+  }
+
+  /* 宣紙文章卡片 */
+  .post-content-card {
+    padding: 3rem 3.5rem;
+    border-top: 4px solid var(--color-ink-black); /* 書法濃墨質感頂邊框 */
+  }
+
+  .post-detail-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+
+  .post-detail-title {
+    font-size: 2.2rem;
+    font-weight: 900;
+    line-height: 1.4;
+    color: var(--color-ink-black);
+    margin-bottom: 1rem;
+  }
+
+  .post-detail-meta {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    font-family: var(--font-serif);
+    font-size: 0.9rem;
+    color: var(--color-ink-grey);
+  }
+
+  .post-detail-tags {
+    display: flex;
+    gap: 0.8rem;
+  }
+
+  .detail-tag {
+    color: var(--color-mountain-cyan);
+  }
+
+  /* Markdown 本文排版樣式優化，保障極佳閱讀感 */
+  .post-markdown-body {
+    font-size: 1.1rem;
+    line-height: 1.9;
+    color: var(--color-ink-text);
+  }
+
+  .post-markdown-body p {
+    margin-bottom: 1.6rem;
+    text-align: justify;
+  }
+
+  .post-markdown-body h2 {
+    font-size: 1.6rem;
+    color: var(--color-ink-black);
+    margin: 2.5rem 0 1.2rem 0;
+    border-bottom: 1.5px solid var(--color-border);
+    padding-bottom: 0.4rem;
+  }
+
+  .post-markdown-body h3 {
+    font-size: 1.3rem;
+    color: var(--color-ink-black);
+    margin: 2rem 0 1rem 0;
+  }
+
+  .post-markdown-body blockquote {
+    border-left: 3px solid var(--color-mountain-green);
+    background: rgba(230, 223, 204, 0.18);
+    padding: 1rem 1.5rem;
+    margin: 1.5rem 0;
+    font-style: italic;
+    color: var(--color-ink-grey);
+  }
+
+  .post-markdown-body blockquote p:last-child {
+    margin-bottom: 0;
+  }
+
+  .post-markdown-body ul, .post-markdown-body ol {
+    margin-bottom: 1.6rem;
+    padding-left: 1.8rem;
+  }
+
+  .post-markdown-body li {
+    margin-bottom: 0.5rem;
+  }
+
+  .post-markdown-body table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 2rem 0;
+    font-size: 0.95rem;
+  }
+
+  .post-markdown-body th, .post-markdown-body td {
+    border: 1px solid var(--color-border);
+    padding: 0.7rem 1rem;
+    text-align: left;
+  }
+
+  .post-markdown-body th {
+    background: rgba(230, 223, 204, 0.3);
+    font-weight: 600;
+  }
+
+  .post-markdown-body tr:nth-child(even) td {
+    background: rgba(253, 252, 247, 0.4);
+  }
+
+  /* Shiki 代碼區塊美化 */
+  .post-markdown-body pre {
+    border: 1px solid var(--color-border);
+    background: #252627 !important; /* 水墨偏深灰底 */
+    border-radius: 4px;
+    padding: 1.2rem;
+    margin: 1.8rem 0;
+    overflow-x: auto;
+    font-size: 0.92rem;
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.15);
+  }
+
+  .post-markdown-body code {
+    font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+  }
+
+  /* 行內代碼 */
+  .post-markdown-body :not(pre) > code {
+    background: rgba(230, 223, 204, 0.35);
+    color: #b73a3a; /* 水墨硃砂紅，點綴行內代碼 */
+    padding: 0.2rem 0.4rem;
+    border-radius: 3px;
+    font-size: 0.9rem;
+  }
+
+  /* 留言卡片 */
+  .comments-card {
+    padding: 2.5rem 3rem;
+  }
+
+  .comments-title {
+    font-size: 1.8rem;
+    font-weight: normal;
+    color: var(--color-ink-black);
+  }
+
+  .giscus-setup-tip {
+    background: rgba(230, 223, 204, 0.2);
+    border: 1px dashed var(--color-border);
+    border-radius: 4px;
+    padding: 1.5rem;
+    font-size: 0.95rem;
+    color: var(--color-ink-grey);
+  }
+
+  .setup-guide {
+    margin-top: 1rem;
+    border-top: 1px solid var(--color-border);
+    padding-top: 0.8rem;
+  }
+
+  .setup-guide ol {
+    margin-top: 0.5rem;
+    padding-left: 1.2rem;
+  }
+
+  .setup-guide li {
+    margin-bottom: 0.4rem;
+  }
+
+  .setup-guide a {
+    text-decoration: underline;
+    font-weight: 600;
+  }
+
+  /* 響應式佈局調整 */
+  @media (max-width: 768px) {
+    .post-content-card {
+      padding: 1.8rem 1.5rem;
+    }
+    .comments-card {
+      padding: 1.5rem;
+    }
+    .post-detail-title {
+      font-size: 1.7rem;
+    }
+  }
+</style>
+
+<script>
+  // GISCUS 配置 - 請使用者在此修改
+  const GISCUS_CONFIG = {
+    repo: "samww/personal-site", // 請改為您的 "GitHub帳號/儲存庫名稱"
+    repoId: "",                  // 請改為您的 Giscus repoId
+    category: "Announcements",   // 預設 Discussions 分類
+    categoryId: "",              // 請改為您的 Giscus categoryId
+  };
+
+  function loadGiscus() {
+    const container = document.getElementById('giscus-container');
+    if (!container) return;
+
+    // 如果沒有配置 repo，則顯示配置指南 (以預設值 'samww/personal-site' 作為 placeholder 檢查)
+    if (!GISCUS_CONFIG.repo || GISCUS_CONFIG.repo === "samww/personal-site" || !GISCUS_CONFIG.repoId) {
+      console.log('Giscus 未完整配置，顯示引導提示。');
+      return;
+    }
+
+    // 移除 placeholder 提示
+    const placeholder = document.getElementById('giscus-placeholder');
+    if (placeholder) placeholder.remove();
+
+    // 動態建立 giscus script
+    const script = document.createElement('script');
+    script.src = 'https://giscus.app/client.js';
+    script.setAttribute('data-repo', GISCUS_CONFIG.repo);
+    script.setAttribute('data-repo-id', GISCUS_CONFIG.repoId);
+    script.setAttribute('data-category', GISCUS_CONFIG.category);
+    script.setAttribute('data-category-id', GISCUS_CONFIG.categoryId);
+    script.setAttribute('data-mapping', 'pathname');
+    script.setAttribute('data-strict', '0');
+    script.setAttribute('data-reactions-enabled', '1');
+    script.setAttribute('data-emit-metadata', '0');
+    script.setAttribute('data-input-position', 'bottom');
+    script.setAttribute('data-theme', 'light'); // 水墨風格採用亮色/宣紙白 Giscus 主題
+    script.setAttribute('data-lang', 'zh-TW');
+    script.setAttribute('data-loading', 'lazy');
+    script.setAttribute('crossorigin', 'anonymous');
+    script.async = true;
+
+    container.appendChild(script);
+  }
+
+  // 配合 Astro ViewTransitions
+  document.addEventListener('astro:page-load', () => {
+    loadGiscus();
+  });
+</script>
