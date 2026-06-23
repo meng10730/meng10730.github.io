@@ -4,10 +4,8 @@ import mdx from '@astrojs/mdx';
 
 // https://astro.build/config
 export default defineConfig({
-  // 請替換為您的 GitHub Pages 網址。例如：https://samww.github.io
-  site: 'https://samww.github.io',
-  // 若部署在個人主網頁（username.github.io），base 設為 '/'。
-  // 若部署在專案子網頁（username.github.io/repo-name），base 請修改為 '/repo-name'。
+  // GitHub 帳號：meng10730，儲存庫須命名為 meng10730.github.io（個人主頁格式）
+  site: 'https://meng10730.github.io',
   base: '/',
   integrations: [mdx()],
 });
