@@ -1,10 +1,12 @@
 ---
-import Layout from '../layouts/Layout.astro';
+import Layout from "../layouts/Layout.astro";
 ---
 
-<Layout title=" | 唐門弟子" description="熱愛古典武俠、寫程式與遊戲開發的唐門子弟，在紛擾塵世中尋求一行乾淨的程式碼與一筆寫意的山水。">
+<Layout
+  title="筆墨涓流，臨淵探賾 | 吃墨水的晚餐"
+  description="晚餐終於擁有瘋狂自言自語的機會啦!"
+>
   <div class="home-container">
-    
     <!-- 頂部書法字標題區 -->
     <section class="hero-section ink-fade-in">
       <h1 class="cursive-title main-heading">寫意水墨</h1>
@@ -17,40 +19,58 @@ import Layout from '../layouts/Layout.astro';
       <div class="paper-card profile-card">
         <h2 class="section-title">自序</h2>
         <p class="profile-text">
-          在下唐門弟子，浮沉於代碼與武俠的塵世之中。日間以程式語言構築虛擬乾坤，夜半則沉浸於絲竹雅樂，尋一筆水墨意境。
+          只是個業餘的斜槓遊民，白天工於程式，晚餐過後則沉浸在自己的世界裡，尋一筆春秋徜蘊。
         </p>
         <p class="profile-text">
-          此處乃是在下的賽博山莊，以 <strong>Astro</strong> 框架所建。這裡沒有繁雜的廣告與追蹤，唯有一方宣紙、幾滴墨跡，記錄江湖見聞、技術探索，以及修行心得。
+          此處乃是在下的藏書閣，以 <strong>Astro</strong> 框架所建。沒有繁雜的廣告與追蹤，唯有一方宣紙、幾滴墨跡，記錄江湖見聞、技術探索，以及修行心得。
         </p>
-        
+
         <div class="skills-showcase">
           <div class="skill-tag">
             <span class="tag-icon">⚡</span>
-            <span>代碼乾坤 (Web 開發)</span>
+            <span>網頁代碼</span>
           </div>
           <div class="skill-tag">
             <span class="tag-icon">🎨</span>
-            <span>水墨寫意 (前端美學)</span>
+            <span>水墨寫意</span>
           </div>
           <div class="skill-tag">
             <span class="tag-icon">🎵</span>
-            <span>絲竹樂音 (古典氛圍)</span>
+            <span>絲竹樂音</span>
           </div>
         </div>
       </div>
     </section>
 
     <!-- 快速導覽按鈕區 -->
-    <section class="navigation-section ink-fade-in" style="animation-delay: 0.4s;">
+    <section
+      class="navigation-section ink-fade-in"
+      style="animation-delay: 0.4s;"
+    >
       <div class="action-buttons">
         <a href="/blog" class="action-btn primary-btn">
-          <span>觀其文 (進入部落格)</span>
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-right" viewBox="0 0 16 16">
-            <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+          <span>觀文揣墨</span>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            fill="currentColor"
+            class="bi bi-chevron-right"
+            viewBox="0 0 16 16"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"
+            ></path>
           </svg>
         </a>
-        <a href="https://github.com/samww" target="_blank" rel="noopener noreferrer" class="action-btn secondary-btn">
-          <span>探其源 (GitHub)</span>
+        <a
+          href="https://github.com/meng10730"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="action-btn secondary-btn"
+        >
+          <span>探源究微 </span>
         </a>
       </div>
     </section>
@@ -95,13 +115,17 @@ import Layout from '../layouts/Layout.astro';
   }
 
   .section-title::after {
-    content: '';
+    content: "";
     position: absolute;
     bottom: -5px;
     left: 0;
     width: 60%;
     height: 1.5px;
-    background: linear-gradient(90deg, var(--color-mountain-green), transparent);
+    background: linear-gradient(
+      90deg,
+      var(--color-mountain-green),
+      transparent
+    );
   }
 
   .profile-card {
