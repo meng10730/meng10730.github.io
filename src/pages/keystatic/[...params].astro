@@ -1,10 +1,6 @@
 ---
-import { KeystaticApp } from '../../components/KeystaticApp';
+import { KeystaticApp } from '../../components/KeystaticApp.tsx';
 
-export function getStaticPaths() {
-  return [
-    { params: { params: undefined } }
-  ];
-}
+export const prerender = false;
 ---
 <KeystaticApp client:only="react" />

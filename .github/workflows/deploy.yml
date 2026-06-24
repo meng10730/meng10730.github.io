@@ -39,7 +39,7 @@ jobs:
 
       - name: Build with Astro
         run: |
-          npx astro build \
+          npm run build -- \
             --site "${{ steps.pages.outputs.origin }}" \
             --base "${{ steps.pages.outputs.base_path }}"
         env:

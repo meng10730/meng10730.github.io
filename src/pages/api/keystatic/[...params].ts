@@ -5,8 +5,4 @@ export const all = makeHandler({
   config: keystaticConfig,
 });
 
-export function getStaticPaths() {
-  return [
-    { params: { params: undefined } }
-  ];
-}
+export const prerender = false;
