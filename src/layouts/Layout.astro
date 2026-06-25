@@ -367,7 +367,7 @@ const {
 
           // 建立增益節點以將音效音量優化放大
           const gainNode = audioCtx.createGain();
-          gainNode.gain.setValueAtTime(3.5, audioCtx.currentTime); // 放大 3.5 倍
+          gainNode.gain.setValueAtTime(20, audioCtx.currentTime); // 放大 3.5 倍
 
           // 建立動態壓縮器平滑最大振幅，防範爆音與削波失真
           const compressor = audioCtx.createDynamicsCompressor();
