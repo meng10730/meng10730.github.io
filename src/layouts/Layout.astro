@@ -367,7 +367,7 @@ const {
 
           // 建立增益節點以將音效音量調大
           const gainNode = audioCtx.createGain();
-          gainNode.gain.value = 4.0;
+          gainNode.gain.value = 20.0;
 
           source.connect(gainNode);
           gainNode.connect(audioCtx.destination);
