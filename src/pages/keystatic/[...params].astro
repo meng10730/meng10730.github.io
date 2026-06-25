@@ -3,4 +3,13 @@ import { KeystaticApp } from '../../components/KeystaticApp.tsx';
 
 export const prerender = false;
 ---
+<script is:inline>
+  (function() {
+    var params = new URLSearchParams(window.location.search);
+    var redirectUrl = params.get('redirect');
+    if (redirectUrl) {
+      window.history.replaceState(null, '', redirectUrl);
+    }
+  })();
+</script>
 <KeystaticApp client:only="react" />

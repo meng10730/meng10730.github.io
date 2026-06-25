@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>尋訪未果，歸隱山莊...</title>
+  <style>
+    body {
+      background-color: #fdfcf7;
+      color: #333333;
+      font-family: serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .container {
+      text-align: center;
+      padding: 2rem;
+      border: 1px solid rgba(92, 92, 92, 0.15);
+      background: rgba(255, 255, 255, 0.5);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+      border-radius: 4px;
+    }
+    .loading-text {
+      font-size: 1.2rem;
+      letter-spacing: 0.1em;
+      margin-bottom: 1rem;
+    }
+    .sub-text {
+      font-size: 0.9rem;
+      color: #666666;
+    }
+  </style>
+  <script type="text/javascript">
+    (function() {
+      var l = window.location;
+      // 判定是否為 keystatic 路由
+      if (l.pathname.startsWith('/keystatic')) {
+        // 重導向至 /keystatic/?redirect=...
+        var destination = l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') + '/keystatic/?redirect=' + encodeURIComponent(l.pathname + l.search + l.hash);
+        l.replace(destination);
+      } else {
+        // 一般 404，導向首頁
+        l.replace(l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') + '/');
+      }
+    })();
+  </script>
+</head>
+<body>
+  <div class="container">
+    <div class="loading-text">尋訪未果，歸隱山莊...</div>
+    <div class="sub-text">正在為您指引道路，請稍候。</div>
+  </div>
+</body>
+</html>

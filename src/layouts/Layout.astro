@@ -86,6 +86,14 @@ const {
                 >莊主登入</a
               >
             </li>
+            <li id="admin-logout-item" style="display: none;">
+              <a
+                href="#"
+                class="ink-link nav-item admin-logout-btn"
+                id="admin-logout-btn"
+                >登出</a
+              >
+            </li>
           </ul>
         </nav>
       </header>
@@ -93,23 +101,48 @@ const {
       <script is:inline>
         function checkAdminStatus() {
           const btn = document.getElementById('admin-login-btn');
+          const logoutItem = document.getElementById('admin-logout-item');
           if (btn) {
             try {
               const token = localStorage.getItem('keystatic-github-token');
               if (token) {
                 btn.textContent = '進入後台';
                 btn.title = '您已登入 GitHub 管理者帳號';
+                if (logoutItem) logoutItem.style.display = 'block';
               } else {
                 btn.textContent = '莊主登入';
                 btn.title = '登入 GitHub 進行文章編輯';
+                if (logoutItem) logoutItem.style.display = 'none';
               }
             } catch (e) {
               // 防禦沙箱環境限制
             }
           }
         }
-        document.addEventListener('astro:page-load', checkAdminStatus);
-        checkAdminStatus();
+
+        function setupLogout() {
+          const logoutBtn = document.getElementById('admin-logout-btn');
+          if (logoutBtn) {
+            logoutBtn.addEventListener('click', function(e) {
+              e.preventDefault();
+              try {
+                localStorage.removeItem('keystatic-github-token');
+                checkAdminStatus();
+                if (window.location.pathname.startsWith('/keystatic')) {
+                  window.location.href = '/';
+                }
+              } catch (err) {}
+            });
+          }
+        }
+
+        function initAdminNav() {
+          checkAdminStatus();
+          setupLogout();
+        }
+
+        document.addEventListener('astro:page-load', initAdminNav);
+        initAdminNav();
       </script>
 
       <!-- 主要內容區域 -->
@@ -195,6 +228,23 @@ const {
     background: rgba(92, 92, 92, 0.07);
     border-color: var(--color-mountain-cyan);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  }
+
+  .admin-logout-btn {
+    border: 1px solid rgba(180, 50, 50, 0.20);
+    padding: 0.2rem 0.65rem;
+    border-radius: 4px;
+    font-size: 0.95rem !important;
+    background: rgba(180, 50, 50, 0.01);
+    color: rgba(180, 50, 50, 0.8) !important;
+    transition: all 0.25s ease;
+  }
+
+  .admin-logout-btn:hover {
+    background: rgba(180, 50, 50, 0.06);
+    border-color: rgba(180, 50, 50, 0.5);
+    color: rgba(180, 50, 50, 1) !important;
+    box-shadow: 0 2px 8px rgba(180, 50, 50, 0.03);
   }
 
   .site-main {
