@@ -31,7 +31,25 @@ export function getStaticPaths() {
   ];
 }
 ---
-<KeystaticApp client:only="react" />
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>莊主後台 | 唐門山莊</title>
+  <script is:inline>
+    (function() {
+      var params = new URLSearchParams(window.location.search);
+      var redirectUrl = params.get('redirect');
+      if (redirectUrl) {
+        window.history.replaceState(null, '', redirectUrl);
+      }
+    })();
+  </script>
+</head>
+<body>
+  <KeystaticApp client:only="react" />
+</body>
+</html>
 `;
     await fs.writeFile(pathPageFile, productionContent, 'utf8');
     console.log('Configured keystatic page for static pre-rendering');
