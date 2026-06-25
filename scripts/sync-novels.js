@@ -45,7 +45,12 @@ function parseLocalMarkdown(fileContent) {
     if (inFrontmatter) {
       frontmatterLines.push(line);
     } else {
-      if (line.includes('<!-- 此檔案由同步腳本自動產生') || line.includes('請勿在此直接修改 -->')) {
+      if (
+        line.includes('<!-- 此檔案由同步腳本自動產生') || 
+        line.includes('請勿在此直接修改 -->') ||
+        line.includes('{/* 此檔案由同步腳本自動產生') ||
+        line.includes('請勿在此直接修改 */}')
+      ) {
         continue;
       }
       contentLines.push(line);
@@ -342,7 +347,7 @@ function runSync() {
       }
       
       const frontmatter = toYAML(mapInfo);
-      const finalFileContent = `${frontmatter}\n<!-- 此檔案由同步腳本自動產生，請勿在此直接修改 -->\n\n${content}`;
+      const finalFileContent = `${frontmatter}\n\n${content}`;
 
       // 2c. 寫入專案目標目錄
       if (!fs.existsSync(targetDir)) {
