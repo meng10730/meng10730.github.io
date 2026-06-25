@@ -104,7 +104,37 @@ const {
           const logoutItem = document.getElementById('admin-logout-item');
           if (btn) {
             try {
-              const token = localStorage.getItem('keystatic-github-token');
+              // 1. 優先嘗試從 Cookie 讀取 keystatic-github-token
+              let token = null;
+              const cookies = document.cookie.split(';');
+              for (let i = 0; i < cookies.length; i++) {
+                const pair = cookies[i].split('=');
+                const name = pair[0].trim();
+                if (name === 'keystatic-github-token') {
+                  token = pair[1] ? pair[1].trim() : null;
+                  break;
+                }
+              }
+
+              // 2. 若 Cookie 沒有，嘗試從 LocalStorage 讀取
+              if (!token) {
+                token = localStorage.getItem('keystatic-github-token');
+              }
+
+              // 3. 備用啟發式搜尋 (尋找任何長度大於 10 且包含 keystatic 或 token 關鍵字的 localStorage 項)
+              if (!token) {
+                for (let i = 0; i < localStorage.length; i++) {
+                  const key = localStorage.key(i);
+                  if (key && (key.includes('keystatic') || key.includes('token'))) {
+                    const val = localStorage.getItem(key);
+                    if (val && val.length > 10) {
+                      token = val;
+                      break;
+                    }
+                  }
+                }
+              }
+
               if (token) {
                 btn.textContent = '進入後台';
                 btn.title = '您已登入 GitHub 管理者帳號';
@@ -126,7 +156,21 @@ const {
             logoutBtn.addEventListener('click', function(e) {
               e.preventDefault();
               try {
+                // 1. 清除 localStorage 特定 token
                 localStorage.removeItem('keystatic-github-token');
+                
+                // 2. 清除 Cookie 狀態 (涵蓋 Path=/ 與 Path=/keystatic)
+                document.cookie = 'keystatic-github-token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+                document.cookie = 'keystatic-github-token=; Path=/keystatic; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+                
+                // 3. 啟發式清理含有 keystatic 關鍵字之本地快取
+                for (let i = localStorage.length - 1; i >= 0; i--) {
+                  const key = localStorage.key(i);
+                  if (key && (key.includes('keystatic') || key.includes('token'))) {
+                    localStorage.removeItem(key);
+                  }
+                }
+
                 checkAdminStatus();
                 if (window.location.pathname.startsWith('/keystatic')) {
                   window.location.href = '/';
