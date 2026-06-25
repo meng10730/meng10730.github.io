@@ -1,5 +1,49 @@
 import { config, fields, collection } from '@keystatic/core';
 
+// 常用小說與設定集漢字拼音對照表，供自動 Slugify 使用
+const PINYIN_MAP: Record<string, string> = {
+  '不': 'bu', '夜': 'ye', '侯': 'hou', '厲': 'li', '絕': 'jue', '鋒': 'feng',
+  '司': 'si', '南': 'nan', '塵': 'chen', '燼': 'jin', '蠲': 'juan', '歲': 'sui',
+  '戲': 'xi', '長': 'chang', '安': 'an', '摘': 'zhai', '雲': 'yun', '斬': 'zhan',
+  '荒': 'huang', '飲': 'yin', '劫': 'jie', '晏': 'yan', '雪': 'xue', '楚': 'chu',
+  '韶': 'shao', '華': 'hua', '樓': 'lou', '深': 'shen', '闕': 'que', '歧': 'qi',
+  '歿': 'mo', '古': 'gu', '江': 'jiang', '無': 'wu', '岸': 'an', '澹': 'dan',
+  '臺': 'tai', '翣': 'sha', '煙': 'yan', '蘿': 'luo', '白': 'bai', '檀': 'tan',
+  '百': 'bai', '年': 'nian', '裁': 'cai', '罰': 'fa', '者': 'zhe', '研': 'yan',
+  '辭': 'ci', '蒹': 'jian', '葭': 'jia', '蘇': 'su', '挽': 'wan', '風': 'feng',
+  '陸': 'lu', '涯': 'ya', '雙': 'shuang', '魂': 'hun', '皇': 'huang', '帝': 'di',
+  '九': 'jiu', '宮': 'gong', '格': 'ge', '乾': 'qian', '坤': 'kun', '秩': 'zhi',
+  '序': 'xu', '矩': 'ju', '陣': 'zhen', '天': 'tian', '羃': 'mi', '遺': 'yi',
+  '玉': 'yu', '六': 'liu', '器': 'qi', '本': 'ben', '源': 'yuan', '服': 'fu',
+  '飾': 'shi', '性': 'xing', '格': 'ge', '表': 'biao', '象': 'xiang', '日': 'ri',
+  '常': 'chang', '習': 'xi', '慣': 'guan', '瞳': 'tong', '孔': 'kong', '神': 'shen',
+  '態': 'tai', '種': 'zhong', '族': 'zu', '血': 'xue', '統': 'tong', '膚': 'fu',
+  '色': 'se', '外': 'wai', '貌': 'mao', '頭': 'tou', '髮': 'fa', '型': 'xing',
+  '特': 'te', '殊': 'shu', '能': 'neng', '力': 'li', '全': 'quan', '維': 'wei',
+  '徵': 'zheng', '美': 'mei', '學': 'xue', '總': 'zong', '綱': 'gang', '舊': 'jiu',
+  '世': 'shi', '中': 'zhong', '陰': 'yin', '界': 'jie', '角': 'jiao', '設': 'she',
+  '草': 'cao', '案': 'an', '擴': 'kuo', '充': 'chong', '組': 'zu', '織': 'zhi',
+  '正': 'zheng', '派': 'pai', '提': 'ti', '浮': 'fu', '生': 'sheng', '極': 'ji',
+  '樂': 'le', '坊': 'fang', '定': 'ding', '碑': 'bei', '內': 'nei', '部': 'bu',
+  '構': 'gou', '造': 'zao', '級': 'ji', '勢': 'shi', '質': 'zhi', '詞': 'ci',
+  '條': 'tiao', '庫': 'ku', '觀': 'guan', '星': 'xing', '閣': 'ge'
+};
+
+function pinyinSlugify(text: string): string {
+  if (!text) return '';
+  const hasChinese = /[\u4e00-\u9fa5]/.test(text);
+  if (!hasChinese) {
+    return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  }
+  const chars = Array.from(text);
+  const result = chars.map(char => {
+    if (/[a-zA-Z0-9]/.test(char)) return char.toLowerCase();
+    if (PINYIN_MAP[char]) return PINYIN_MAP[char];
+    return '';
+  }).filter(Boolean).join('-');
+  return result.replace(/-+/g, '-').replace(/(^-|-$)/g, '');
+}
+
 export default config({
   storage: import.meta.env.DEV
     ? { kind: 'github' as const, repo: 'meng10730/meng10730.github.io' }
@@ -12,7 +56,14 @@ export default config({
       path: 'src/content/blog/*',
       format: { contentField: 'content' },
       schema: {
-        title: fields.slug({ name: { label: '標題' } }),
+        title: fields.slug({
+          name: { label: '標題' },
+          slug: {
+            label: '網址別名 (Slug)',
+            description: '此欄位若留空，純中文標題會自動轉為拼音',
+            slugify: pinyinSlugify
+          }
+        }),
         description: fields.text({ label: '簡介', multiline: true }),
         pubDate: fields.date({ label: '發布日期' }),
         tags: fields.array(fields.text({ label: '標籤' }), {
@@ -28,7 +79,14 @@ export default config({
       path: 'src/content/works/*',
       format: { contentField: 'content' },
       schema: {
-        title: fields.slug({ name: { label: '專案名稱' } }),
+        title: fields.slug({
+          name: { label: '專案名稱' },
+          slug: {
+            label: '網址別名 (Slug)',
+            description: '此欄位若留空，純中文標題會自動轉為拼音',
+            slugify: pinyinSlugify
+          }
+        }),
         description: fields.text({ label: '一句話描述' }),
         category: fields.select({
           label: '分類',
@@ -64,7 +122,14 @@ export default config({
       path: 'src/content/novels/*',
       format: { contentField: 'content' },
       schema: {
-        title: fields.slug({ name: { label: '小說標題' } }),
+        title: fields.slug({
+          name: { label: '小說標題' },
+          slug: {
+            label: '網址別名 (Slug)',
+            description: '此欄位若留空，純中文標題會自動轉為拼音',
+            slugify: pinyinSlugify
+          }
+        }),
         description: fields.text({ label: '簡介', multiline: true }),
         genre: fields.array(fields.text({ label: '類型標籤 (武俠、仙俠…)' }), {
           label: '類型',
@@ -94,7 +159,14 @@ export default config({
       path: 'src/content/characters/*',
       format: { contentField: 'content' },
       schema: {
-        name: fields.slug({ name: { label: '人物名稱' } }),
+        name: fields.slug({
+          name: { label: '人物名稱' },
+          slug: {
+            label: '網址別名 (Slug)',
+            description: '此欄位若留空，純中文標題會自動轉為拼音',
+            slugify: pinyinSlugify
+          }
+        }),
         description: fields.text({ label: '人物簡介 (用於前台懸浮氣泡，選填)', multiline: true }),
         alias: fields.array(fields.text({ label: '別名 / 江湖稱號' }), {
           label: '別名',
@@ -116,7 +188,14 @@ export default config({
       path: 'src/content/worldview/*',
       format: { contentField: 'content' },
       schema: {
-        title: fields.slug({ name: { label: '設定標題' } }),
+        title: fields.slug({
+          name: { label: '設定標題' },
+          slug: {
+            label: '網址別名 (Slug)',
+            description: '此欄位若留空，純中文標題會自動轉為拼音',
+            slugify: pinyinSlugify
+          }
+        }),
         description: fields.text({ label: '設定簡介 (用於前台懸浮氣泡，選填)', multiline: true }),
         category: fields.text({ label: '分類 (例：機制、地理、神明體系)' }),
         pubDate: fields.date({ label: '建立日期' }),
@@ -129,7 +208,14 @@ export default config({
       path: 'src/content/factions/*',
       format: { contentField: 'content' },
       schema: {
-        title: fields.slug({ name: { label: '勢力名稱' } }),
+        title: fields.slug({
+          name: { label: '勢力名稱' },
+          slug: {
+            label: '網址別名 (Slug)',
+            description: '此欄位若留空，純中文標題會自動轉為拼音',
+            slugify: pinyinSlugify
+          }
+        }),
         description: fields.text({ label: '勢力簡介 (用於前台懸浮氣泡，選填)', multiline: true }),
         category: fields.text({ label: '分類 (例：正派、地下、世俗、中立)' }),
         pubDate: fields.date({ label: '建立日期' }),
@@ -142,7 +228,14 @@ export default config({
       path: 'src/content/guoxue/*',
       format: { contentField: 'content' },
       schema: {
-        title: fields.slug({ name: { label: '筆記標題' } }),
+        title: fields.slug({
+          name: { label: '筆記標題' },
+          slug: {
+            label: '網址別名 (Slug)',
+            description: '此欄位若留空，純中文標題會自動轉為拼音',
+            slugify: pinyinSlugify
+          }
+        }),
         source: fields.text({ label: '出處 (論語、道德經…)' }),
         category: fields.select({
           label: '分類',

@@ -24,6 +24,34 @@ items.sort((a: any, b: any) => {
   return dateB - dateA;
 });
 
+// 若為勢力分類，動態生成 Mermaid 勢力關係圖譜字串
+let mermaidCode = '';
+if (type === 'factions') {
+  const charactersList = await getCollection('characters', (entry: any) => !entry.id.startsWith('_'));
+  
+  mermaidCode = 'graph TD\n';
+  // 設定 Mermaid 的樣式
+  mermaidCode += '  %% Styles\n';
+  mermaidCode += '  classDef faction fill:#fbfaf7,stroke:#8a6c55,stroke-width:2px,color:#2c2520,font-family:LXGW WenKai TC;\n';
+  mermaidCode += '  classDef character fill:#faf8f5,stroke:#d9d2c9,stroke-width:1px,color:#594f46,font-family:LXGW WenKai TC;\n';
+
+  items.forEach((faction: any) => {
+    const fId = `f_${faction.slug.replace(/[^a-zA-Z0-9]/g, '_')}`;
+    const fName = faction.data.title;
+    mermaidCode += `  ${fId}["🏯 ${fName}"]\n`;
+    mermaidCode += `  class ${fId} faction;\n`;
+
+    // 篩選屬於此勢力的登場人物
+    const members = charactersList.filter((char: any) => char.data.affiliation === fName);
+    members.forEach((member: any) => {
+      const cId = `c_${member.slug.replace(/[^a-zA-Z0-9]/g, '_')}`;
+      const cName = member.data.name;
+      mermaidCode += `  ${fId} --> ${cId}["⚔️ ${cName}"]\n`;
+      mermaidCode += `  class ${cId} character;\n`;
+    });
+  });
+}
+
 const novelStatusMap: Record<string, string> = {
   ongoing: '連載中',
   completed: '已完結',
@@ -51,6 +79,17 @@ const guoxueCatMap: Record<string, string> = {
     <h1 class="page-title cursive-title">{title}</h1>
     <p class="page-subtitle cursive-title">「{subtitle}」</p>
     <div class="mountain-line"></div>
+
+    {type === 'factions' && items.length > 0 && (
+      <div class="factions-chart-wrapper paper-card ink-fade-in">
+        <details class="chart-details">
+          <summary class="chart-summary cursive-title">🗺️ 展開勢力山河圖（Mermaid 關係圖譜）</summary>
+          <div class="mermaid-container">
+            <pre class="mermaid">{mermaidCode}</pre>
+          </div>
+        </details>
+      </div>
+    )}
 
     {items.length === 0 ? (
       <div class="empty-state paper-card">
@@ -152,9 +191,100 @@ const guoxueCatMap: Record<string, string> = {
       </div>
     )}
   </div>
+
+  {type === 'factions' && (
+    <script is:inline src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script is:inline>
+      function initMermaid() {
+        if (window.mermaid) {
+          window.mermaid.initialize({
+            startOnLoad: true,
+            theme: 'neutral',
+            securityLevel: 'loose',
+            flowchart: {
+              useWidth: 900,
+              htmlLabels: true
+            }
+          });
+          // 重建以利 ViewTransitions 觸發
+          window.mermaid.init(undefined, document.querySelectorAll('.mermaid'));
+        }
+      }
+      document.addEventListener('astro:page-load', initMermaid);
+      initMermaid();
+    </script>
+  )}
 </Layout>
 
 <style>
+  /* Mermaid 勢力山河圖古風樣式 */
+  .factions-chart-wrapper {
+    margin-bottom: 2rem;
+    padding: 1.5rem 2rem;
+    background: rgba(250, 248, 245, 0.95);
+    border: 1px solid #d9d2c9;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(44, 37, 32, 0.06);
+  }
+
+  .chart-details {
+    width: 100%;
+  }
+
+  .chart-summary {
+    font-size: 1.15rem;
+    color: var(--color-mountain-cyan);
+    cursor: pointer;
+    user-select: none;
+    outline: none;
+    font-weight: bold;
+    transition: color 0.2s ease;
+  }
+
+  .chart-summary:hover {
+    color: var(--color-mountain-green);
+  }
+
+  .mermaid-container {
+    margin-top: 1.5rem;
+    width: 100%;
+    overflow-x: auto;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 4px;
+    padding: 1rem;
+    border: 1px dashed rgba(138, 108, 85, 0.2);
+    display: flex;
+    justify-content: center;
+  }
+
+  /* 調整 Mermaid 節點在霞鶩字型下的水墨風視覺效果 */
+  :global(.mermaid) {
+    font-family: 'LXGW WenKai TC', 'Noto Serif TC', serif !important;
+  }
+  
+  :global(.mermaid .node rect), :global(.mermaid .node circle), :global(.mermaid .node polygon) {
+    fill: #fbfaf7 !important;
+    stroke: #8a6c55 !important;
+    stroke-width: 1.5px !important;
+    rx: 4px;
+    ry: 4px;
+  }
+
+  :global(.mermaid .edgePath .path) {
+    stroke: #8a6c55 !important;
+    stroke-width: 1.5px !important;
+  }
+
+  :global(.mermaid .edgeArrowOps .arrowMarkerPath) {
+    fill: #8a6c55 !important;
+    stroke: none !important;
+  }
+
+  :global(.mermaid .label) {
+    color: #2c2520 !important;
+    font-weight: 600 !important;
+  }
+
   .shanzhuang-container {
     max-width: 1000px;
     margin: 0 auto;
