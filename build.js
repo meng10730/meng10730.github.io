@@ -11,16 +11,30 @@ process.on('unhandledRejection', (reason) => {
   console.error(reason);
 });
 
-const pathPage = path.resolve('src/pages/keystatic');
-const pathPageTemp = path.resolve('temp-keystatic-page');
+const pathPageFile = path.resolve('src/pages/keystatic/[...params].astro');
+let pageFileBackup = null;
 const pathApi = path.resolve('src/pages/api/keystatic');
 const pathApiTemp = path.resolve('temp-keystatic-api');
 
 async function run() {
   console.log('--- Preparing build (disabling dev-only routes) ---');
-  if (await fs.pathExists(pathPage)) {
-    await fs.move(pathPage, pathPageTemp, { overwrite: true });
-    console.log('Disabled keystatic page folder');
+  if (await fs.pathExists(pathPageFile)) {
+    pageFileBackup = await fs.readFile(pathPageFile, 'utf8');
+    const productionContent = `---
+import { KeystaticApp } from '../../components/KeystaticApp.tsx';
+
+export const prerender = true;
+
+export function getStaticPaths() {
+  return [
+    { params: { params: undefined } },
+  ];
+}
+---
+<KeystaticApp client:only="react" />
+`;
+    await fs.writeFile(pathPageFile, productionContent, 'utf8');
+    console.log('Configured keystatic page for static pre-rendering');
   }
   if (await fs.pathExists(pathApi)) {
     await fs.move(pathApi, pathApiTemp, { overwrite: true });
@@ -39,9 +53,9 @@ async function run() {
     buildError = err;
   } finally {
     console.log('--- Cleaning up (restoring dev-only routes) ---');
-    if (await fs.pathExists(pathPageTemp)) {
-      await fs.move(pathPageTemp, pathPage, { overwrite: true });
-      console.log('Restored keystatic page folder');
+    if (pageFileBackup !== null) {
+      await fs.writeFile(pathPageFile, pageFileBackup, 'utf8');
+      console.log('Restored keystatic page file content');
     }
     if (await fs.pathExists(pathApiTemp)) {
       await fs.move(pathApiTemp, pathApi, { overwrite: true });
