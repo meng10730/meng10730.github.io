@@ -3,6 +3,14 @@
 ---
 
 <div class="audio-player-container" id="audio-player-ui">
+  <!-- 背景音樂曲目跑馬燈 -->
+  <div class="music-marquee-container" id="music-marquee-container">
+    <span class="music-note-icon">🎵</span>
+    <div class="music-marquee-inner">
+      <span class="music-marquee-content" id="music-marquee-content"></span>
+    </div>
+  </div>
+
   <!-- 提示文字，懸停時顯示 -->
   <span class="player-tooltip" id="player-tooltip">開啟背景音樂</span>
   
@@ -49,6 +57,83 @@
     align-items: center;
     gap: 0.8rem;
     z-index: 999;
+  }
+
+  /* 跑馬燈容器 - 自適應寬度，水墨邊框，宣紙底色 */
+  .music-marquee-container {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    max-width: 0;
+    opacity: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    background: rgba(253, 252, 247, 0.95);
+    border: 0px solid var(--color-border);
+    padding: 0;
+    border-radius: 20px;
+    height: 32px;
+    font-size: 0.8rem;
+    font-family: var(--font-serif);
+    color: var(--color-ink-grey);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+    transition: max-width 0.5s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.5s ease, padding 0.5s ease, border-width 0.5s ease, margin-right 0.5s ease;
+    pointer-events: none;
+  }
+
+  .music-marquee-container.visible {
+    max-width: 220px; /* 最大展開寬度 */
+    opacity: 1;
+    padding: 0 0.8rem;
+    border: 1.5px solid var(--color-ink-black);
+    margin-right: 0.2rem;
+    pointer-events: auto;
+  }
+
+  /* 漸隱水墨邊緣遮罩 */
+  .music-marquee-inner {
+    overflow: hidden;
+    white-space: nowrap;
+    display: flex;
+    flex: 1;
+    width: max-content;
+    mask-image: linear-gradient(to right, transparent, white 8px, white 92%, transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, white 8px, white 92%, transparent);
+  }
+
+  .music-marquee-content {
+    display: inline-block;
+    white-space: nowrap;
+  }
+
+  /* 8 秒滾動完一輪，僅當確定需要滾動且 visible 時才啟用 */
+  .music-marquee-container.visible.should-scroll .music-marquee-content {
+    padding-left: 100%;
+    animation: marquee-scroll 8s linear infinite;
+  }
+
+  /* 微幅震動的古風音符 */
+  .music-note-icon {
+    display: inline-block;
+    animation: note-bounce 1.5s ease-in-out infinite alternate;
+  }
+
+  @keyframes note-bounce {
+    0% {
+      transform: translateY(0) rotate(-5deg);
+    }
+    100% {
+      transform: translateY(-2px) rotate(5deg);
+    }
+  }
+
+  @keyframes marquee-scroll {
+    0% {
+      transform: translate3d(0, 0, 0);
+    }
+    100% {
+      transform: translate3d(-100%, 0, 0);
+    }
   }
 
   .player-tooltip {
@@ -158,7 +243,7 @@
     }
   }
 
-  /* 行動端優化：稍微縮小尺寸，避免阻擋內容 */
+  /* 行動端優化：稍微縮小尺寸，直接隱藏跑馬燈，縮小成正在播放圖示 */
   @media (max-width: 768px) {
     .audio-player-container {
       bottom: 1.5rem;
@@ -171,6 +256,9 @@
     .player-tooltip {
       display: none; /* 行動端隱藏提示字 */
     }
+    .music-marquee-container {
+      display: none !important; /* 行動端直接隱藏跑馬燈 */
+    }
   }
 </style>
 
@@ -181,15 +269,67 @@
     const sfxBtn = document.getElementById('sfx-toggle-global');
     const sfxIcon = document.getElementById('sfx-status-icon');
     const tooltip = document.getElementById('player-tooltip');
+    
+    // 跑馬燈 DOM 節點
+    const marqueeContainer = document.getElementById('music-marquee-container');
+    const marqueeContent = document.getElementById('music-marquee-content');
 
     if (!audio || !musicBtn || !sfxBtn) return () => {};
 
-    // 1. 同步背景音樂按鈕的 UI 狀態
+    // 解析並格式化古風歌名
+    const getMusicTitle = (src: string) => {
+      if (!src) return '未知曲目';
+      if (src.includes('traditional-oriental-cherry-blossoms')) {
+        return '《櫻花落》- 古風雅樂';
+      }
+      if (src.includes('bgm.mp3')) {
+        return '《唐門雅樂》- 自訂背景音樂';
+      }
+      try {
+        const url = new URL(src, window.location.href);
+        const filename = url.pathname.substring(url.pathname.lastIndexOf('/') + 1);
+        const nameWithoutExt = filename.replace(/\.[^/.]+$/, "");
+        return `《${decodeURIComponent(nameWithoutExt)}》`;
+      } catch (e) {
+        return '《唐門雅樂》';
+      }
+    };
+
+    // 同步背景音樂按鈕的 UI 狀態與跑馬燈狀態
     const updateMusicUI = () => {
       if (audio.paused) {
         musicBtn.classList.remove('playing');
+        if (marqueeContainer) {
+          marqueeContainer.classList.remove('visible');
+          marqueeContainer.classList.remove('should-scroll');
+        }
       } else {
         musicBtn.classList.add('playing');
+        if (marqueeContainer && marqueeContent) {
+          const title = getMusicTitle(audio.src);
+          marqueeContent.textContent = title;
+          marqueeContainer.classList.add('visible');
+          
+          // 重置滾動狀態
+          marqueeContainer.classList.remove('should-scroll');
+          
+          // 延遲測量以防 DOM 未完全展開，當歌名長度超出 130px 時啟用跑馬燈滾動
+          setTimeout(() => {
+            if (marqueeContent.scrollWidth > 130) {
+              marqueeContainer.classList.add('should-scroll');
+            }
+          }, 80);
+        }
+      }
+    };
+
+    // 瀏覽器標籤頁隱藏時暫停動畫，節能省電
+    const handleVisibilityChange = () => {
+      if (!marqueeContainer || !marqueeContent) return;
+      if (document.hidden) {
+        marqueeContainer.classList.remove('should-scroll');
+      } else if (!audio.paused && marqueeContent.scrollWidth > 130) {
+        marqueeContainer.classList.add('should-scroll');
       }
     };
 
@@ -207,6 +347,7 @@
     musicBtn.addEventListener('click', toggleMusic);
     audio.addEventListener('play', updateMusicUI);
     audio.addEventListener('pause', updateMusicUI);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // 2. 同步全域按鍵音效的 UI 狀態
     const updateSfxUI = () => {
@@ -248,6 +389,7 @@
       musicBtn.removeEventListener('click', toggleMusic);
       audio.removeEventListener('play', updateMusicUI);
       audio.removeEventListener('pause', updateMusicUI);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       sfxBtn.removeEventListener('click', toggleSfx);
       musicBtn.removeEventListener('mouseenter', handleMusicTooltip);
       sfxBtn.removeEventListener('mouseenter', handleSfxTooltip);

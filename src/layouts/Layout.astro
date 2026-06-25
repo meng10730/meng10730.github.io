@@ -365,16 +365,29 @@ const {
           const source = audioCtx.createBufferSource();
           source.buffer = buffer;
 
-          // 建立增益節點以將音效音量調大
+          // 建立增益節點以將音效音量優化放大
           const gainNode = audioCtx.createGain();
-          gainNode.gain.value = 20.0;
+          gainNode.gain.setValueAtTime(3.5, audioCtx.currentTime); // 放大 3.5 倍
+
+          // 建立動態壓縮器平滑最大振幅，防範爆音與削波失真
+          const compressor = audioCtx.createDynamicsCompressor();
+          compressor.threshold.setValueAtTime(-24, audioCtx.currentTime);
+          compressor.knee.setValueAtTime(30, audioCtx.currentTime);
+          compressor.ratio.setValueAtTime(12, audioCtx.currentTime);
+          compressor.attack.setValueAtTime(0.003, audioCtx.currentTime);
+          compressor.release.setValueAtTime(0.25, audioCtx.currentTime);
 
           source.connect(gainNode);
-          gainNode.connect(audioCtx.destination);
+          gainNode.connect(compressor);
+          compressor.connect(audioCtx.destination);
           source.start(0);
         }
 
         function setupGlobalClickSfx() {
+          // 防止 Astro ViewTransitions 頁面跳轉時重複綁定 click 事件造成的音量與音軌重疊
+          if ((window as any).__sfx_initialized) return;
+          (window as any).__sfx_initialized = true;
+
           // 初始化音訊解碼 (配合瀏覽器安全策略限制，於首次點擊或交互時自動加載)
           document.addEventListener(
             "click",
