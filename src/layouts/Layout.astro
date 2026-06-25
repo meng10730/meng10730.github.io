@@ -276,10 +276,105 @@ const {
           } catch (e) {}
         }
 
+        // --- 全域古風按鍵音效系統 (Web Audio API) ---
+        let audioCtx = null;
+        const sfxBuffers = {
+          normal: null,
+          high: null,
+          low: null
+        };
+
+        async function loadSfx(name, url) {
+          try {
+            const response = await fetch(url);
+            const arrayBuffer = await response.arrayBuffer();
+            if (audioCtx) {
+              sfxBuffers[name] = await audioCtx.decodeAudioData(arrayBuffer);
+            }
+          } catch (err) {
+            // 僅本地偵錯或靜默降級，不影響使用者
+          }
+        }
+
+        async function initWebAudioSfx() {
+          if (audioCtx) return;
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (!AudioContextClass) return;
+          audioCtx = new AudioContextClass();
+          
+          await Promise.all([
+            loadSfx('normal', '/audio/click.wav'),
+            loadSfx('high', '/audio/click-high.wav'),
+            loadSfx('low', '/audio/click-low.wav')
+          ]);
+        }
+
+        function playClickSfx(type) {
+          try {
+            const bgm = document.getElementById('main-bgm');
+            if (bgm && bgm.paused) return; // 靜音同步：BGM 暫停時不播放按鍵音
+
+            if (!audioCtx) {
+              initWebAudioSfx().then(() => triggerBufferPlay(type));
+              return;
+            }
+            if (audioCtx.state === 'suspended') {
+              audioCtx.resume();
+            }
+            triggerBufferPlay(type);
+          } catch (e) {}
+        }
+
+        function triggerBufferPlay(type) {
+          const buffer = sfxBuffers[type];
+          if (!buffer || !audioCtx) return;
+          const source = audioCtx.createBufferSource();
+          source.buffer = buffer;
+          source.connect(audioCtx.destination);
+          source.start(0);
+        }
+
+        function setupGlobalClickSfx() {
+          // 初始化音訊解碼 (配合瀏覽器安全策略限制，於首次點擊或交互時自動加載)
+          document.addEventListener('click', function initOnFirstClick() {
+            initWebAudioSfx();
+            document.removeEventListener('click', initOnFirstClick);
+          }, { once: true });
+
+          // 全域事件代理監聽
+          document.addEventListener('click', function(e) {
+            const target = e.target;
+            if (!target) return;
+
+            const clickable = target.closest('a, button, .scroll-card, .member-card, .ink-expand-btn');
+            if (!clickable) return;
+
+            // 1. 壞連結 / 未登記設定 (LowVoice)
+            if (clickable.classList.contains('broken-link')) {
+              playClickSfx('low');
+              return;
+            }
+
+            // 2. 展開 / 收合 / 特殊開關 (HighVoice)
+            if (
+              clickable.id === 'toggle-members-btn' ||
+              clickable.id === 'music-toggle' ||
+              clickable.classList.contains('ink-expand-btn')
+            ) {
+              playClickSfx('high');
+              return;
+            }
+
+            // 3. 一般點擊 (Click2)
+            playClickSfx('normal');
+          });
+        }
+
         function initAdminNav() {
           checkAdminStatus();
           setupLogout();
           initScrollTracker();
+          setupGlobalClickSfx();
         }
 
         document.addEventListener('astro:page-load', initAdminNav);

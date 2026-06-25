@@ -26,3 +26,6 @@ pnpm-debug.log*
 # local backups & trash
 .backup/
 trash/
+
+# external raw audio resources
+/Audio/
