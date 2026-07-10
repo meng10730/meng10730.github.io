@@ -80,25 +80,26 @@ const categories = [
       <a href="#" class="resume-btn font-semibold">繼續閱讀 ➔</a>
     </div>
 
-    <div class="scroll-wrapper">
-      <div class="scroll-container" id="scroll-container">
-        {categories.map(cat => (
-          <div class="scroll-card paper-card">
-            <div class="card-icon">{cat.icon}</div>
-            <h2 class="card-section-title cursive-title">{cat.title}</h2>
-            <h3 class="card-name-title">{cat.name}</h3>
-            <p class="card-desc">{cat.desc}</p>
-            <div class="card-count-badge">
-              <span class="count-num">{cat.count}</span> {cat.unit}
-            </div>
-            <div class="card-footer">
-              <a href={`${import.meta.env.BASE_URL}shanzhuang/${cat.link}`} class="read-btn">
-                翻閱此閣 →
-              </a>
+    <!-- 古風竹簡書架清單佈局 -->
+    <div class="shanzhuang-list-container">
+      {categories.map(cat => (
+        <a href={`${import.meta.env.BASE_URL}shanzhuang/${cat.link}`} class="shanzhuang-list-item paper-card">
+          <div class="item-left">
+            <span class="item-icon">{cat.icon}</span>
+            <div class="item-title-group">
+              <h2 class="item-title cursive-title">{cat.title}</h2>
+              <span class="item-name">{cat.name}</span>
             </div>
           </div>
-        ))}
-      </div>
+          <p class="item-desc">{cat.desc}</p>
+          <div class="item-right">
+            <span class="item-count-badge">
+              <span class="count-num">{cat.count}</span> {cat.unit}
+            </span>
+            <span class="item-action-btn">翻閱 ➔</span>
+          </div>
+        </a>
+      ))}
     </div>
   </div>
 </Layout>
@@ -171,128 +172,117 @@ const categories = [
     margin-bottom: 1rem;
   }
 
-  /* 橫向滾動容器包裝器，改為網格佈局的包裝器 */
-  .scroll-wrapper {
-    position: relative;
-    width: 100%;
-    margin-top: 3rem;
-  }
-
-  /* 移除水墨漸層淡出遮罩，以適應鋪開的網格 */
-  .scroll-wrapper::before,
-  .scroll-wrapper::after {
-    display: none;
-  }
-
-  /* 網格並排陳列容器 */
-  .scroll-container {
-    display: grid;
-    /* 自動調適寬度，最小 300px，在大螢幕上自動並排 */
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 2.2rem;
-    padding: 1.5rem 0.5rem;
-    justify-content: center;
-    max-width: 1200px;
-    margin: 0 auto;
-  }
-
-  /* 並排卡片：高度固定，寬度自適應以適應 Grid */
-  .scroll-card {
-    box-sizing: border-box;
-    width: 100%;
-    max-width: 360px;
-    height: 420px;
-    min-height: 420px;
-    max-height: 420px;
+  /* 竹簡書單清單佈局容器 */
+  .shanzhuang-list-container {
+    max-width: 800px;
+    margin: 3rem auto 0 auto;
     display: flex;
     flex-direction: column;
+    gap: 1.5rem;
+    padding-bottom: 3rem;
+  }
+
+  /* 單個書單長條 - 宣紙底色，水墨細邊 */
+  .shanzhuang-list-item {
+    display: flex;
+    align-items: center;
     justify-content: space-between;
-    padding: 2.5rem 2rem;
+    padding: 1.5rem 2rem;
     border-radius: 6px;
+    background: var(--color-paper-light);
+    border: 1px solid var(--color-border);
+    text-decoration: none;
+    color: var(--color-ink-text);
+    transition: var(--transition-smooth);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.015);
     position: relative;
     overflow: hidden;
-    margin: 0 auto; /* 卡片在網格單元中置中 */
+    gap: 2rem;
   }
 
-  /* 卡片內部設計 */
-  .card-icon {
-    font-size: 2.5rem;
-    margin-bottom: 1rem;
-    opacity: 0.8;
-    height: 3rem;
+  .shanzhuang-list-item:hover {
+    border-color: var(--color-mountain-cyan);
+    background: rgba(253, 252, 247, 0.98);
+    transform: translateX(6px);
+    box-shadow: 0 6px 20px rgba(45, 95, 90, 0.05);
   }
 
-  .card-section-title {
-    font-size: 1.8rem;
+  /* 左側：圖示與標題組 */
+  .item-left {
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+    flex-shrink: 0;
+  }
+
+  .item-icon {
+    font-size: 2rem;
+    opacity: 0.85;
+  }
+
+  .item-title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .item-title {
+    font-size: 1.3rem;
     color: var(--color-mountain-cyan);
-    margin-bottom: 0.3rem;
+    margin: 0;
     line-height: 1.2;
-    height: 2.2rem;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
   }
 
-  .card-name-title {
-    font-size: 1.1rem;
-    color: var(--color-ink-black);
-    font-weight: 600;
-    margin-bottom: 1.2rem;
+  .item-name {
+    font-size: 0.85rem;
+    color: var(--color-ink-grey);
     letter-spacing: 0.05em;
-    line-height: 1.4;
-    height: 1.5rem;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
   }
 
-  .card-desc {
-    font-size: 0.95rem;
+  /* 中間：介紹描述 (無固定高度限制，字體精巧為 0.9rem) */
+  .item-desc {
+    flex: 1;
+    font-size: 0.9rem;
     color: var(--color-ink-text);
     line-height: 1.6;
-    margin-bottom: 1.5rem;
-    height: 7.6rem;
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-line-clamp: 5;
-    -webkit-box-orient: vertical;
+    margin: 0;
   }
 
-  .card-count-badge {
-    align-self: flex-start;
-    font-size: 0.85rem;
-    background: rgba(45, 95, 90, 0.06);
+  /* 右側：數量徽章與按鈕 */
+  .item-right {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-shrink: 0;
+  }
+
+  .item-count-badge {
+    font-size: 0.8rem;
+    background: rgba(45, 95, 90, 0.05);
     color: var(--color-mountain-cyan);
-    padding: 0.25rem 0.75rem;
-    border-radius: 20px;
-    border: 1px solid rgba(45, 95, 90, 0.12);
-    margin-bottom: 1.5rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 4px;
+    border: 1px solid rgba(45, 95, 90, 0.1);
     font-weight: 600;
+    white-space: nowrap;
   }
 
   .count-num {
-    font-size: 1.1rem;
+    font-size: 1.05rem;
     font-family: var(--font-cursive);
     color: var(--color-mountain-green);
   }
 
-  .card-footer {
-    border-top: 1px dashed var(--color-border);
-    padding-top: 1rem;
-    margin-top: auto;
-  }
-
-  .read-btn {
-    font-size: 0.95rem;
+  .item-action-btn {
+    font-size: 0.9rem;
     color: var(--color-mountain-cyan);
-    font-weight: 600;
+    font-weight: bold;
     transition: var(--transition-fast);
-    display: inline-block;
+    white-space: nowrap;
   }
 
-  .read-btn:hover {
+  .shanzhuang-list-item:hover .item-action-btn {
     color: var(--color-mountain-green);
-    transform: translateX(6px);
   }
 
   /* 一鍵續讀卡片水墨風樣式 */
@@ -374,16 +364,27 @@ const categories = [
       align-self: flex-end;
     }
 
-    .scroll-container {
-      grid-template-columns: 1fr;
-      gap: 1.5rem;
-      padding: 1rem 0;
+    .shanzhuang-list-item {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+      padding: 1.5rem;
     }
 
-    .scroll-card {
-      max-width: 100%;
-      height: auto;
-      min-height: 380px;
+    .item-left {
+      width: 100%;
+    }
+
+    .item-desc {
+      width: 100%;
+    }
+
+    .item-right {
+      width: 100%;
+      justify-content: space-between;
+      border-top: 1px dashed var(--color-border);
+      padding-top: 0.8rem;
+      margin-top: 0.2rem;
     }
   }
 </style>
