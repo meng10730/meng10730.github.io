@@ -478,14 +478,36 @@ const {
         if (!motionEnabled) {
           // 動畫關閉時，直接設定最終狀態，防止頁面加載時的布局與字體抖動
           gsap.set(".site-main", { opacity: 1, y: 0, clearProps: "transform,opacity" });
+          gsap.set(".nav-links li", { opacity: 1, y: 0, clearProps: "transform,opacity" });
           return;
         }
 
-        // 極簡前台漸現動畫 (位移與透明度)，只清除 transform 與 opacity 屬性，保障原生排版樣式不被擦除
-        gsap.from(".site-main", {
+        // 1. 頂部選單的極簡交錯滑動淡入 (Staggered Menu Entrance)
+        gsap.from(".nav-links li", {
+          opacity: 0,
+          y: -5,
+          duration: 0.4,
+          stagger: 0.04,
+          ease: "power1.out",
+          clearProps: "transform,opacity"
+        });
+
+        // 2. 極簡內容分層漸現動畫 (位移與透明度)，只清除 transform 與 opacity 屬性，保障原生排版樣式不被擦除
+        // 優先淡入主標題
+        gsap.from(".site-main h1, .site-main .main-title", {
+          y: 8,
+          opacity: 0,
+          duration: 0.5,
+          ease: "power2.out",
+          clearProps: "transform,opacity"
+        });
+
+        // 隨後淡入其餘內容
+        gsap.from(".site-main > *:not(h1):not(.main-title)", {
           y: 12,
           opacity: 0,
           duration: 0.5,
+          delay: 0.12,
           ease: "power2.out",
           clearProps: "transform,opacity"
         });
