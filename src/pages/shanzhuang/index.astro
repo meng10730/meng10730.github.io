@@ -104,30 +104,6 @@ const categories = [
 </Layout>
 
 <script>
-  // 垂直滾輪轉橫向滾動，防範觸控板衝突，並在邊界釋放垂直滾動
-  function initHorizontalScroll() {
-    const container = document.getElementById('scroll-container');
-    if (container) {
-      container.addEventListener('wheel', (e) => {
-        if (e.deltaX === 0) {
-          const delta = e.deltaY;
-          const scrollLeft = container.scrollLeft;
-          const maxScrollLeft = container.scrollWidth - container.clientWidth;
-          
-          const atLeft = scrollLeft <= 0;
-          const atRight = scrollLeft >= maxScrollLeft - 1;
-          
-          if ((delta < 0 && atLeft) || (delta > 0 && atRight)) {
-            return;
-          }
-          
-          e.preventDefault();
-          container.scrollLeft += delta * 1.2;
-        }
-      }, { passive: false });
-    }
-  }
-
   // 讀取閱讀進度並顯示卡片
   function checkResumeRead() {
     const card = document.getElementById('resume-read-card');
@@ -167,7 +143,6 @@ const categories = [
   }
 
   function initShanzhuangHome() {
-    initHorizontalScroll();
     checkResumeRead();
   }
 
@@ -196,70 +171,47 @@ const categories = [
     margin-bottom: 1rem;
   }
 
-  /* 橫向滾動容器包裝器，用於定位漸層遮罩 */
+  /* 橫向滾動容器包裝器，改為網格佈局的包裝器 */
   .scroll-wrapper {
     position: relative;
     width: 100%;
     margin-top: 3rem;
   }
 
-  /* 左右水墨漸層淡出遮罩 */
+  /* 移除水墨漸層淡出遮罩，以適應鋪開的網格 */
   .scroll-wrapper::before,
   .scroll-wrapper::after {
-    content: '';
-    position: absolute;
-    top: -10px;
-    bottom: -10px;
-    width: 120px;
-    z-index: 10;
-    pointer-events: none; /* 穿透點擊，不阻擋下方點擊 */
-    transition: var(--transition-smooth);
+    display: none;
   }
 
-  .scroll-wrapper::before {
-    left: 0;
-    background: linear-gradient(90deg, var(--color-paper-bg) 20%, transparent);
-  }
-
-  .scroll-wrapper::after {
-    right: 0;
-    background: linear-gradient(270deg, var(--color-paper-bg) 20%, transparent);
-  }
-
-  /* 滾動容器 */
+  /* 網格並排陳列容器 */
   .scroll-container {
-    display: flex;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE 10+ */
+    display: grid;
+    /* 自動調適寬度，最小 300px，在大螢幕上自動並排 */
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2.2rem;
     padding: 1.5rem 0.5rem;
-    scroll-behavior: smooth;
-    gap: 2rem;
+    justify-content: center;
+    max-width: 1200px;
+    margin: 0 auto;
   }
 
-  .scroll-container::-webkit-scrollbar {
-    display: none; /* Chrome/Safari */
-  }
-
-  /* 滾動卡片：設定完全固定的寬度與高度，防範字體載入抖動與 Snap 跳動 */
+  /* 並排卡片：高度固定，寬度自適應以適應 Grid */
   .scroll-card {
     box-sizing: border-box;
-    flex: 0 0 320px;
-    width: 320px;
-    min-width: 320px;
-    max-width: 320px;
+    width: 100%;
+    max-width: 360px;
     height: 420px;
     min-height: 420px;
     max-height: 420px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    scroll-snap-align: center;
     padding: 2.5rem 2rem;
     border-radius: 6px;
     position: relative;
     overflow: hidden;
+    margin: 0 auto; /* 卡片在網格單元中置中 */
   }
 
   /* 卡片內部設計 */
@@ -422,23 +374,16 @@ const categories = [
       align-self: flex-end;
     }
 
-    .scroll-wrapper::before,
-    .scroll-wrapper::after {
-      display: none; /* 行動端不需要漸層遮罩 */
-    }
-
     .scroll-container {
-      flex-direction: column;
-      overflow-x: visible;
-      scroll-snap-type: none;
+      grid-template-columns: 1fr;
       gap: 1.5rem;
       padding: 1rem 0;
     }
 
     .scroll-card {
-      flex: 1 1 auto;
+      max-width: 100%;
       height: auto;
-      min-height: 280px;
+      min-height: 380px;
     }
   }
 </style>
