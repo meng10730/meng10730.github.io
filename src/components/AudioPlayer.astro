@@ -27,6 +27,11 @@
   <button class="sfx-toggle-btn-global" id="sfx-toggle-global" aria-label="切換按鍵音效">
     <span class="sfx-status-icon" id="sfx-status-icon">🔔</span>
   </button>
+
+  <!-- 動畫控制鈕 -->
+  <button class="motion-toggle-btn-global" id="motion-toggle-global" aria-label="切換動畫效果" title="切換全站動畫效果">
+    <span class="motion-status-text" id="motion-status-text">動</span>
+  </button>
   
   <!-- 隱藏的 audio 元素，預設 data-astro-transition-persist 以確保跨頁跳轉不中斷 -->
   <audio 
@@ -248,9 +253,10 @@
       bottom: 1.5rem;
       right: 1.5rem;
     }
-    .music-toggle-btn, .sfx-toggle-btn-global {
+    .music-toggle-btn, .sfx-toggle-btn-global, .motion-toggle-btn-global {
       width: 40px;
       height: 40px;
+      font-size: 0.9rem !important;
     }
     .player-tooltip {
       display: none; /* 行動端隱藏提示字 */
@@ -259,14 +265,56 @@
       display: none !important; /* 行動端直接隱藏跑馬燈 */
     }
   }
+
+  /* 動畫控制圓章按鈕 */
+  .motion-toggle-btn-global {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(253, 252, 247, 0.85);
+    border: 1.5px solid var(--color-ink-black);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+    transition: var(--transition-smooth);
+    font-size: 1.05rem;
+    font-family: var(--font-serif);
+    font-weight: bold;
+    color: var(--color-ink-black);
+  }
+
+  .motion-toggle-btn-global:hover {
+    background: var(--color-paper-light);
+    border-color: var(--color-mountain-cyan);
+    transform: scale(1.05);
+    color: var(--color-mountain-cyan);
+  }
+
+  /* 關閉狀態的動畫按鈕，呈灰墨色，顯示「靜」 */
+  .motion-toggle-btn-global.disabled {
+    border-color: rgba(180, 50, 50, 0.3);
+    color: rgba(180, 50, 50, 0.7) !important;
+    background: rgba(240, 240, 240, 0.65);
+    box-shadow: none;
+  }
+  .motion-toggle-btn-global.disabled:hover {
+    border-color: rgba(180, 50, 50, 0.6);
+    color: rgba(180, 50, 50, 0.95) !important;
+  }
 </style>
 
 <script>
+  import { gsap } from "gsap";
+
   function initAudioPlayer() {
     const audio = document.getElementById('main-bgm') as HTMLAudioElement;
     const musicBtn = document.getElementById('music-toggle');
     const sfxBtn = document.getElementById('sfx-toggle-global');
     const sfxIcon = document.getElementById('sfx-status-icon');
+    const motionBtn = document.getElementById('motion-toggle-global');
+    const motionText = document.getElementById('motion-status-text');
     const tooltip = document.getElementById('player-tooltip');
     
     // 跑馬燈 DOM 節點
@@ -404,9 +452,43 @@
     musicBtn.addEventListener('mouseenter', handleMusicTooltip);
     sfxBtn.addEventListener('mouseenter', handleSfxTooltip);
 
+    // 4. 同步全域動畫的 UI 與 GSAP 狀態
+    const updateMotionUI = () => {
+      if (!motionBtn || !motionText) return;
+      const isEnabled = localStorage.getItem('global_motion_enabled') !== 'false';
+      if (isEnabled) {
+        motionBtn.classList.remove('disabled');
+        motionText.textContent = '動';
+        document.body.classList.remove("no-motion");
+        gsap.globalTimeline.timeScale(1);
+      } else {
+        motionBtn.classList.add('disabled');
+        motionText.textContent = '靜';
+        document.body.classList.add("no-motion");
+        gsap.globalTimeline.timeScale(9999);
+      }
+    };
+
+    const toggleMotion = () => {
+      const isEnabled = localStorage.getItem('global_motion_enabled') !== 'false';
+      localStorage.setItem('global_motion_enabled', isEnabled ? 'false' : 'true');
+      updateMotionUI();
+    };
+
+    const handleMotionTooltip = () => {
+      const isEnabled = localStorage.getItem('global_motion_enabled') !== 'false';
+      if (tooltip) tooltip.textContent = isEnabled ? '關閉全站動效' : '開啟全站動效';
+    };
+
+    if (motionBtn) {
+      motionBtn.addEventListener('click', toggleMotion);
+      motionBtn.addEventListener('mouseenter', handleMotionTooltip);
+    }
+
     // 初始狀態同步
     updateMusicUI();
     updateSfxUI();
+    updateMotionUI();
 
     return () => {
       musicBtn.removeEventListener('click', toggleMusic);
@@ -416,6 +498,10 @@
       sfxBtn.removeEventListener('click', toggleSfx);
       musicBtn.removeEventListener('mouseenter', handleMusicTooltip);
       sfxBtn.removeEventListener('mouseenter', handleSfxTooltip);
+      if (motionBtn) {
+        motionBtn.removeEventListener('click', toggleMotion);
+        motionBtn.removeEventListener('mouseenter', handleMotionTooltip);
+      }
     };
   }
 
