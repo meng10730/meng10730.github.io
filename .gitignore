@@ -29,3 +29,10 @@ trash/
 
 # external raw audio resources
 /Audio/
+
+# 排除一體化測試腳本與日誌
+scripts/test-backend.js
+logs/
+
+# 排除 AI Agent Skills 自訂技能
+.agents/skills/

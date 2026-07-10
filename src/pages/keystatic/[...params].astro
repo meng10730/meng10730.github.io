@@ -1,5 +1,7 @@
 ---
-import { KeystaticApp } from '../../components/KeystaticApp.tsx';
+import keystaticConfig from '../../../keystatic.config';
+import { Keystatic } from '@keystatic/core/ui';
+import { getCollection } from "astro:content";
 
 export const prerender = true;
 
@@ -8,11 +10,100 @@ export function getStaticPaths() {
     { params: { params: undefined } },
   ];
 }
+
+const appSlug = {
+  envName: 'PUBLIC_KEYSTATIC_GITHUB_APP_SLUG',
+  value: import.meta.env.PUBLIC_KEYSTATIC_GITHUB_APP_SLUG
+};
+
+// 山莊主要 Markdown 集合列表 (已排除為空的 empty collections 以防編譯錯誤)
+const collectionsList = [
+  "novels",
+  "worldview",
+  "characters",
+  "factions",
+  "guoxue",
+  "blog",
+  "works"
+];
+
+// 讀取所有集合的文章清單
+const allArticles: Record<string, any[]> = {};
+for (const col of collectionsList) {
+  try {
+    const list = await getCollection(col as any);
+    allArticles[col] = list.map((item: any) => {
+      const data = item.data as any;
+      return {
+        slug: item.slug,
+        title: data.title || data.name || item.slug,
+        category: data.category || ""
+      };
+    });
+  } catch (e) {
+    allArticles[col] = [];
+  }
+}
+
+// 取得目標集合已存在的 category 列表，以利分類 Column 的自動生成
+const existingCategories: Record<string, string[]> = {};
+for (const col of collectionsList) {
+  try {
+    const list = await getCollection(col as any);
+    const cats = new Set<string>();
+    list.forEach((item: any) => {
+      const cat = (item.data as any).category;
+      if (cat) cats.add(cat);
+    });
+    existingCategories[col] = Array.from(cats);
+  } catch (e) {
+    existingCategories[col] = [];
+  }
+}
+
+const isDev = import.meta.env.DEV;
 ---
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8" />
+  <script is:inline>
+    (function() {
+      var errCount = 0;
+      window.onerror = function(message, source, lineno, colno, error) {
+        errCount++;
+        if (errCount > 10) return;
+        fetch('/api/log-client-error', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: message,
+            source: source,
+            lineno: lineno,
+            colno: colno,
+            stack: error ? error.stack : ''
+          })
+        }).catch(function(e) {
+          console.error('無法回報客戶端錯誤:', e);
+        });
+      };
+      window.addEventListener('unhandledrejection', function(event) {
+        errCount++;
+        if (errCount > 10) return;
+        fetch('/api/log-client-error', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: 'Unhandled Promise Rejection: ' + event.reason,
+            stack: event.reason ? event.reason.stack : ''
+          })
+        }).catch(function(e) {
+          console.error('無法回報非同步錯誤:', e);
+        });
+      });
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>莊主後台 | 唐門山莊</title>
   <script is:inline>
     (function() {
@@ -27,6 +118,16 @@ export function getStaticPaths() {
     /* 引入霞鶩文楷手寫字型，確保與山莊古風呼應 */
     @import url('https://cdn.jsdelivr.net/npm/lxgw-wenkai-tc-web@latest/style.css');
 
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #16161a;
+      color: #e2e2e9;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* 返回前台水墨圓章按鈕 */
     .back-to-site-btn {
       position: fixed;
       bottom: 2rem;
@@ -40,7 +141,7 @@ export function getStaticPaths() {
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
       cursor: pointer;
       text-decoration: none;
       transition: all 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
@@ -49,7 +150,7 @@ export function getStaticPaths() {
     .back-to-site-btn:hover {
       transform: scale(1.08) rotate(-10deg);
       border-color: #2d5f5a; /* 石青 */
-      box-shadow: 0 6px 25px rgba(45, 95, 90, 0.15);
+      box-shadow: 0 6px 25px rgba(45, 95, 90, 0.3);
     }
 
     .btn-stamp-text {
@@ -61,28 +162,1260 @@ export function getStaticPaths() {
       line-height: 1.1;
       text-align: center;
       display: block;
+      user-select: none;
+    }
+
+    /* ========================================================
+       雙視圖容器設計與隱藏機制 (Keystatic & Mover View Control)
+       ======================================================== */
+    /* 預設隱藏自訂的藏書移置閣 */
+    #mover-view {
+      display: none !important;
+      width: 100vw;
+      height: 100vh;
+      position: absolute;
+      top: 0;
+      left: 0;
+      overflow: auto;
+      z-index: 10;
+      background-color: #16161a;
+    }
+
+    /* 當處於移置閣狀態時：
+       1. 隱藏 Keystatic 的 React 節點 (即 body 下除了移置閣、選單與遮罩外的所有直接子元素)
+       2. 顯現移置閣 */
+    body.mover-active > *:not(#mover-view):not(.stamp-wrapper):not(.back-to-site-btn):not(.ink-transition-overlay):not(.splash-mask) {
+      display: none !important;
+    }
+
+    body.mover-active #mover-view {
+      display: block !important;
+    }
+
+    /* ========================================================
+       水墨擴散過渡遮罩 (Ink Splash Transition Overlay)
+       ======================================================== */
+    .ink-transition-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: #16161a;
+      z-index: 99999;
+      pointer-events: none;
+      opacity: 0;
+      display: none; /* 預設隱藏，避免 opacity 與 filter 渲染衝突造成黑屏 */
+      /* 擬真毛邊墨跡擴散效果：利用對比度極大化將模糊圓形邊緣粗糙化 */
+      filter: contrast(18) saturate(0.8);
+      mix-blend-mode: normal;
+      transition: opacity 0.3s ease;
+    }
+
+    .ink-transition-overlay::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at 85% 85%, #000 0%, #000 40%, transparent 60%);
+      background-size: 100% 100%;
+      opacity: 0;
+      filter: blur(25px);
+      transition: opacity 0.5s ease;
+    }
+
+    .ink-transition-overlay.animating {
+      display: block;
+      opacity: 1;
+    }
+
+    .ink-transition-overlay.animating::before {
+      opacity: 1;
+      animation: ink-expand 1.2s cubic-bezier(0.77, 0, 0.175, 1) forwards;
+    }
+
+    @keyframes ink-expand {
+      0% {
+        background-image: radial-gradient(circle at 85% 85%, #000 0%, transparent 10%);
+      }
+      50% {
+        background-image: radial-gradient(circle at 85% 85%, #000 40%, transparent 55%);
+      }
+      100% {
+        background-image: radial-gradient(circle at 85% 85%, #000 85%, transparent 100%);
+      }
+    }
+
+    /* ========================================================
+       多功能懸浮硃砂印章 (Extensible Floating Seal Stamp)
+       ======================================================== */
+    .stamp-wrapper {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      z-index: 10000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    /* 主選單印章 */
+    .stamp-btn {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: 2px solid #b22222;
+      background: radial-gradient(circle, #d32f2f 0%, #b22222 100%);
+      color: #fff;
+      font-family: 'LXGW WenKai TC', serif;
+      font-weight: 900;
+      box-shadow: 0 6px 20px rgba(178, 34, 34, 0.4);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      outline: none;
+      transform-style: preserve-3d;
+      transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s;
+    }
+
+    .stamp-btn:hover {
+      transform: translateY(-4px) rotate(10deg) scale(1.05);
+      box-shadow: 0 10px 25px rgba(178, 34, 34, 0.6);
+    }
+
+    .stamp-btn:active {
+      transform: translateY(2px) scale(0.95);
+      box-shadow: 0 3px 8px rgba(178, 34, 34, 0.3);
+    }
+
+    .stamp-btn-text {
+      font-size: 0.7rem;
+      line-height: 1.2;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.4);
+      display: block;
+      width: 28px;
+      text-align: center;
+    }
+
+    /* 硃砂落印紅墨擴散環 */
+    .ink-splatter {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 10px;
+      height: 10px;
+      background: rgba(178, 34, 34, 0.5);
+      border-radius: 50%;
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .stamp-btn.clicked .ink-splatter {
+      animation: splatter-expand 0.6s cubic-bezier(0.1, 0.8, 0.3, 1);
+    }
+
+    @keyframes splatter-expand {
+      0% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+      }
+      100% {
+        transform: translate(-50%, -50%) scale(8);
+        opacity: 0;
+      }
+    }
+
+    /* 子選單選面板 */
+    .sub-stamps-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(20px) scale(0.8);
+      transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      pointer-events: none;
+    }
+
+    .sub-stamps-panel.active {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+    }
+
+    .sub-stamp-btn {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      color: #fff;
+      font-family: 'LXGW WenKai TC', serif;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      border: 1.5px solid;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      transition: transform 0.3s, box-shadow 0.3s;
+      outline: none;
+    }
+
+    .sub-stamp-btn:hover {
+      transform: scale(1.08) translateY(-2px);
+    }
+
+    /* 移置印 (青黛綠) */
+    .mover-stamp {
+      border-color: #2d5f5a;
+      background: radial-gradient(circle, #3d7f78 0%, #2d5f5a 100%);
+      box-shadow: 0 4px 15px rgba(45, 95, 90, 0.3);
+    }
+    .mover-stamp:hover {
+      box-shadow: 0 6px 20px rgba(45, 95, 90, 0.5);
+    }
+
+    /* 後台印 (硃砂紅) */
+    .keystatic-stamp {
+      border-color: #b22222;
+      background: radial-gradient(circle, #d32f2f 0%, #b22222 100%);
+      box-shadow: 0 4px 15px rgba(178, 34, 34, 0.3);
+    }
+    .keystatic-stamp:hover {
+      box-shadow: 0 6px 20px rgba(178, 34, 34, 0.5);
+    }
+
+    /* 系統印 (石墨灰，擴充空間) */
+    .system-stamp {
+      border-color: #4a4a58;
+      background: radial-gradient(circle, #5c5c6d 0%, #4a4a58 100%);
+      box-shadow: 0 4px 15px rgba(74, 74, 88, 0.3);
+    }
+    .system-stamp:hover {
+      box-shadow: 0 6px 20px rgba(74, 74, 88, 0.5);
+    }
+
+    /* ========================================================
+       移置藏書閣看板介面樣式 (Mover UI)
+       ======================================================== */
+    .mover-main {
+      min-height: 100vh;
+      background-color: #16161a;
+      padding: 2.5rem;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .main-breadcrumb {
+      font-size: 0.85rem;
+      color: #71717a;
+      margin-bottom: 1.5rem;
+    }
+    .main-breadcrumb span {
+      color: #e2e2e9;
+    }
+
+    .main-title {
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin-top: 0;
+      margin-bottom: 1.5rem;
+      color: #e2e2e9;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .mover-board-layout {
+      display: flex;
+      gap: 1.5rem;
+      flex-grow: 1;
+      margin-bottom: 7rem;
+    }
+
+    .mover-panel {
+      flex: 1;
+      background-color: #1f1f26;
+      border: 1px solid #2e2e3a;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-height: 480px;
+    }
+
+    .panel-header {
+      padding: 1rem;
+      background-color: #25252f;
+      border-bottom: 1px solid #2e2e3a;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .panel-header label {
+      font-weight: bold;
+      color: #a2a2ab;
+    }
+
+    .ink-select {
+      background-color: #16161a;
+      border: 1px solid #3a3a4c;
+      color: #e2e2e9;
+      padding: 0.4rem 0.8rem;
+      border-radius: 5px;
+      font-weight: bold;
+      cursor: pointer;
+      outline: none;
+      font-family: inherit;
+    }
+    .ink-select:focus {
+      border-color: #e5a93b;
+    }
+
+    .card-list-container {
+      flex-grow: 1;
+      overflow-y: auto;
+      padding: 1rem;
+      max-height: 550px;
+    }
+
+    .card-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .article-card {
+      background-color: #282834;
+      border: 1px solid #333344;
+      border-radius: 6px;
+      padding: 0.9rem;
+      cursor: grab;
+      user-select: none;
+      transition: border-color 0.2s, background-color 0.2s, transform 0.2s;
+    }
+    .article-card:hover {
+      background-color: #313140;
+      border-color: #44445c;
+      transform: translateY(-2px);
+    }
+    .article-card.dragging {
+      opacity: 0.4;
+      border-style: dashed;
+      transform: scale(0.98);
+    }
+
+    .card-title {
+      font-weight: 600;
+      color: #e2e2e9;
+      font-size: 0.95rem;
+      line-height: 1.3;
+    }
+
+    .card-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 0.75rem;
+      color: #71717a;
+    }
+
+    .card-cat-tag {
+      background-color: #3a3a4c;
+      color: #e5a93b;
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+
+    .board-columns {
+      display: flex;
+      gap: 1rem;
+      padding: 1rem;
+      overflow-x: auto;
+      flex-grow: 1;
+      min-height: 400px;
+    }
+
+    .board-column {
+      width: 250px;
+      background-color: #16161a;
+      border: 1px solid #2e2e3a;
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .column-header {
+      padding: 0.75rem;
+      background-color: #23232d;
+      border-bottom: 1px solid #2e2e3a;
+      font-weight: bold;
+      color: #e2e2e9;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .column-cards {
+      flex-grow: 1;
+      padding: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      min-height: 350px;
+      background-color: #171720;
+      transition: background-color 0.2s;
+    }
+    .column-cards.dragover {
+      background-color: #222232;
+      border: 1.5px dashed #e5a93b;
+      border-radius: 4px;
+    }
+
+    .flat-dropzone {
+      margin: 1rem;
+      border: 2px dashed #3a3a4c;
+      border-radius: 6px;
+      min-height: 350px;
+      display: flex;
+      flex-direction: column;
+      background-color: #171720;
+      flex-grow: 1;
+    }
+    .flat-dropzone.dragover {
+      border-color: #e5a93b;
+      background-color: #222232;
+    }
+
+    .flat-dropzone-tip {
+      margin: auto;
+      text-align: center;
+      padding: 2rem;
+    }
+    .tip-icon {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .tip-title {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: #e2e2e9;
+      margin-bottom: 0.25rem;
+    }
+    .tip-desc {
+      font-size: 0.8rem;
+      color: #71717a;
+    }
+
+    .flat-dropzone-cards {
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    /* 下方控制列 */
+    .control-bar {
+      position: fixed;
+      bottom: 0;
+      right: 0;
+      left: 0;
+      background-color: #1f1f26;
+      border-top: 1px solid #2e2e3a;
+      padding: 1rem 2.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 100;
+    }
+
+    .changes-summary {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      max-width: 65%;
+    }
+
+    .summary-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: bold;
+    }
+
+    .summary-label {
+      color: #a2a2ab;
+    }
+
+    #changes-count {
+      color: #e5a93b;
+    }
+
+    .changes-list-wrapper {
+      max-height: 50px;
+      overflow-y: auto;
+      font-size: 0.8rem;
+      color: #71717a;
+    }
+
+    .changes-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .pending-change-tag {
+      background-color: #2b2b38;
+      border: 1px solid #3c3c52;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      color: #e2e2e9;
+    }
+
+    .remove-change-btn {
+      background: transparent;
+      border: none;
+      color: #8c2a2a;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 0.9rem;
+      padding: 0;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .ink-btn {
+      padding: 0.6rem 1.2rem;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+      font-size: 0.9rem;
+    }
+
+    .primary-btn {
+      background-color: #e5a93b;
+      border: 1px solid #c9932d;
+      color: #1a1a20;
+    }
+    .primary-btn:hover:not(:disabled) {
+      background-color: #f5b94b;
+    }
+    .primary-btn:disabled {
+      background-color: #3a3a46;
+      border-color: #4a4a58;
+      color: #71717a;
+      cursor: not-allowed;
+    }
+
+    .secondary-btn {
+      background-color: #2a2a35;
+      border: 1px solid #3e3e52;
+      color: #e2e2e9;
+    }
+    .secondary-btn:hover:not(:disabled) {
+      background-color: #353545;
+    }
+    .secondary-btn:disabled {
+      background-color: #1f1f26;
+      border-color: #2e2e3a;
+      color: #71717a;
+      cursor: not-allowed;
+    }
+
+    /* 運墨搬書加載遮罩 */
+    .splash-mask {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(10, 10, 12, 0.92);
+      z-index: 100000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.5s ease;
+    }
+    .splash-mask.hidden {
+      display: none;
+    }
+
+    .splash-stamp {
+      font-size: 1.8rem;
+      font-weight: bold;
+      color: #e5a93b;
+      margin-top: 1rem;
+      text-align: center;
+      font-family: 'LXGW WenKai TC', serif;
+    }
+
+    .spin {
+      animation: anime-spin 1.5s linear infinite;
+    }
+    @keyframes anime-spin {
+      100% { transform: rotate(360deg); }
+    }
+
+    .empty-tip {
+      color: #71717a;
+      text-align: center;
+      padding: 2rem;
+      font-style: italic;
     }
 
     @media (max-width: 768px) {
-      .back-to-site-btn {
-        bottom: 1rem;
-        left: 1rem;
-        width: 42px;
-        height: 42px;
+      .mover-board-layout {
+        flex-direction: column;
       }
-      .btn-stamp-text {
-        font-size: 0.65rem;
-        width: 24px;
+      .control-bar {
+        flex-direction: column;
+        gap: 1rem;
+        padding: 1rem;
+        height: auto;
+      }
+      .changes-summary {
+        max-width: 100%;
       }
     }
   </style>
 </head>
 <body>
-  <!-- 返回前台水墨圓章按鈕 -->
+  <!-- ========================================================
+       返回前台按鈕
+       ======================================================== -->
   <a href="/" class="back-to-site-btn" id="back-to-site-btn" title="返回唐門山莊前台">
     <span class="btn-stamp-text">返回山莊</span>
   </a>
 
-  <KeystaticApp client:only="react" />
+  <!-- ========================================================
+       懸浮多功能硃砂印章選單
+       ======================================================== -->
+  <div class="stamp-wrapper">
+    <!-- 子印章選單 -->
+    <div id="sub-stamps-panel" class="sub-stamps-panel">
+      <!-- 莊主後台印 (切回 Keystatic) -->
+      <button id="keystatic-stamp" class="sub-stamp-btn keystatic-stamp" title="莊主後台">
+        <span class="btn-stamp-text">莊主後台</span>
+      </button>
+      <!-- 移置藏書印 (切到 藏書閣) -->
+      <button id="mover-stamp" class="sub-stamp-btn mover-stamp" title="移置藏書">
+        <span class="btn-stamp-text">移置藏書</span>
+      </button>
+      <!-- 系統設置印 (預留擴充空間) -->
+      <button class="sub-stamp-btn system-stamp" title="系統設定 (未開放)" style="cursor: not-allowed; opacity: 0.6;">
+        <span class="btn-stamp-text">系統設定</span>
+      </button>
+    </div>
+
+    <!-- 主印章 (唐門莊主印) -->
+    <button id="main-stamp-btn" class="stamp-btn" title="唐門莊主印 (展開/收合選單)">
+      <span class="stamp-btn-text">莊主之印</span>
+      <span class="ink-splatter" id="ink-splatter"></span>
+    </button>
+  </div>
+
+  <!-- ========================================================
+       水墨漸變過渡遮罩
+       ======================================================== -->
+  <div id="ink-transition-overlay" class="ink-transition-overlay"></div>
+
+  <!-- ========================================================
+       載入中 / 運墨搬書中 鎖定遮罩
+       ======================================================== -->
+  <div id="splash-mask" class="splash-mask hidden">
+    <div class="splash-spinner">
+      <svg class="spin" width="50" height="50" viewBox="0 0 50 50" style="fill: none; stroke: #e5a93b; stroke-width: 4; stroke-linecap: round;">
+        <circle cx="25" cy="25" r="20" stroke-dasharray="80" stroke-dashoffset="0"></circle>
+      </svg>
+    </div>
+    <div id="splash-status" class="splash-stamp">正在運墨搬書，請稍候...</div>
+  </div>
+
+  <!-- ========================================================
+       視圖一：Keystatic 本地端後台
+       ======================================================== -->
+  <Keystatic config={keystaticConfig} appSlug={appSlug} client:only="react" />
+
+  <!-- ========================================================
+       視圖二：自訂 藏書移置閣 嵌入介面
+       ======================================================== -->
+  <div id="mover-view">
+    <div class="mover-main">
+      <div class="main-breadcrumb">
+        Dashboard &gt; <span>移置整理藏書</span>
+      </div>
+      
+      <h1 class="main-title">
+        <span>🚚 藏書移置閣</span>
+      </h1>
+      
+      <!-- 看板主體 -->
+      <div class="mover-board-layout">
+        <!-- 左欄：來源 -->
+        <div class="mover-panel">
+          <div class="panel-header">
+            <span>📜</span>
+            <label for="src-select">來源分區：</label>
+            <select id="src-select" class="ink-select">
+              {collectionsList.map(c => (
+                <option value={c} selected={c === "novels"}>{c}</option>
+              ))}
+            </select>
+          </div>
+          <div class="card-list-container">
+            <div id="src-list" class="card-list">
+              <!-- JS 動態生成 -->
+            </div>
+          </div>
+        </div>
+
+        <!-- 右欄：目標 -->
+        <div class="mover-panel">
+          <div class="panel-header">
+            <span>📖</span>
+            <label for="tgt-select">目標分區：</label>
+            <select id="tgt-select" class="ink-select">
+              {collectionsList.map(c => (
+                <option value={c} selected={c === "worldview"}>{c}</option>
+              ))}
+            </select>
+          </div>
+          <div class="card-list-container" style="padding: 0;">
+            <div id="tgt-board" class="board-columns">
+              <!-- JS 動態生成 -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 下方控制列 -->
+      <footer class="control-bar">
+        <div class="changes-summary">
+          <div class="summary-header">
+            <span>🎨</span>
+            <span class="summary-label">變更墨跡：</span>
+            <span id="changes-count">無變更項目</span>
+          </div>
+          <div id="changes-list-wrapper" class="changes-list-wrapper">
+            <div id="changes-list" class="changes-list"></div>
+          </div>
+        </div>
+        <div class="action-buttons">
+          <button id="reset-btn" class="ink-btn secondary-btn" disabled>
+            <span>🧹 拂塵重設</span>
+          </button>
+          <button id="save-btn" class="ink-btn primary-btn" disabled>
+            <span>印 硃砂確認</span>
+          </button>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <!-- 傳遞變數給前端 -->
+  <script is:inline define:vars={{ allArticles, existingCategories, isDev }}>
+    window.allArticles = allArticles;
+    window.existingCategories = existingCategories;
+    window.isDev = isDev;
+  </script>
+
+  <!-- ========================================================
+       整合互動控制邏輯 (DOM Swapper & Tab Control)
+       ======================================================== -->
+  <script is:inline>
+    const allArticles = window.allArticles || {};
+    const existingCategories = window.existingCategories || {};
+
+    // 狀態管理：搬移暫存
+    let pendingChanges = new Map();
+    let currentSrcCollection = "novels";
+    let currentTgtCollection = "worldview";
+
+    // 載入 localStorage 暫存以防止狀態丟失
+    try {
+      const savedMoves = localStorage.getItem("keystatic_pending_moves");
+      if (savedMoves) {
+        const parsed = JSON.parse(savedMoves);
+        pendingChanges = new Map(parsed);
+      }
+    } catch (e) {
+      console.error("無法還原搬移暫存:", e);
+    }
+
+    // 取得 DOM 節點
+
+
+    
+    const mainStampBtn = document.getElementById("main-stamp-btn");
+    const subStampsPanel = document.getElementById("sub-stamps-panel");
+    const keystaticStamp = document.getElementById("keystatic-stamp");
+    const moverStamp = document.getElementById("mover-stamp");
+    const inkSplatter = document.getElementById("ink-splatter");
+    const inkOverlay = document.getElementById("ink-transition-overlay");
+    const moverView = document.getElementById("mover-view");
+    const srcSelect = document.getElementById("src-select");
+    const tgtSelect = document.getElementById("tgt-select");
+    const srcList = document.getElementById("src-list");
+    const tgtBoard = document.getElementById("tgt-board");
+    const resetBtn = document.getElementById("reset-btn");
+    const saveBtn = document.getElementById("save-btn");
+    const changesCount = document.getElementById("changes-count");
+    const changesList = document.getElementById("changes-list");
+    
+    const splashMask = document.getElementById("splash-mask");
+    const splashStatus = document.getElementById("splash-status");
+
+    let isMenuOpen = false;
+    let isTransitioning = false;
+    let currentActiveTab = "keystatic"; // "keystatic" 或 "mover"
+    let hasSavedInSession = false; // 是否在本次 Session 儲存過文章
+
+    // 點擊主印章：展開或收合子選單
+    mainStampBtn.addEventListener("click", () => {
+      // 觸發硃砂落印動畫
+      mainStampBtn.classList.remove("clicked");
+      void mainStampBtn.offsetWidth; // 觸發重繪以重新播動畫
+      mainStampBtn.classList.add("clicked");
+
+      isMenuOpen = !isMenuOpen;
+      if (isMenuOpen) {
+        subStampsPanel.classList.add("active");
+      } else {
+        subStampsPanel.classList.remove("active");
+      }
+    });
+
+    // 監聽外部點擊以收合選單
+    document.addEventListener("click", (e) => {
+      if (!e.target.closest(".stamp-wrapper")) {
+        isMenuOpen = false;
+        subStampsPanel.classList.remove("active");
+      }
+    });
+
+    // 切換視圖主函數 (水墨暈開漸變切換)
+    function switchView(targetTab) {
+      if (targetTab === currentActiveTab || isTransitioning) return;
+      isTransitioning = true;
+      isMenuOpen = false;
+      subStampsPanel.classList.remove("active");
+
+      // 1. 水墨遮罩擴散淡入
+      inkOverlay.style.display = "block"; // 顯示遮罩，防止 CSS 渲染 Bug
+      void inkOverlay.offsetWidth; // 觸發重繪
+      inkOverlay.classList.add("animating");
+
+      // 2. 動畫中途切換 DOM 顯示
+      setTimeout(() => {
+        if (targetTab === "mover") {
+          document.body.classList.add("mover-active");
+          window.location.hash = "move-articles";
+          renderSourceList();
+          renderTargetBoard();
+          updateControlBar();
+        } else {
+          // 切回後台：若在移置閣中儲存過，或偵測到檔案有異動，強制重載以刷新 Keystatic 緩存
+          if (hasSavedInSession) {
+            window.location.hash = "";
+            window.location.reload();
+            return;
+          }
+          document.body.classList.remove("mover-active");
+          window.location.hash = "";
+        }
+        currentActiveTab = targetTab;
+      }, 600); // 在水墨擴散達到半屏時切換
+
+      // 3. 水墨遮罩收縮淡出
+      setTimeout(() => {
+        inkOverlay.classList.remove("animating");
+        // 等待 transition 動畫結束後隱藏它
+        setTimeout(() => {
+          if (!inkOverlay.classList.contains("animating")) {
+            inkOverlay.style.display = "none";
+          }
+        }, 300);
+        isTransitioning = false;
+      }, 1200);
+    }
+
+    keystaticStamp.addEventListener("click", () => switchView("keystatic"));
+    moverStamp.addEventListener("click", () => switchView("mover"));
+
+    // 監聽網址 Hash 變化（支援重新整理與歷史定位）
+    function handleHashLocation() {
+      const hash = window.location.hash;
+      if (hash === "#move-articles") {
+        currentActiveTab = "mover";
+        document.body.classList.add("mover-active");
+        renderSourceList();
+        renderTargetBoard();
+        updateControlBar();
+      } else {
+        currentActiveTab = "keystatic";
+        document.body.classList.remove("mover-active");
+      }
+    }
+
+    // 初始化 Hash 定位
+    window.addEventListener("DOMContentLoaded", handleHashLocation);
+
+    // ========================================================
+    // 移置藏書閣核心拖曳與批次儲存邏輯
+    // ========================================================
+    function savePendingToLocalStorage() {
+      try {
+        const serialized = JSON.stringify(Array.from(pendingChanges.entries()));
+        localStorage.setItem("keystatic_pending_moves", serialized);
+      } catch (e) {
+        console.error("無法將搬移暫存寫入 localStorage:", e);
+      }
+    }
+
+    // 點點式移動卡片
+    window.triggerCardMove = function(slug, title) {
+      const categories = existingCategories[currentTgtCollection] || [];
+      let chosenCat = null;
+      
+      if (categories.length > 0) {
+        const catListStr = categories.join(", ");
+        const userInput = prompt(`請輸入要將《${title}》移至的分類：\n(目前有的分類: ${catListStr}, 或輸入 "未分類" 留空)`);
+        if (userInput === null) return;
+        const trimmed = userInput.trim();
+        if (trimmed && trimmed !== "未分類") {
+          chosenCat = trimmed;
+        }
+      }
+      
+      const changeKey = `${currentSrcCollection}:${slug}`;
+      pendingChanges.set(changeKey, {
+        slug,
+        title,
+        fromCollection: currentSrcCollection,
+        toCollection: currentTgtCollection,
+        newCategory: chosenCat
+      });
+      
+      savePendingToLocalStorage();
+      renderSourceList();
+      renderTargetBoard();
+      updateControlBar();
+    };
+
+    function initMover() {
+      srcSelect.addEventListener("change", (e) => {
+        currentSrcCollection = e.target.value;
+        renderSourceList();
+      });
+
+      tgtSelect.addEventListener("change", (e) => {
+        currentTgtCollection = e.target.value;
+        renderTargetBoard();
+      });
+
+      resetBtn.addEventListener("click", () => {
+        if (confirm("確定要拂塵清空所有尚未儲存的搬移暫存嗎？")) {
+          pendingChanges.clear();
+          savePendingToLocalStorage();
+          renderSourceList();
+          renderTargetBoard();
+          updateControlBar();
+        }
+      });
+
+      saveBtn.addEventListener("click", submitChanges);
+    }
+
+    function renderSourceList() {
+      srcList.innerHTML = "";
+      const articles = allArticles[currentSrcCollection] || [];
+      
+      const activeArticles = articles.filter(art => {
+        const changeKey = `${currentSrcCollection}:${art.slug}`;
+        return !pendingChanges.has(changeKey);
+      });
+
+      if (activeArticles.length === 0) {
+        srcList.innerHTML = `<div class="empty-tip">此分區已無藏書</div>`;
+        return;
+      }
+
+      activeArticles.forEach(art => {
+        const card = document.createElement("div");
+        card.className = "article-card";
+        card.draggable = true;
+        card.dataset.slug = art.slug;
+        card.dataset.title = art.title;
+        card.dataset.collection = currentSrcCollection;
+
+        card.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; width: 100%;">
+            <div class="card-title" style="margin-bottom: 0;">${art.title}</div>
+            <button class="card-move-btn" onclick="event.stopPropagation(); triggerCardMove('${art.slug}', '${art.title}')" style="background: transparent; border: 1px solid #3e3e52; color: #e5a93b; font-size: 0.75rem; padding: 0.15rem 0.4rem; border-radius: 4px; cursor: pointer; transition: background-color 0.2s;">👉 移動</button>
+          </div>
+          <div class="card-meta" style="margin-top: 0.4rem;">
+            <span>slug: ${art.slug}</span>
+            ${art.category ? `<span class="card-cat-tag">${art.category}</span>` : ""}
+          </div>
+        `;
+
+        card.addEventListener("dragstart", handleDragStart);
+        card.addEventListener("dragend", handleDragEnd);
+
+        srcList.appendChild(card);
+      });
+    }
+
+    function renderTargetBoard() {
+      tgtBoard.innerHTML = "";
+      const categories = existingCategories[currentTgtCollection] || [];
+
+      if (categories.length > 0) {
+        categories.forEach(cat => {
+          createColumn(cat, cat);
+        });
+        createColumn("未分類", null);
+      } else {
+        const flatZone = document.createElement("div");
+        flatZone.className = "flat-dropzone";
+        flatZone.dataset.category = "";
+        
+        flatZone.innerHTML = `
+          <div class="flat-dropzone-tip">
+            <div class="tip-icon">📥</div>
+            <div class="tip-title">直接移置區</div>
+            <div class="tip-desc">將卡片拖入此處，即移置到 [${currentTgtCollection}] 分區下</div>
+          </div>
+          <div class="flat-dropzone-cards"></div>
+        `;
+
+        flatZone.addEventListener("dragover", handleDragOver);
+        flatZone.addEventListener("dragenter", handleDragEnter);
+        flatZone.addEventListener("dragleave", handleDragLeave);
+        flatZone.addEventListener("drop", handleDrop);
+
+        const zoneCardsContainer = flatZone.querySelector(".flat-dropzone-cards");
+
+        pendingChanges.forEach((change, key) => {
+          if (change.toCollection === currentTgtCollection) {
+            const card = createPendingCard(change.slug, change.title, key);
+            zoneCardsContainer.appendChild(card);
+          }
+        });
+
+        tgtBoard.appendChild(flatZone);
+      }
+    }
+
+    function createColumn(title, categoryVal) {
+      const col = document.createElement("div");
+      col.className = "board-column";
+      col.dataset.category = categoryVal || "";
+
+      col.innerHTML = `
+        <div class="column-header">
+          <span>${title}</span>
+        </div>
+        <div class="column-cards"></div>
+      `;
+
+      const cardsContainer = col.querySelector(".column-cards");
+
+      cardsContainer.addEventListener("dragover", handleDragOver);
+      cardsContainer.addEventListener("dragenter", handleDragEnter);
+      cardsContainer.addEventListener("dragleave", handleDragLeave);
+      cardsContainer.addEventListener("drop", handleDrop);
+
+      pendingChanges.forEach((change, key) => {
+        if (change.toCollection === currentTgtCollection) {
+          const isMatch = (!categoryVal && !change.newCategory) || (change.newCategory === categoryVal);
+          if (isMatch) {
+            const card = createPendingCard(change.slug, change.title, key);
+            cardsContainer.appendChild(card);
+          }
+        }
+      });
+
+      tgtBoard.appendChild(col);
+    }
+
+    function createPendingCard(slug, title, changeKey) {
+      const card = document.createElement("div");
+      card.className = "article-card pending-card";
+      card.style.borderColor = "#e5a93b";
+      
+      card.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+          <div class="card-title">${title}</div>
+          <button class="remove-change-btn" onclick="event.stopPropagation(); removePendingChange('${changeKey}')" title="還原暫存">🧹</button>
+        </div>
+        <div class="card-meta" style="margin-top: 0.3rem;">
+          <span>slug: ${slug}</span>
+        </div>
+      `;
+      return card;
+    }
+
+    window.removePendingChange = function(changeKey) {
+      pendingChanges.delete(changeKey);
+      savePendingToLocalStorage();
+      renderSourceList();
+      renderTargetBoard();
+      updateControlBar();
+    };
+
+    let draggedCard = null;
+
+    function handleDragStart(e) {
+      draggedCard = e.currentTarget;
+      draggedCard.classList.add("dragging");
+      e.dataTransfer.setData("text/plain", draggedCard.dataset.slug);
+    }
+
+    function handleDragEnd() {
+      if (draggedCard) {
+        draggedCard.classList.remove("dragging");
+        draggedCard = null;
+      }
+    }
+
+    function handleDragOver(e) {
+      e.preventDefault();
+    }
+
+    function handleDragEnter(e) {
+      e.currentTarget.classList.add("dragover");
+    }
+
+    function handleDragLeave(e) {
+      e.currentTarget.classList.remove("dragover");
+    }
+
+    function handleDrop(e) {
+      e.preventDefault();
+      const container = e.currentTarget;
+      container.classList.remove("dragover");
+
+      if (!draggedCard) return;
+
+      const slug = draggedCard.dataset.slug;
+      const title = draggedCard.dataset.title;
+      const fromCol = draggedCard.dataset.collection;
+      const targetCategory = container.parentElement.dataset.category || container.dataset.category || "";
+
+      const changeKey = `${fromCol}:${slug}`;
+      pendingChanges.set(changeKey, {
+        slug,
+        title,
+        fromCollection: fromCol,
+        toCollection: currentTgtCollection,
+        newCategory: targetCategory || null
+      });
+
+      savePendingToLocalStorage();
+      renderSourceList();
+      renderTargetBoard();
+      updateControlBar();
+    }
+
+    function updateControlBar() {
+      const count = pendingChanges.size;
+      changesList.innerHTML = "";
+      
+      if (count === 0) {
+        changesCount.textContent = "無變更項目";
+        resetBtn.disabled = true;
+        saveBtn.disabled = true;
+        return;
+      }
+
+      changesCount.textContent = `共 ${count} 項變更待儲存`;
+      resetBtn.disabled = false;
+      saveBtn.disabled = false;
+
+      pendingChanges.forEach((change, key) => {
+        const tag = document.createElement("div");
+        tag.className = "pending-change-tag";
+        tag.innerHTML = `
+          <span>《${change.title}》 ➔ [${change.toCollection}]${change.newCategory ? ' (' + change.newCategory + ')' : ''}</span>
+          <button class="remove-change-btn" onclick="removePendingChange('${key}')">✕</button>
+        `;
+        changesList.appendChild(tag);
+      });
+    }
+
+    async function submitChanges() {
+      if (pendingChanges.size === 0) return;
+      
+      splashMask.classList.remove("hidden");
+      splashStatus.textContent = "正在運墨搬書，請稍候...";
+      
+      saveBtn.disabled = true;
+      resetBtn.disabled = true;
+      
+      const changesArray = Array.from(pendingChanges.values());
+
+      try {
+        const response = await fetch("/api/batch-move-articles", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ changes: changesArray })
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+          // 清空 localStorage 與記憶體暫存
+          pendingChanges.clear();
+          savePendingToLocalStorage();
+          hasSavedInSession = true;
+
+          splashStatus.innerHTML = `<span style="color: #e5a93b">藏書移置成功！</span><br/><span style="font-size:1.1rem; color:#a2a2ab">乾坤重組，後台刷新中...</span>`;
+          setTimeout(() => {
+            // 強制重新載入頁面，使 Keystatic 後台獲取最新的檔案列表與快取
+            window.location.hash = ""; // 重載後自動切回 Keystatic
+            window.location.reload();
+          }, 1500);
+        } else {
+          splashMask.classList.add("hidden");
+          saveBtn.disabled = false;
+          resetBtn.disabled = false;
+          alert(`移置失敗：${result.error || "未知錯誤"}`);
+        }
+      } catch (err) {
+        splashMask.classList.add("hidden");
+        saveBtn.disabled = false;
+        resetBtn.disabled = false;
+        alert(`連線 API 異常：${err.message}`);
+      }
+    }
+
+    // 初始化 Mover 邏輯
+    initMover();
+  </script>
 </body>
 </html>

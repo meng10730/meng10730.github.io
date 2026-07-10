@@ -1,0 +1,307 @@
+{
+  "blog": {
+    "label": "部落格文章 (blog，例如：閱讀心得、隨筆、日常)",
+    "fields": {
+      "title": {
+        "type": "slug",
+        "label": "標題",
+        "multiline": false
+      },
+      "description": {
+        "type": "text",
+        "label": "簡介",
+        "multiline": true
+      },
+      "pubDate": {
+        "type": "date",
+        "label": "發布日期",
+        "multiline": false
+      },
+      "tags": {
+        "type": "array",
+        "label": "標籤",
+        "multiline": false
+      }
+    }
+  },
+  "novels": {
+    "label": "小說連載 (novels，例如：小說正文)",
+    "fields": {
+      "title": {
+        "type": "slug",
+        "label": "小說標題",
+        "multiline": false
+      },
+      "description": {
+        "type": "text",
+        "label": "簡介",
+        "multiline": true
+      },
+      "genre": {
+        "type": "array",
+        "label": "類型標籤 (武俠、仙俠…)",
+        "multiline": false
+      },
+      "status": {
+        "type": "select",
+        "label": "連載狀態",
+        "multiline": false,
+        "options": [
+          {
+            "label": "連載中 (ongoing)",
+            "value": "ongoing"
+          },
+          {
+            "label": "已完結 (completed)",
+            "value": "completed"
+          },
+          {
+            "label": "停更 (hiatus)",
+            "value": "hiatus"
+          }
+        ]
+      },
+      "pubDate": {
+        "type": "date",
+        "label": "開始連載日期",
+        "multiline": false
+      },
+      "cover": {
+        "type": "image",
+        "label": "封面圖",
+        "multiline": false
+      }
+    }
+  },
+  "characters": {
+    "label": "人物設定 (characters，例如：人物誌)",
+    "fields": {
+      "name": {
+        "type": "slug",
+        "label": "人物名稱",
+        "multiline": false
+      },
+      "description": {
+        "type": "text",
+        "label": "人物簡介 (用於前台懸浮氣泡，選填)",
+        "multiline": true
+      },
+      "alias": {
+        "type": "array",
+        "label": "別名 / 江湖稱號",
+        "multiline": false
+      },
+      "affiliation": {
+        "type": "text",
+        "label": "所屬門派或陣營",
+        "multiline": false
+      },
+      "novel": {
+        "type": "text",
+        "label": "所屬小說名稱",
+        "multiline": false
+      },
+      "tags": {
+        "type": "array",
+        "label": "標籤 (主角、反派…)",
+        "multiline": false
+      },
+      "pubDate": {
+        "type": "date",
+        "label": "建立日期",
+        "multiline": false
+      }
+    }
+  },
+  "worldview": {
+    "label": "世界觀設定 (worldview，例如：小說設定、機制地理)",
+    "fields": {
+      "title": {
+        "type": "slug",
+        "label": "設定標題",
+        "multiline": false
+      },
+      "description": {
+        "type": "text",
+        "label": "設定簡介 (用於前台懸浮氣泡，選填)",
+        "multiline": true
+      },
+      "category": {
+        "type": "text",
+        "label": "分類 (例：機制、地理、神明體系)",
+        "multiline": false
+      },
+      "pubDate": {
+        "type": "date",
+        "label": "建立日期",
+        "multiline": false
+      }
+    }
+  },
+  "factions": {
+    "label": "勢力組織 (factions)",
+    "fields": {
+      "title": {
+        "type": "slug",
+        "label": "勢力名稱",
+        "multiline": false
+      },
+      "description": {
+        "type": "text",
+        "label": "勢力簡介 (用於前台懸浮氣泡，選填)",
+        "multiline": true
+      },
+      "category": {
+        "type": "text",
+        "label": "分類 (例：正派、地下、世俗、中立)",
+        "multiline": false
+      },
+      "pubDate": {
+        "type": "date",
+        "label": "建立日期",
+        "multiline": false
+      }
+    }
+  },
+  "guoxue": {
+    "label": "國學筆記 (guoxue，例如：國學常識、經史子集)",
+    "fields": {
+      "title": {
+        "type": "slug",
+        "label": "筆記標題",
+        "multiline": false
+      },
+      "source": {
+        "type": "text",
+        "label": "出處 (論語、道德經…)",
+        "multiline": false
+      },
+      "category": {
+        "type": "select",
+        "label": "分類",
+        "multiline": false,
+        "options": [
+          {
+            "label": "儒家 (confucianism)",
+            "value": "confucianism"
+          },
+          {
+            "label": "道家 (taoism)",
+            "value": "taoism"
+          },
+          {
+            "label": "佛家 (buddhism)",
+            "value": "buddhism"
+          },
+          {
+            "label": "史學 (history)",
+            "value": "history"
+          },
+          {
+            "label": "詩詞 (poetry)",
+            "value": "poetry"
+          },
+          {
+            "label": "其他 (other)",
+            "value": "other"
+          }
+        ]
+      },
+      "tags": {
+        "type": "array",
+        "label": "標籤",
+        "multiline": false
+      },
+      "pubDate": {
+        "type": "date",
+        "label": "建立日期",
+        "multiline": false
+      }
+    }
+  },
+  "items": {
+    "label": "法寶神兵 (items)",
+    "fields": {
+      "title": {
+        "type": "slug",
+        "label": "法寶名稱",
+        "multiline": false
+      },
+      "description": {
+        "type": "text",
+        "label": "簡介",
+        "multiline": true
+      },
+      "novel": {
+        "type": "text",
+        "label": "所屬作品 (預設: 長生劫)",
+        "multiline": false
+      },
+      "rank": {
+        "type": "text",
+        "label": "品階 (如: 地級、先天靈寶)",
+        "multiline": false
+      },
+      "pubDate": {
+        "type": "date",
+        "label": "建立日期",
+        "multiline": false
+      }
+    }
+  },
+  "techniques": {
+    "label": "功法秘笈 (techniques)",
+    "fields": {
+      "title": {
+        "type": "slug",
+        "label": "功法名稱",
+        "multiline": false
+      },
+      "description": {
+        "type": "text",
+        "label": "簡介",
+        "multiline": true
+      },
+      "novel": {
+        "type": "text",
+        "label": "所屬作品 (預設: 長生劫)",
+        "multiline": false
+      },
+      "type": {
+        "type": "text",
+        "label": "功法類型 (如: 心法、劍訣)",
+        "multiline": false
+      },
+      "pubDate": {
+        "type": "date",
+        "label": "建立日期",
+        "multiline": false
+      }
+    }
+  },
+  "bestiary": {
+    "label": "靈獸妖魔 (bestiary)",
+    "fields": {
+      "title": {
+        "type": "slug",
+        "label": "名稱",
+        "multiline": false
+      },
+      "description": {
+        "type": "text",
+        "label": "簡介",
+        "multiline": true
+      },
+      "novel": {
+        "type": "text",
+        "label": "所屬作品 (預設: 長生劫)",
+        "multiline": false
+      },
+      "pubDate": {
+        "type": "date",
+        "label": "建立日期",
+        "multiline": false
+      }
+    }
+  }
+}

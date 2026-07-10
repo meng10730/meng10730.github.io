@@ -12,26 +12,29 @@ echo   [1] 🧪 啟動本地測試 (測試音效與排版)
 echo.
 echo   [2] 📝 開啟後台編輯 (寫作與修改條目)
 echo.
-echo   [3] 🔄 小說雙向同步 (同步 Obsidian)
+echo   [3] 📥 同步線上編輯 (拉取最新文章)
 echo.
-echo   [4] 📥 匯入外部文章 (新增小說與設定)
+echo   [4] 📥 選擇外部匯入 (原生對話框多選與歸檔)
 echo.
 echo   [5] 🚀 一鍵發布上線 (自動打包並上傳)
 echo.
-echo   [6] 🛠️  網頁進階維護 (環境修復與還原)
+echo   [6] 🛠️  管理自訂類別 (新增、修改、刪除類別)
 echo.
-echo   [7] ❌ 退出終端
+echo   [7] ⚙️  網頁進階維護 (環境修復與還原)
+echo.
+echo   [8] ❌ 退出終端
 echo.
 echo ====================================================
-set /p opt="請輸入選項序號 [1-7]: "
+set /p opt="請輸入選項序號 [1-8]: "
 
 if "%opt%"=="1" goto DEV_TEST
 if "%opt%"=="2" goto OPEN_CMS
 if "%opt%"=="3" goto SYNC_NOVEL
 if "%opt%"=="4" goto IMPORT_NOVEL
 if "%opt%"=="5" goto PUBLISH_SITE
-if "%opt%"=="6" goto ADVANCED_MAINTAIN
-if "%opt%"=="7" goto EXIT_BATCH
+if "%opt%"=="6" goto MANAGE_COLLECTION
+if "%opt%"=="7" goto ADVANCED_MAINTAIN
+if "%opt%"=="8" goto EXIT_BATCH
 
 echo ❌ 選項無效，請重新選擇！
 pause
@@ -68,7 +71,7 @@ goto MENU
 :SYNC_NOVEL
 echo.
 echo ----------------------------------------------------
-echo   正在執行小說雙向同步與備份...
+echo   正在同步線上編輯 (拉取 GitHub 最新狀態)...
 echo ----------------------------------------------------
 call 一鍵同步.bat
 goto MENU
@@ -76,10 +79,9 @@ goto MENU
 :IMPORT_NOVEL
 echo.
 echo ----------------------------------------------------
-echo   正在啟動文章互動匯入工具 (scripts/import-novel.js)...
+echo   正在彈出選擇檔案對話框...
 echo ----------------------------------------------------
-node scripts/import-novel.js
-pause
+call 一鍵匯入.bat
 goto MENU
 
 :PUBLISH_SITE
@@ -88,6 +90,14 @@ echo ----------------------------------------------------
 echo   正在打包建置並發布網站上線...
 echo ----------------------------------------------------
 call 一鍵發布.bat
+goto MENU
+
+:MANAGE_COLLECTION
+echo.
+echo ----------------------------------------------------
+echo   正在載入自訂類別整合維護管理工具...
+echo ----------------------------------------------------
+node scripts/add-collection-cli.js
 goto MENU
 
 :ADVANCED_MAINTAIN

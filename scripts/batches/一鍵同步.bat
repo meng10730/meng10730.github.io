@@ -20,18 +20,7 @@ if %errorlevel% neq 0 (
 echo [Git] 拉取成功，本地已是最新狀態.
 echo.
 
-echo Running sync script, please wait...
-node scripts/sync-novels.js
-if %errorlevel% equ 0 goto SYNC_SUCCESS
-
 echo.
-echo [Error] Sync failed! Please check the error messages above.
-echo.
-pause
-exit /b 1
-
-:SYNC_SUCCESS
-echo.
-echo [Success] Sync completed successfully!
+echo [Success] 同步線上最新編輯成功！
 echo.
 pause

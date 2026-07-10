@@ -8,7 +8,11 @@ export async function getStaticPaths() {
     { params: { type: 'characters' }, props: { title: '俠客譜 · 人物列表', subtitle: '江湖豪傑，正邪門派，群俠列傳。' } },
     { params: { type: 'guoxue' }, props: { title: '研經室 · 國學筆記', subtitle: '幾案研經，讀書札記，修身齊家。' } },
     { params: { type: 'worldview' }, props: { title: '風物誌 · 世界觀設定', subtitle: '玄理風物，天地運行，設定奧秘。' } },
-    { params: { type: 'factions' }, props: { title: '群雄會 · 勢力組織', subtitle: '江湖割據，名門暗潮，群雄並起。' } }
+    { params: { type: 'factions' }, props: { title: '群雄會 · 勢力組織', subtitle: '江湖割據，名門暗潮，群雄並起。' } },
+    { params: { type: 'items' }, props: { title: '法寶神兵列表', subtitle: '江湖神兵，天地法寶記載。' } },
+    { params: { type: 'techniques' }, props: { title: '功法秘笈列表', subtitle: '江湖功法，神功秘笈記載。' } },
+    { params: { type: 'bestiary' }, props: { title: '靈獸妖魔列表', subtitle: '天地靈獸，大千妖魔記載。' } }
+    // [ADD_NEW_COLLECTION_PATH_HERE]
   ];
 }
 
@@ -16,6 +20,16 @@ const { type } = Astro.params;
 const { title, subtitle } = Astro.props;
 
 const items = await getCollection(type as any, (entry: any) => !entry.id.startsWith('_'));
+
+const allNovels = await getCollection('novels', (entry: any) => !entry.id.startsWith('_'));
+const findNovelSlug = (novelTitle: string) => {
+  const matched = allNovels.find((n: any) => n.data.title === novelTitle);
+  return matched ? matched.slug : null;
+};
+
+const RENDER_CONFIG: Record<string, Record<string, string>> = {
+  // [ADD_NEW_COLLECTION_RENDER_CONFIG_HERE]
+};
 
 // 排序：預設按發布日期排序（如果有）
 items.sort((a: any, b: any) => {

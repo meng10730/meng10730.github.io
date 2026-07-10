@@ -1,4 +1,0 @@
-@echo off
-chcp 65001 > nul
-node scripts/import-novel.js
-pause

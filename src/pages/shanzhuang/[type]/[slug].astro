@@ -10,6 +10,10 @@ export async function getStaticPaths() {
     const worldview = await getCollection('worldview', entry => !entry.id.startsWith('_'));
     const factions = await getCollection('factions', entry => !entry.id.startsWith('_'));
 
+    const items = await getCollection('items', entry => !entry.id.startsWith('_'));
+    const techniques = await getCollection('techniques', entry => !entry.id.startsWith('_'));
+    const bestiary = await getCollection('bestiary', entry => !entry.id.startsWith('_'));
+
     return [
       ...novels.map(entry => ({
         params: { type: 'novels', slug: entry.slug },
@@ -30,7 +34,20 @@ export async function getStaticPaths() {
       ...factions.map(entry => ({
         params: { type: 'factions', slug: entry.slug },
         props: { entry, type: 'factions' }
+      })),
+      ...items.map(entry => ({
+        params: { type: 'items', slug: entry.slug },
+        props: { entry, type: 'items' }
+      })),
+      ...techniques.map(entry => ({
+        params: { type: 'techniques', slug: entry.slug },
+        props: { entry, type: 'techniques' }
+      })),
+      ...bestiary.map(entry => ({
+        params: { type: 'bestiary', slug: entry.slug },
+        props: { entry, type: 'bestiary' }
       }))
+      // [ADD_NEW_COLLECTION_PATH_HERE]
     ];
   } catch (error) {
     console.error("GET STATIC PATHS ERROR:", error);
@@ -40,6 +57,16 @@ export async function getStaticPaths() {
 
 const { entry, type } = Astro.props;
 const { Content } = await entry.render();
+
+const allNovels = await getCollection('novels', entry => !entry.id.startsWith('_'));
+const findNovelSlug = (novelTitle: string) => {
+  const matched = allNovels.find((n: any) => n.data.title === novelTitle);
+  return matched ? matched.slug : null;
+};
+
+const RENDER_CONFIG: Record<string, Record<string, string>> = {
+  // [ADD_NEW_COLLECTION_RENDER_CONFIG_HERE]
+};
 
 const factions = await getCollection('factions', entry => !entry.id.startsWith('_'));
 const characters = await getCollection('characters', entry => !entry.id.startsWith('_'));
@@ -136,6 +163,54 @@ const guoxueCatMap = {
           </div>
         )}
 
+        {RENDER_CONFIG[type] && (
+          <div class="detail-meta">
+            {Object.entries(RENDER_CONFIG[type]).map(([fieldName, fieldType]) => {
+              const val = (entry.data as any)[fieldName];
+              if (!val) return null;
+              if (fieldName === 'novel') {
+                const slug = findNovelSlug(val);
+                return (
+                  <span class="novel-badge">
+                    出處：
+                    {slug ? (
+                      <a href={`${import.meta.env.BASE_URL}shanzhuang/novels/${slug}`} class="ink-link-badge">
+                        《{val}》
+                      </a>
+                    ) : (
+                      `《${val}》`
+                    )}
+                  </span>
+                );
+              }
+              if (fieldType === 'text') {
+                return <span class="source-badge">{fieldName}：{val}</span>;
+              }
+              if (fieldType === 'link') {
+                return (
+                  <span class="source-badge">
+                    {fieldName}：
+                    <a href={val} class="ink-link-badge" target="_blank" rel="noopener noreferrer">
+                      連結 →
+                    </a>
+                  </span>
+                );
+              }
+              if (fieldType === 'image') {
+                return (
+                  <span class="source-badge">
+                    {fieldName}：
+                    <a href={`${import.meta.env.BASE_URL}${val.replace(/^public\//, '')}`} target="_blank" class="ink-link-badge">
+                      查看圖片
+                    </a>
+                  </span>
+                );
+              }
+              return null;
+            })}
+          </div>
+        )}
+
         <h1 class="detail-title cursive-title">{(entry.data as any).title || (entry.data as any).name}</h1>
         
         {type === 'characters' && (entry.data as any).alias && (entry.data as any).alias.length > 0 && (
@@ -144,6 +219,20 @@ const guoxueCatMap = {
       </header>
 
       <div class="mountain-line"></div>
+
+      {RENDER_CONFIG[type] && Object.entries(RENDER_CONFIG[type]).map(([fieldName, fieldType]) => {
+        const val = (entry.data as any)[fieldName];
+        if (!val) return null;
+        if (fieldType === 'image') {
+          return (
+            <div class="custom-detail-image-wrapper my-4 flex flex-col items-center justify-center">
+              <img src={`${import.meta.env.BASE_URL}${val.replace(/^public\//, '')}`} alt={fieldName} class="custom-detail-image max-w-full md:max-w-md rounded shadow border border-border" />
+              <p class="custom-detail-image-caption text-xs text-ink-grey mt-2">【{fieldName}】</p>
+            </div>
+          );
+        }
+        return null;
+      })}
 
       <div class="markdown-body">
         <Content />

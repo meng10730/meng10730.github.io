@@ -53,22 +53,22 @@ exit /b 1
 echo.
 
 
-:: 3. Sync novels and worldview settings
-echo [3/5] Syncing novels and worldview settings...
-node scripts/sync-novels.js
-if %errorlevel% neq 0 goto SYNC_FAILED
-echo   Sync completed!
+:: 3. Run glossary and anti-AI pre-check
+echo [3/5] Running website glossary and anti-AI checks...
+node scripts/check-glossary.js
+if %errorlevel% neq 0 goto CHECK_FAILED
+echo   Glossary check completed!
 echo.
-goto SYNC_DONE
+goto CHECK_DONE
 
-:SYNC_FAILED
+:CHECK_FAILED
 echo.
-echo [Error] Sync failed! Publish aborted. Please check sync-config.json.
+echo [Error] Glossary check script failed with an execution error!
 echo.
 pause
 exit /b 1
 
-:SYNC_DONE
+:CHECK_DONE
 
 
 :: 4. Scan changes and handle Commit

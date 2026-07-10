@@ -93,6 +93,11 @@ const {
                 id="admin-logout-btn">登出</a
               >
             </li>
+            <li class="motion-toggle-item">
+              <button id="motion-toggle-btn" class="nav-item motion-toggle-btn" title="切換全站動畫效果">
+                動畫: 開
+              </button>
+            </li>
           </ul>
         </nav>
       </header>
@@ -457,6 +462,60 @@ const {
 
     <!-- 全站百科懸浮氣泡 -->
     <GlossaryPopover />
+
+    <script>
+      import { gsap } from "gsap";
+
+      function initMotionControl() {
+        const toggleBtn = document.getElementById("motion-toggle-btn");
+        if (!toggleBtn) return;
+
+        // 讀取 localStorage 狀態 (預設為開啟 true)
+        let motionEnabled = localStorage.getItem("global_motion_enabled") !== "false";
+
+        function updateMotionState(enabled: boolean) {
+          if (enabled) {
+            document.body.classList.remove("no-motion");
+            gsap.globalTimeline.timeScale(1);
+            toggleBtn!.textContent = "動畫: 開";
+            localStorage.setItem("global_motion_enabled", "true");
+          } else {
+            document.body.classList.add("no-motion");
+            gsap.globalTimeline.timeScale(9999); // 以極高速完成所有 GSAP 動畫，達成關閉效果
+            toggleBtn!.textContent = "動畫: 關";
+            localStorage.setItem("global_motion_enabled", "false");
+          }
+        }
+
+        // 初始化狀態
+        updateMotionState(motionEnabled);
+
+        // 點擊事件
+        toggleBtn.addEventListener("click", () => {
+          motionEnabled = !motionEnabled;
+          updateMotionState(motionEnabled);
+        });
+      }
+
+      function initAnimations() {
+        // 極簡前台漸現動畫 (位移與透明度)
+        gsap.from(".site-main", {
+          y: 12,
+          opacity: 0,
+          duration: 0.5,
+          ease: "power2.out",
+          clearProps: "all"
+        });
+      }
+
+      function setupMotionAll() {
+        initMotionControl();
+        initAnimations();
+      }
+
+      // 監聽 Astro 路由載入事件，確保單頁切換時同樣生效
+      document.addEventListener("astro:page-load", setupMotionAll);
+    </script>
   </body>
 </html>
 
@@ -574,5 +633,42 @@ const {
     .site-main {
       padding: 2rem 1.5rem;
     }
+  }
+
+  /* 動畫開關極簡按鈕樣式 */
+  .motion-toggle-btn {
+    background: none;
+    border: 1px solid rgba(92, 92, 92, 0.25);
+    padding: 0.15rem 0.55rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem !important;
+    font-family: var(--font-serif);
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    color: var(--color-ink-text);
+  }
+  .motion-toggle-btn:hover {
+    background: rgba(92, 92, 92, 0.05);
+    border-color: var(--color-mountain-cyan);
+    color: var(--color-mountain-cyan);
+  }
+  body.no-motion .motion-toggle-btn {
+    border-color: rgba(180, 50, 50, 0.3);
+    color: rgba(180, 50, 50, 0.75) !important;
+  }
+  body.no-motion .motion-toggle-btn:hover {
+    background: rgba(180, 50, 50, 0.05);
+    border-color: rgba(180, 50, 50, 0.6);
+    color: rgba(180, 50, 50, 1) !important;
+  }
+
+  /* 當動畫關閉時，強行停用全站 CSS 過渡與關鍵幀動畫 */
+  body.no-motion *, 
+  body.no-motion *::before, 
+  body.no-motion *::after {
+    transition: none !important;
+    animation: none !important;
   }
 </style>
