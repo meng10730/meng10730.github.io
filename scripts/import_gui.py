@@ -11,8 +11,9 @@ except ImportError:
     print("[INFO] PySide6 not found. Installing via pip...")
     subprocess.run([sys.executable, "-m", "pip", "install", "PySide6"])
 
+import datetime
 from PySide6.QtCore import Qt, QProcess, QSize, QUrl
-from PySide6.QtGui import QIcon, QDesktopServices, QFont, QTextCursor
+from PySide6.QtGui import QIcon, QDesktopServices, QFont, QTextCursor, QColor
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QListWidget, QListWidgetItem, QLabel, QComboBox, QLineEdit,
@@ -543,6 +544,31 @@ class MainWindow(QMainWindow):
     def clear_logs(self):
         self.console_log.clear()
 
+    def get_existing_target_files_map(self):
+        """建置山莊 content 資料夾內所有既有 .md 檔對照表"""
+        content_dir = os.path.join(self.project_dir, "src", "content")
+        target_map = {} # filename_lower -> { path, collection, mtime }
+        if not os.path.exists(content_dir):
+            return target_map
+            
+        for col in os.listdir(content_dir):
+            col_path = os.path.join(content_dir, col)
+            if os.path.isdir(col_path):
+                for fname in os.listdir(col_path):
+                    if fname.endswith(".md") and not fname.startswith("_"):
+                        fpath = os.path.join(col_path, fname)
+                        try:
+                            mtime = os.path.getmtime(fpath)
+                        except Exception:
+                            mtime = 0
+                        target_map[fname.lower()] = {
+                            "filename": fname,
+                            "path": fpath,
+                            "collection": col,
+                            "mtime": mtime
+                        }
+        return target_map
+
     def refresh_file_list(self):
         self.file_list_widget.clear()
         if not os.path.exists(self.workspace_dir):
@@ -550,14 +576,36 @@ class MainWindow(QMainWindow):
             return
         
         files = [f for f in os.listdir(self.workspace_dir) if f.endswith(".md") or f.endswith(".txt")]
+        target_map = self.get_existing_target_files_map()
         
-        # 篩選未在 sync-config.json 中登記的，或是有變更的
-        # 我們為了簡便，列出該目錄下所有的 Markdown 與純文字檔案
+        imported_count = 0
         for f in files:
             item = QListWidgetItem(f)
+            base_name = os.path.splitext(f)[0]
+            possible_target = f"{base_name.lower()}.md"
+            slugified_target = f"{self.slugify_text(base_name).lower()}.md"
+            
+            # 檢查是否已存在於山莊 content 中
+            matched_info = None
+            if f.lower() in target_map:
+                matched_info = target_map[f.lower()]
+            elif possible_target in target_map:
+                matched_info = target_map[possible_target]
+            elif slugified_target in target_map:
+                matched_info = target_map[slugified_target]
+                
+            if matched_info:
+                imported_count += 1
+                mtime_str = datetime.datetime.fromtimestamp(matched_info["mtime"]).strftime("%Y-%m-%d %H:%M:%S")
+                item.setForeground(QColor("#00ff88")) # 已匯入高亮呈現亮綠色
+                item.setToolTip(f"✅ [已匯入山莊]\n目標分區: {matched_info['collection']}\n目標檔名: {matched_info['filename']}\n修改時間: {mtime_str}")
+            else:
+                item.setForeground(QColor("#e2e2e9")) # 未匯入呈現預設灰白色
+                item.setToolTip("📄 尚未匯入山莊")
+                
             self.file_list_widget.addItem(item)
             
-        self.log(f"✓ 已刷新文字檔列表，共尋找到 {len(files)} 個檔案 ({self.workspace_dir})。")
+        self.log(f"✓ 已刷新文字檔列表，共尋找到 {len(files)} 個檔案 ({imported_count} 個已有匯入紀錄) ({self.workspace_dir})。")
 
     def change_workspace(self):
         new_dir = QFileDialog.getExistingDirectory(
@@ -1306,6 +1354,58 @@ class MainWindow(QMainWindow):
             elif field_type in ["url", "image"]:
                 data[field_name] = widget.text().strip()
                 
+        # 檢查目標分區或全站中是否已存在對應的目標 .md 檔案，若存在則提示修改時間並由使用者決定是否覆寫
+        target_map = self.get_existing_target_files_map()
+        title_or_name = data.get("title") or data.get("name") or os.path.splitext(filename)[0]
+        custom_slug = data.get("slug", "").strip()
+        predicted_slug = custom_slug if custom_slug else self.slugify_text(title_or_name)
+        if not predicted_slug.endswith(".md"):
+            target_md_filename = f"{predicted_slug}.md"
+        else:
+            target_md_filename = predicted_slug
+
+        # 在目標分區路徑或是對照表中尋找匹配
+        matched_target_info = None
+        target_path_in_col = os.path.join(self.project_dir, "src", "content", col_name, target_md_filename)
+        if os.path.exists(target_path_in_col):
+            matched_target_info = {
+                "filename": target_md_filename,
+                "path": target_path_in_col,
+                "collection": col_name,
+                "mtime": os.path.getmtime(target_path_in_col)
+            }
+        elif target_md_filename.lower() in target_map:
+            matched_target_info = target_map[target_md_filename.lower()]
+
+        if matched_target_info:
+            src_mtime = os.path.getmtime(filepath) if os.path.exists(filepath) else 0
+            tgt_mtime = matched_target_info["mtime"]
+
+            src_time_str = datetime.datetime.fromtimestamp(src_mtime).strftime("%Y-%m-%d %H:%M:%S") if src_mtime else "未知"
+            tgt_time_str = datetime.datetime.fromtimestamp(tgt_mtime).strftime("%Y-%m-%d %H:%M:%S") if tgt_mtime else "未知"
+
+            if src_mtime > tgt_mtime:
+                time_note = "📌 狀態提示：待匯入的來源檔案【較新】（適合覆寫更新）"
+            elif src_mtime < tgt_mtime:
+                time_note = "⚠️ 警告提示：山莊目標分區內的已有檔案【較新】！覆寫可能蓋掉後台近期的修改"
+            else:
+                time_note = "ℹ️ 狀態提示：來源檔案與目標檔案的修改時間相同"
+
+            reply = QMessageBox.question(
+                self, "⚠️ 重複目標檔案上傳警告",
+                f"偵測到山莊目標分區 [{matched_target_info['collection']}] 中已存在同名檔案：\n「{matched_target_info['filename']}」\n\n"
+                f"📁 檔案修改時間對比：\n"
+                f"• 待匯入檔案 (本地來源): {src_time_str}\n"
+                f"• 已存在檔案 (山莊目標): {tgt_time_str}\n\n"
+                f"{time_note}\n\n"
+                f"請問您確定要繼續匯入並覆寫該目標檔案嗎？",
+                QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+            )
+
+            if reply != QMessageBox.Yes:
+                self.log(f"ℹ️ 使用者取消了重複檔案「{filename}」的匯入作業。")
+                return
+
         # 呼叫 gui-helper.js 執行匯入
         import_proc = QProcess()
         import_proc.setWorkingDirectory(self.project_dir)
