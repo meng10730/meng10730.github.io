@@ -1,6 +1,4 @@
 ---
-slug: 
-description: 
 alias: []
 affiliation: 鎮厄垣
 novel: 長生劫

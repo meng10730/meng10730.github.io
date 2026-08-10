@@ -1,6 +1,4 @@
 ---
-slug: 
-description: 
 alias: []
 affiliation: 太初劍閣
 novel: 長生劫

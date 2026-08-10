@@ -1,6 +1,4 @@
 ---
-slug: 
-description: 
 alias: []
 affiliation: -- 請選擇或手動輸入 --
 novel: 長生劫

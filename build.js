@@ -68,6 +68,37 @@ async function formatAllMarkdownSpaces() {
   console.log('✅ Markdown 中英文/數字空格排版自動格式化完成。');
 }
 
+// 輔助腳本：清除所有 Markdown Frontmatter 中無效/空白的欄位 (如 slug:, description:)，防範 Astro 報錯
+async function sanitizeEmptySlugs() {
+  const contentDir = path.resolve('src/content');
+  if (!await fs.pathExists(contentDir)) return;
+
+  const processDir = async (dir) => {
+    const items = await fs.readdir(dir);
+    for (const item of items) {
+      const fullPath = path.join(dir, item);
+      const stat = await fs.statSync(fullPath);
+      if (stat.isDirectory()) {
+        await processDir(fullPath);
+      } else if (stat.isFile() && item.endsWith('.md')) {
+        let raw = await fs.readFile(fullPath, 'utf8');
+        const fmMatch = raw.match(/^---([\s\S]*?)---/);
+        if (fmMatch) {
+          const originalFm = fmMatch[1];
+          const sanitizedFm = originalFm.replace(/^[a-zA-Z0-9_-]+:\s*["']?\s*$\r?\n/gm, '');
+          if (originalFm !== sanitizedFm) {
+            raw = raw.replace(originalFm, sanitizedFm);
+            await fs.writeFile(fullPath, raw, 'utf8');
+            console.log(`🧹 [清理 Frontmatter] 已自動清理無效空白欄位：${item}`);
+          }
+        }
+      }
+    }
+  };
+
+  await processDir(contentDir);
+}
+
 // 輔助腳本：滾動備份，保留最新 5 次
 async function performBuildBackup() {
   const pad = (n) => String(n).padStart(2, '0');
@@ -117,11 +148,12 @@ async function run() {
     console.error('⚠️ [備份系統] 備份失敗：', err);
   }
 
-  // 2. 執行中英文自動加空格排版優化
+  // 2. 執行中英文自動加空格排版優化與空白 slug 清理
   try {
     await formatAllMarkdownSpaces();
+    await sanitizeEmptySlugs();
   } catch (err) {
-    console.error('⚠️ [排版系統] 空格格式化失敗：', err);
+    console.error('⚠️ [排版系統] 格式化與 slug 清理失敗：', err);
   }
 
   // 3. 執行正文未登記條目、文風與幽靈資源清理檢測

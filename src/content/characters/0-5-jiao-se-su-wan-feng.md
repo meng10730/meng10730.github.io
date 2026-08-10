@@ -1,6 +1,4 @@
 ---
-slug: 
-description: 
 alias: []
 affiliation: 不夜舫
 novel: 長生劫

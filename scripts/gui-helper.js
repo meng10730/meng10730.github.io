@@ -160,6 +160,7 @@ function toYAML(obj) {
   const lines = ["---"];
   for (const [key, value] of Object.entries(obj)) {
     if (value === undefined || value === null) continue;
+    if (key === "slug" && (typeof value !== "string" || !value.trim())) continue;
     if (Array.isArray(value)) {
       lines.push(`${key}: [${value.map((v) => JSON.stringify(v)).join(", ")}]`);
     } else if (typeof value === "string") {

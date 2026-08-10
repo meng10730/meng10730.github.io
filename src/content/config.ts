@@ -44,10 +44,10 @@ const characters = defineCollection({
   type: "content",
   schema: z.object({
     name: z.string(), // 人物名稱
-    description: z.string().optional(), // 人物簡介 (用於懸浮氣泡)
+    description: z.string().nullish(), // 人物簡介 (用於懸浮氣泡)
     alias: z.array(z.string()).default([]), // 別名 / 江湖稱號
-    affiliation: z.string().optional(), // 所屬門派或陣營 (指向 factions 的 slug)
-    novel: z.string().optional(), // 所屬小說名稱（選填）
+    affiliation: z.string().nullish(), // 所屬門派或陣營 (指向 factions 的 slug)
+    novel: z.string().nullish(), // 所屬小說名稱（選填）
     tags: z.array(z.string()).default([]), // 標籤（主角、反派…）
     pubDate: z.coerce.date(), // 建立日期
   }),
