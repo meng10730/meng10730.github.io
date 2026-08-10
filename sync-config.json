@@ -1,3 +1,25 @@
 {
-  "workspacePath": "C:\\workspace\\長生劫_小說工作區"
+  "workspacePath": "C:/workspace/長生劫_小說工作區/00_世界觀與劇本/01_Creative_Source/03_角色檔案庫",
+  "novels": {
+    "01_角色_塵燼蠲歲.md": {
+      "title": "01_角色_塵燼蠲歲",
+      "slug": "0-1-jiao-se-chen-jin-juan-sui",
+      "category": "characters"
+    },
+    "02_角色_厲絕鋒.md": {
+      "title": "02_角色_厲絕鋒",
+      "slug": "0-2-jiao-se-li-jue-feng",
+      "category": "characters"
+    },
+    "03_角色_陸長涯.md": {
+      "title": "03_角色_陸長涯",
+      "slug": "0-3-jiao-se-lu-chang-ya",
+      "category": "characters"
+    },
+    "04_角色_江無岸.md": {
+      "title": "04_角色_江無岸",
+      "slug": "0-4-jiao-se-jiang-wu-an",
+      "category": "characters"
+    }
+  }
 }

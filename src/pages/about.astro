@@ -1,39 +1,40 @@
 ---
-import Layout from '../layouts/Layout.astro';
+import Layout from "../layouts/Layout.astro";
 ---
 
 <Layout title="關於我 | 晚餐" description="晚餐現在吃什麼呢">
   <div class="about-container ink-fade-in">
     <h1 class="page-title">關於我</h1>
     <div class="mountain-line"></div>
-    
+
     <div class="about-card paper-card">
       <div class="qa-section">
         <div class="qa-item">
-          <div class="question cursive-title">問：莊主是何許人也？</div>
+          <div class="question cursive-title">問：晚餐是誰？</div>
           <div class="answer">
-            答：在下乃一名愛好古風與技術的網頁開發者、遊戲創作者。平日裡喜好研讀國學經典、撰寫故事，亦沉迷於程式代碼的世界中，試圖在冰冷的代碼中尋求一絲墨香與寫意。
+            答：我是一名愛好古風與技術的網頁開發者、創作者。平日裡喜好研讀國學經典、撰寫故事。
           </div>
         </div>
 
         <div class="qa-item">
-          <div class="question cursive-title">問：本網站為何名為「後山」？</div>
+          <div class="question cursive-title">問：這個網站是做什麼用的？</div>
           <div class="answer">
             答：本站為個人構築之網站。後山內分三閣：其一為「小說發布」，安放江湖幻想；其二為「人物設定」，記錄筆下眾生；其三為「國學筆記」，沉澱古籍智慧。
           </div>
         </div>
 
         <div class="qa-item">
-          <div class="question cursive-title">問：莊主目前專注於哪些領域？</div>
+          <div class="question cursive-title">問：晚餐目前專注於哪些領域？</div>
           <div class="answer">
-            答：在鑽研本科的同時，亦在不斷打磨個人的寫作風格，期盼能創作出極致古雅、富含意境的武俠故事。
+            答：在鑽研相關科系的同時，亦在不斷打磨個人的寫作風格，期盼能創作出極致古雅、富含意境的武俠故事。
           </div>
         </div>
 
         <div class="qa-item">
-          <div class="question cursive-title">問：如何與莊主取得聯繫？</div>
+          <div class="question cursive-title">問：如何與晚餐取得聯繫？</div>
           <div class="answer">
-            答：您可以透過本專案的 GitHub 倉庫與我交流，或者在部落格文章下方留下您的墨寶。期待與志同道合的俠士琴簫合奏、共論天下。
+            答：您可以透過本專案的 GitHub
+            倉庫與我交流，或者在部落格文章下方留下您的建議。
           </div>
         </div>
       </div>
@@ -46,40 +47,40 @@ import Layout from '../layouts/Layout.astro';
     max-width: 800px;
     margin: 0 auto;
   }
-  
+
   .page-title {
     text-align: center;
     font-size: 2.5rem;
     margin-bottom: 0.5rem;
   }
-  
+
   .about-card {
     margin-top: 2rem;
   }
-  
+
   .qa-section {
     display: flex;
     flex-direction: column;
     gap: 2.5rem;
   }
-  
+
   .qa-item {
     border-bottom: 1px dashed var(--color-border);
     padding-bottom: 1.5rem;
   }
-  
+
   .qa-item:last-child {
     border-bottom: none;
     padding-bottom: 0;
   }
-  
+
   .question {
     font-size: 1.3rem;
     color: var(--color-mountain-cyan);
     margin-bottom: 0.8rem;
     font-weight: 600;
   }
-  
+
   .answer {
     line-height: 1.8;
     color: var(--color-ink-text);

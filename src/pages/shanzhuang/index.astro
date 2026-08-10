@@ -1,71 +1,91 @@
 ---
-import { getCollection } from 'astro:content';
-import Layout from '../../layouts/Layout.astro';
+import { getCollection } from "astro:content";
+import Layout from "../../layouts/Layout.astro";
 
-const novels = await getCollection('novels', entry => !entry.id.startsWith('_'));
-const characters = await getCollection('characters', entry => !entry.id.startsWith('_'));
-const guoxue = await getCollection('guoxue', entry => !entry.id.startsWith('_'));
-const worldview = await getCollection('worldview', entry => !entry.id.startsWith('_'));
-const factions = await getCollection('factions', entry => !entry.id.startsWith('_'));
+const novels = await getCollection(
+  "novels",
+  (entry) => !entry.id.startsWith("_"),
+);
+const characters = await getCollection(
+  "characters",
+  (entry) => !entry.id.startsWith("_"),
+);
+const guoxue = await getCollection(
+  "guoxue",
+  (entry) => !entry.id.startsWith("_"),
+);
+const worldview = await getCollection(
+  "worldview",
+  (entry) => !entry.id.startsWith("_"),
+);
+const factions = await getCollection(
+  "factions",
+  (entry) => !entry.id.startsWith("_"),
+);
 
 const categories = [
   {
-    id: 'novels',
-    title: '藏書閣',
-    name: '小說連載',
-    desc: '閣中存卷，江湖故事，躍然紙上。包含仙俠、武俠長篇創作。',
+    id: "novels",
+    title: "藏書閣",
+    name: "小說連載",
+    desc: "晚餐的長篇創作連載區。",
     count: novels.length,
-    unit: '卷存書',
-    link: 'novels',
-    icon: '📜'
+    unit: "卷存書",
+    link: "novels",
+    icon: "📜",
   },
   {
-    id: 'characters',
-    title: '俠客譜',
-    name: '人物誌設定',
-    desc: '江湖豪傑，正邪門派，群俠列傳。記載人物生平、功法與關係。',
+    id: "characters",
+    title: "俠客譜",
+    name: "人物誌設定",
+    desc: "記載人物生平與關係。",
     count: characters.length,
-    unit: '名俠客',
-    link: 'characters',
-    icon: '⚔️'
+    unit: "名俠客",
+    link: "characters",
+    icon: "⚔️",
   },
   {
-    id: 'guoxue',
-    title: '研經室',
-    name: '國學筆記',
-    desc: '幾案研經，讀書札記，修身齊家。涵蓋儒道釋、古典詩詞與史籍。',
+    id: "guoxue",
+    title: "研經室",
+    name: "國學筆記",
+    desc: "存放晚餐到處爬國學典籍的筆記，或許可用來加入至小說設定？",
     count: guoxue.length,
-    unit: '則筆記',
-    link: 'guoxue',
-    icon: '✍️'
+    unit: "則筆記",
+    link: "guoxue",
+    icon: "✍️",
   },
   {
-    id: 'worldview',
-    title: '風物誌',
-    name: '世界觀設定',
-    desc: '玄理風物，天地運行，設定奧秘。揭示功法機制、天地劫數與地理。',
+    id: "worldview",
+    title: "風物誌",
+    name: "世界觀設定",
+    desc: "揭示各類小說世界觀的設定。",
     count: worldview.length,
-    unit: '則設定',
-    link: 'worldview',
-    icon: '🗺️'
+    unit: "則設定",
+    link: "worldview",
+    icon: "🗺️",
   },
   {
-    id: 'factions',
-    title: '群雄會',
-    name: '勢力組織',
-    desc: '江湖割據，名門暗潮，群雄並起。記載門派起落、勢力爭奪與地盤。',
+    id: "factions",
+    title: "群雄會",
+    name: "勢力組織",
+    desc: "記載各作品中的門派、勢力與組織。",
     count: factions.length,
-    unit: '方勢力',
-    link: 'factions',
-    icon: '🏯'
-  }
+    unit: "方勢力",
+    link: "factions",
+    icon: "🏯",
+  },
 ];
 ---
 
-<Layout title="後山 | 創作與筆記" description="後山藏書閣，包含小說連載、人物設定、國學筆記、世界觀與勢力組織">
+<Layout
+  title="後山 | 創作與筆記"
+  description="後山藏書閣，包含小說連載、人物設定、國學筆記、世界觀與勢力組織"
+>
   <div class="shanzhuang-container ink-fade-in">
     <h1 class="page-title">後山</h1>
-    <p class="page-subtitle cursive-title">「一盞清茶論江湖，半壁江山寫墨意」</p>
+    <p class="page-subtitle cursive-title">
+      「一盞清茶論江湖，半壁江山寫墨意」
+    </p>
     <div class="mountain-line"></div>
 
     <!-- 一鍵續讀卡片 (預設隱藏，由 Client-side JS 讀取 localStorage 後動態顯現) -->
@@ -82,24 +102,29 @@ const categories = [
 
     <!-- 古風竹簡書架清單佈局 -->
     <div class="shanzhuang-list-container">
-      {categories.map(cat => (
-        <a href={`${import.meta.env.BASE_URL}shanzhuang/${cat.link}`} class="shanzhuang-list-item paper-card">
-          <div class="item-left">
-            <span class="item-icon">{cat.icon}</span>
-            <div class="item-title-group">
-              <h2 class="item-title cursive-title">{cat.title}</h2>
-              <span class="item-name">{cat.name}</span>
+      {
+        categories.map((cat) => (
+          <a
+            href={`${import.meta.env.BASE_URL}shanzhuang/${cat.link}`}
+            class="shanzhuang-list-item paper-card"
+          >
+            <div class="item-left">
+              <span class="item-icon">{cat.icon}</span>
+              <div class="item-title-group">
+                <h2 class="item-title cursive-title">{cat.title}</h2>
+                <span class="item-name">{cat.name}</span>
+              </div>
             </div>
-          </div>
-          <p class="item-desc">{cat.desc}</p>
-          <div class="item-right">
-            <span class="item-count-badge">
-              <span class="count-num">{cat.count}</span> {cat.unit}
-            </span>
-            <span class="item-action-btn">翻閱 ➔</span>
-          </div>
-        </a>
-      ))}
+            <p class="item-desc">{cat.desc}</p>
+            <div class="item-right">
+              <span class="item-count-badge">
+                <span class="count-num">{cat.count}</span> {cat.unit}
+              </span>
+              <span class="item-action-btn">翻閱 ➔</span>
+            </div>
+          </a>
+        ))
+      }
     </div>
   </div>
 </Layout>
@@ -107,47 +132,53 @@ const categories = [
 <script>
   // 讀取閱讀進度並顯示卡片
   function checkResumeRead() {
-    const card = document.getElementById('resume-read-card');
+    const card = document.getElementById("resume-read-card");
     if (!card) return;
 
     try {
-      const raw = localStorage.getItem('shanzhuang_last_read');
+      const raw = localStorage.getItem("shanzhuang_last_read");
       if (raw) {
         const record = JSON.parse(raw);
         // 進度在 2% 到 95% 之間時，才顯示續讀橫幅（避免已看完的章節佔版面）
-        if (record && record.url && record.percent > 0.02 && record.percent < 0.95) {
-          const titleSpan = card.querySelector('.resume-title');
-          const progressSpan = card.querySelector('.resume-progress');
-          const btn = card.querySelector('.resume-btn');
-          
+        if (
+          record &&
+          record.url &&
+          record.percent > 0.02 &&
+          record.percent < 0.95
+        ) {
+          const titleSpan = card.querySelector(".resume-title");
+          const progressSpan = card.querySelector(".resume-progress");
+          const btn = card.querySelector(".resume-btn");
+
           const typeMap = {
-            novels: '藏書閣 · 小說',
-            characters: '俠客譜 · 人物',
-            worldview: '風物誌 · 設定',
-            factions: '群雄會 · 組織',
-            guoxue: '研經室 · 國學'
+            novels: "藏書閣 · 小說",
+            characters: "俠客譜 · 人物",
+            worldview: "風物誌 · 設定",
+            factions: "群雄會 · 組織",
+            guoxue: "研經室 · 國學",
           };
-          
-          const typeText = typeMap[record.type] || '設定';
+
+          const typeText = typeMap[record.type] || "設定";
           const percentText = Math.round(record.percent * 100);
-          
+
           if (titleSpan) titleSpan.innerText = `《${record.title}》`;
-          if (progressSpan) progressSpan.innerText = `分類：${typeText} | 已讀進度：${percentText}% | 閱讀時間：${new Date(record.updatedAt).toLocaleDateString('zh-TW')} ${new Date(record.updatedAt).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}`;
+          if (progressSpan)
+            progressSpan.innerText = `分類：${typeText} | 已讀進度：${percentText}% | 閱讀時間：${new Date(record.updatedAt).toLocaleDateString("zh-TW")} ${new Date(record.updatedAt).toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit" })}`;
           if (btn) btn.href = record.url;
-          
-          card.classList.remove('hidden');
+
+          card.classList.remove("hidden");
           return;
         }
       }
     } catch (e) {}
-    card.classList.add('hidden');
+    card.classList.add("hidden");
   }
 
   function initShanzhuangHome() {
     checkResumeRead();
   }
 
-  document.addEventListener('astro:page-load', initShanzhuangHome);
+  document.addEventListener("astro:page-load", initShanzhuangHome);
   initShanzhuangHome();
 </script>
 
@@ -158,13 +189,13 @@ const categories = [
     padding: 0 1rem;
     position: relative;
   }
-  
+
   .page-title {
     text-align: center;
     font-size: 2.5rem;
     margin-bottom: 0.2rem;
   }
-  
+
   .page-subtitle {
     text-align: center;
     color: var(--color-ink-grey);
@@ -297,20 +328,22 @@ const categories = [
     margin: 1.5rem 0;
     box-shadow: 0 4px 12px rgba(44, 37, 32, 0.06);
     border-left: 3px solid #a63f3f; /* 朱泥紅點綴 */
-    font-family: 'LXGW WenKai TC', 'Noto Serif TC', serif;
-    transition: opacity 0.3s ease, transform 0.3s ease;
+    font-family: "LXGW WenKai TC", "Noto Serif TC", serif;
+    transition:
+      opacity 0.3s ease,
+      transform 0.3s ease;
   }
-  
+
   .resume-read-card.hidden {
     display: none !important;
   }
-  
+
   .resume-content {
     display: flex;
     align-items: center;
     gap: 1.2rem;
   }
-  
+
   .resume-tag {
     font-size: 0.95rem;
     color: #a63f3f;
@@ -320,31 +353,31 @@ const categories = [
     border: 1px solid rgba(166, 63, 63, 0.15);
     white-space: nowrap;
   }
-  
+
   .resume-details {
     display: flex;
     flex-direction: column;
     gap: 0.2rem;
   }
-  
+
   .resume-title {
     font-size: 1.05rem;
     font-weight: bold;
     color: #1a1512;
   }
-  
+
   .resume-progress {
     font-size: 0.8rem;
     color: #8c7f73;
   }
-  
+
   .resume-btn {
     font-size: 0.9rem;
     color: #a63f3f;
     text-decoration: none;
     transition: transform 0.2s ease;
   }
-  
+
   .resume-btn:hover {
     color: var(--color-mountain-green);
     transform: translateX(4px);
@@ -359,7 +392,7 @@ const categories = [
       width: 100%;
       box-sizing: border-box;
     }
-    
+
     .resume-btn {
       align-self: flex-end;
     }

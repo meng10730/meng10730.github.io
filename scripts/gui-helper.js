@@ -364,10 +364,17 @@ function importDocument(filePath, collectionChoice, dataJSON) {
   }
   
   // 網址別名 (Slugify)
-  // characters 用 name, 其餘用 title
-  const textForSlug = collectionChoice === "characters" ? data.name : data.title;
-  if (!textForSlug) {
-    throw new Error("欄位中缺失標題 (title) 或名稱 (name)，無法生成網頁別名 (Slug)！");
+  // 優先採用手動輸入的 data.slug；若無則 characters 用 name，其餘用 title
+  const fallbackTitle = path.basename(filePath, path.extname(filePath));
+  let textForSlug = (data.slug && data.slug.trim()) ? data.slug : (collectionChoice === "characters" ? data.name : data.title);
+  
+  if (!textForSlug || typeof textForSlug !== "string" || textForSlug.trim() === "") {
+    textForSlug = fallbackTitle;
+    if (collectionChoice === "characters") {
+      data.name = fallbackTitle;
+    } else {
+      data.title = fallbackTitle;
+    }
   }
   
   const cleanSlug = pinyinSlugify(textForSlug);

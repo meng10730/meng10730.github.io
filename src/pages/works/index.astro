@@ -1,87 +1,102 @@
 ---
-import { getCollection } from 'astro:content';
-import Layout from '../../layouts/Layout.astro';
+import { getCollection } from "astro:content";
+import Layout from "../../layouts/Layout.astro";
 
-const allWorks = await getCollection('works', (entry) => {
-  return !entry.id.startsWith('_');
+const allWorks = await getCollection("works", (entry) => {
+  return !entry.id.startsWith("_");
 });
 
 // 按分類篩選
-const webWorks = allWorks.filter(work => work.data.category === 'web');
-const gameWorks = allWorks.filter(work => work.data.category === 'game');
-const otherWorks = allWorks.filter(work => work.data.category === 'other');
+const webWorks = allWorks.filter((work) => work.data.category === "web");
+const gameWorks = allWorks.filter((work) => work.data.category === "game");
+const otherWorks = allWorks.filter((work) => work.data.category === "other");
 
 const categories = [
-  { id: 'web', name: '網頁開發', works: webWorks },
-  { id: 'game', name: '遊戲作品', works: gameWorks },
-  { id: 'other', name: '其他創作', works: otherWorks }
+  { id: "web", name: "網頁開發", works: webWorks },
+  { id: "game", name: "遊戲作品", works: gameWorks },
+  { id: "other", name: "其他創作", works: otherWorks },
 ];
 
 const statusMap = {
-  completed: '已完成',
-  ongoing: '進行中',
-  archived: '封存中'
+  completed: "已完成",
+  ongoing: "進行中",
+  archived: "封存中",
 };
 ---
 
-<Layout title="作品集 | 唐門山莊" description="展示唐門弟子的網頁專案、遊戲作品與其他技術創作">
+<Layout title="作品集" description="展示晚餐的網頁專案、作品與其他技術創作">
   <div class="works-container ink-fade-in">
     <h1 class="page-title">作品集</h1>
     <div class="mountain-line"></div>
 
     <div class="categories-wrapper">
-      {categories.map(({ id, name, works }) => (
-        <section class="category-section" id={id}>
-          <h2 class="category-title cursive-title">{name}</h2>
-          
-          {works.length === 0 ? (
-            <div class="empty-state paper-card">
-              <p>此類專案目前正由莊主潛心研發中，暫無公開展示，敬請期待...</p>
-            </div>
-          ) : (
-            <div class="works-grid">
-              {works.map(work => (
-                <div class="work-card paper-card">
-                  <div class="card-header">
-                    <span class={`status-badge ${work.data.status}`}>
-                      {statusMap[work.data.status] || work.data.status}
-                    </span>
-                    <span class="pub-date">
-                      {new Date(work.data.pubDate).toLocaleDateString('zh-TW', {
-                        year: 'numeric',
-                        month: 'long'
-                      })}
-                    </span>
-                  </div>
-                  <h3 class="work-title">{work.data.title}</h3>
-                  <p class="work-desc">{work.data.description}</p>
-                  
-                  {work.data.techs && work.data.techs.length > 0 && (
-                    <div class="tech-tags">
-                      {work.data.techs.map(tech => (
-                        <span class="tech-tag">{tech}</span>
-                      ))}
+      {
+        categories.map(({ id, name, works }) => (
+          <section class="category-section" id={id}>
+            <h2 class="category-title cursive-title">{name}</h2>
+
+            {works.length === 0 ? (
+              <div class="empty-state paper-card">
+                <p>此類專案目前正由晚餐潛心研發中，暫無公開展示，敬請期待...</p>
+              </div>
+            ) : (
+              <div class="works-grid">
+                {works.map((work) => (
+                  <div class="work-card paper-card">
+                    <div class="card-header">
+                      <span class={`status-badge ${work.data.status}`}>
+                        {statusMap[work.data.status] || work.data.status}
+                      </span>
+                      <span class="pub-date">
+                        {new Date(work.data.pubDate).toLocaleDateString(
+                          "zh-TW",
+                          {
+                            year: "numeric",
+                            month: "long",
+                          },
+                        )}
+                      </span>
                     </div>
-                  )}
-                  
-                  <div class="card-links">
-                    {work.data.github && (
-                      <a href={work.data.github} target="_blank" rel="noopener noreferrer" class="link-btn github">
-                        原始碼
-                      </a>
+                    <h3 class="work-title">{work.data.title}</h3>
+                    <p class="work-desc">{work.data.description}</p>
+
+                    {work.data.techs && work.data.techs.length > 0 && (
+                      <div class="tech-tags">
+                        {work.data.techs.map((tech) => (
+                          <span class="tech-tag">{tech}</span>
+                        ))}
+                      </div>
                     )}
-                    {work.data.demo && (
-                      <a href={work.data.demo} target="_blank" rel="noopener noreferrer" class="link-btn demo">
-                        線上預覽
-                      </a>
-                    )}
+
+                    <div class="card-links">
+                      {work.data.github && (
+                        <a
+                          href={work.data.github}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class="link-btn github"
+                        >
+                          原始碼
+                        </a>
+                      )}
+                      {work.data.demo && (
+                        <a
+                          href={work.data.demo}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class="link-btn demo"
+                        >
+                          線上預覽
+                        </a>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      ))}
+                ))}
+              </div>
+            )}
+          </section>
+        ))
+      }
     </div>
   </div>
 </Layout>
@@ -91,24 +106,24 @@ const statusMap = {
     max-width: 900px;
     margin: 0 auto;
   }
-  
+
   .page-title {
     text-align: center;
     font-size: 2.5rem;
     margin-bottom: 0.5rem;
   }
-  
+
   .categories-wrapper {
     display: flex;
     flex-direction: column;
     gap: 3.5rem;
     margin-top: 2rem;
   }
-  
+
   .category-section {
     scroll-margin-top: 100px;
   }
-  
+
   .category-title {
     font-size: 1.8rem;
     color: var(--color-mountain-cyan);
@@ -116,20 +131,20 @@ const statusMap = {
     border-left: 4px solid var(--color-mountain-green);
     padding-left: 0.8rem;
   }
-  
+
   .works-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 1.5rem;
   }
-  
+
   .work-card {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     height: 100%;
   }
-  
+
   .card-header {
     display: flex;
     justify-content: space-between;
@@ -137,41 +152,41 @@ const statusMap = {
     margin-bottom: 1rem;
     font-size: 0.8rem;
   }
-  
+
   .status-badge {
     padding: 0.2rem 0.6rem;
     border-radius: 99px;
     font-weight: 600;
   }
-  
+
   .status-badge.completed {
     background: rgba(61, 126, 90, 0.1);
     color: var(--color-mountain-green);
     border: 1px solid rgba(61, 126, 90, 0.2);
   }
-  
+
   .status-badge.ongoing {
     background: rgba(196, 140, 59, 0.1);
     color: var(--color-mountain-accent);
     border: 1px solid rgba(196, 140, 59, 0.2);
   }
-  
+
   .status-badge.archived {
     background: rgba(92, 92, 92, 0.1);
     color: var(--color-ink-grey);
     border: 1px solid rgba(92, 92, 92, 0.2);
   }
-  
+
   .pub-date {
     color: var(--color-ink-grey);
   }
-  
+
   .work-title {
     font-size: 1.25rem;
     margin-bottom: 0.8rem;
     color: var(--color-ink-black);
   }
-  
+
   .work-desc {
     font-size: 0.95rem;
     color: var(--color-ink-text);
@@ -179,14 +194,14 @@ const statusMap = {
     margin-bottom: 1.2rem;
     flex-grow: 1;
   }
-  
+
   .tech-tags {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
     margin-bottom: 1.5rem;
   }
-  
+
   .tech-tag {
     font-size: 0.75rem;
     background: rgba(0, 0, 0, 0.03);
@@ -195,14 +210,14 @@ const statusMap = {
     border-radius: 4px;
     border: 1px solid rgba(0, 0, 0, 0.05);
   }
-  
+
   .card-links {
     display: flex;
     gap: 1rem;
     border-top: 1px dashed var(--color-border);
     padding-top: 1rem;
   }
-  
+
   .link-btn {
     flex: 1;
     text-align: center;
@@ -212,26 +227,26 @@ const statusMap = {
     border: 1px solid var(--color-mountain-cyan);
     transition: var(--transition-fast);
   }
-  
+
   .link-btn.github {
     background: transparent;
     color: var(--color-mountain-cyan);
   }
-  
+
   .link-btn.github:hover {
     background: rgba(45, 95, 90, 0.05);
   }
-  
+
   .link-btn.demo {
     background: var(--color-mountain-cyan);
     color: var(--color-paper-light);
   }
-  
+
   .link-btn.demo:hover {
     background: var(--color-mountain-green);
     border-color: var(--color-mountain-green);
   }
-  
+
   .empty-state {
     text-align: center;
     padding: 3rem 2rem;

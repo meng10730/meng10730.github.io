@@ -368,11 +368,15 @@ class MainWindow(QMainWindow):
         
         sidebar_layout.addStretch()
         
-        # 顯示工作區路徑
+        # 顯示工作區路徑與切換按鈕
         self.path_info = QLabel(f"工作區:\n{self.workspace_dir}")
         self.path_info.setWordWrap(True)
         self.path_info.setStyleSheet("color: #72727c; font-size: 11px;")
         sidebar_layout.addWidget(self.path_info)
+        
+        self.change_workspace_btn = QPushButton("📂 切換工作區")
+        self.change_workspace_btn.clicked.connect(self.change_workspace)
+        sidebar_layout.addWidget(self.change_workspace_btn)
         
         main_layout.addWidget(sidebar)
         
@@ -480,15 +484,41 @@ class MainWindow(QMainWindow):
             self.log(f"❌ [錯誤] 找不到工作區路徑: {self.workspace_dir}")
             return
         
-        files = [f for f in os.listdir(self.workspace_dir) if f.endswith(".md")]
+        files = [f for f in os.listdir(self.workspace_dir) if f.endswith(".md") or f.endswith(".txt")]
         
         # 篩選未在 sync-config.json 中登記的，或是有變更的
-        # 我們為了簡便，列出該目錄下所有的 Markdown 檔案
+        # 我們為了簡便，列出該目錄下所有的 Markdown 與純文字檔案
         for f in files:
             item = QListWidgetItem(f)
             self.file_list_widget.addItem(item)
             
-        self.log(f"✓ 已刷新文字檔列表，共尋找到 {len(files)} 個檔案。")
+        self.log(f"✓ 已刷新文字檔列表，共尋找到 {len(files)} 個檔案 ({self.workspace_dir})。")
+
+    def change_workspace(self):
+        new_dir = QFileDialog.getExistingDirectory(
+            self, "選取新工作區資料夾", self.workspace_dir
+        )
+        if not new_dir:
+            return
+        
+        if not os.path.exists(new_dir):
+            QMessageBox.warning(self, "路徑無效", "選取的資料夾不存在！")
+            return
+        
+        self.workspace_dir = new_dir
+        self.path_info.setText(f"工作區:\n{self.workspace_dir}")
+        
+        # 寫回 sync-config.json 持久化
+        config_path = os.path.join(self.project_dir, "sync-config.json")
+        try:
+            with open(config_path, "w", encoding="utf-8") as f:
+                json.dump({"workspacePath": self.workspace_dir}, f, ensure_ascii=False, indent=2)
+            self.log(f"✅ 工作區已成功切換並寫入設定檔: {self.workspace_dir}")
+        except Exception as e:
+            self.log(f"⚠️ 寫入 sync-config.json 失敗: {e}")
+            
+        # 觸發即時熱更新
+        self.refresh_file_list()
 
     def on_file_selected(self):
         selected = self.file_list_widget.selectedItems()
@@ -499,6 +529,13 @@ class MainWindow(QMainWindow):
         
         # 解析檔案的 Frontmatter 以利帶入預設值
         fm, body = self.parse_frontmatter(filepath)
+        
+        # 若 Frontmatter 中無標題或名稱，自動以檔名(去副檔名)作為預設值
+        base_title = os.path.splitext(filename)[0]
+        if "title" not in fm or not fm["title"]:
+            fm["title"] = base_title
+        if "name" not in fm or not fm["name"]:
+            fm["name"] = base_title
         
         # 填入表單
         self.populate_form(fm)
@@ -545,12 +582,68 @@ class MainWindow(QMainWindow):
             fm, _ = self.parse_frontmatter(filepath)
         self.populate_form(fm)
 
+    def get_novels_list(self):
+        novels = set(getattr(self, "custom_novels", []))
+        novels_dir = os.path.join(self.project_dir, "src", "content", "novels")
+        if os.path.exists(novels_dir):
+            for file in os.listdir(novels_dir):
+                if file.endswith(".md"):
+                    filepath = os.path.join(novels_dir, file)
+                    fm, _ = self.parse_frontmatter(filepath)
+                    title = fm.get("title") or os.path.splitext(file)[0]
+                    if title:
+                        novels.add(title)
+        return sorted(list(novels))
+
+    def get_factions_list(self):
+        factions = set(getattr(self, "custom_factions", []))
+        factions_dir = os.path.join(self.project_dir, "src", "content", "factions")
+        if os.path.exists(factions_dir):
+            for file in os.listdir(factions_dir):
+                if file.endswith(".md"):
+                    filepath = os.path.join(factions_dir, file)
+                    fm, _ = self.parse_frontmatter(filepath)
+                    title = fm.get("title") or os.path.splitext(file)[0]
+                    if title:
+                        factions.add(title)
+        return sorted(list(factions))
+
+    def add_novel_dialog(self, combo):
+        name, ok = QInputDialog.getText(self, "新增作品", "請輸入小說作品名稱:")
+        if ok and name.strip():
+            clean_name = name.strip()
+            if not hasattr(self, "custom_novels"):
+                self.custom_novels = []
+            if clean_name not in self.custom_novels:
+                self.custom_novels.append(clean_name)
+            combo.addItem(clean_name, clean_name)
+            combo.setCurrentText(clean_name)
+            self.log(f"✅ 已成功新增作品至選單: {clean_name}")
+
+    def add_faction_dialog(self, combo):
+        name, ok = QInputDialog.getText(self, "新增門派/陣營", "請輸入門派或陣營名稱:")
+        if ok and name.strip():
+            clean_name = name.strip()
+            if not hasattr(self, "custom_factions"):
+                self.custom_factions = []
+            if clean_name not in self.custom_factions:
+                self.custom_factions.append(clean_name)
+            combo.addItem(clean_name, clean_name)
+            combo.setCurrentText(clean_name)
+            self.log(f"✅ 已成功新增門派至選單: {clean_name}")
+
     def populate_form(self, defaults={}):
         # 清除現有動態表單欄位
         for i in reversed(range(self.scroll_layout.count())):
-            widget = self.scroll_layout.itemAt(i).widget()
-            if widget is not None:
-                widget.deleteLater()
+            item = self.scroll_layout.itemAt(i)
+            if item.widget() is not None:
+                item.widget().deleteLater()
+            elif item.layout() is not None:
+                # 遞迴刪除子佈局
+                for j in reversed(range(item.layout().count())):
+                    w = item.layout().itemAt(j).widget()
+                    if w is not None:
+                        w.deleteLater()
         
         self.dynamic_widgets.clear()
         
@@ -560,7 +653,16 @@ class MainWindow(QMainWindow):
             
         fields = self.schema[col_name]["fields"]
         
-        # 逐一生成欄位
+        # 1. 顯式提供「網頁別名 (slug)」手動編輯欄位
+        lbl_slug = QLabel("網頁別名 (slug, 選填手動自訂):")
+        lbl_slug.setStyleSheet("color: #e5a93b; font-weight: bold;")
+        edit_slug = QLineEdit(str(defaults.get("slug", "")))
+        edit_slug.setPlaceholderText("留空則自動採用標題之拼音生成")
+        self.scroll_layout.addWidget(lbl_slug)
+        self.scroll_layout.addWidget(edit_slug)
+        self.dynamic_widgets["slug"] = ("text_single", edit_slug)
+        
+        # 逐一生成動態欄位
         for field_name, field_info in fields.items():
             field_type = field_info["type"]
             field_label = field_info["label"]
@@ -568,7 +670,61 @@ class MainWindow(QMainWindow):
             # 使用選中檔案已存在的 frontmatter 值，否則為空
             val = defaults.get(field_name, "")
             
-            if field_type == "text":
+            # 專屬邏輯：小說名稱欄位 (novel) 升級為動態資料庫下拉選單 + ➕ 新增按鈕
+            if field_name == "novel":
+                lbl = QLabel(f"{field_label} ({field_name}):")
+                lbl.setStyleSheet("color: #a2a2ab; font-weight: bold;")
+                
+                combo_box_layout = QHBoxLayout()
+                combo = QComboBox()
+                combo.setEditable(True)
+                novels_list = self.get_novels_list()
+                
+                combo.addItem("-- 請選擇或手動輸入 --", "")
+                for nov in novels_list:
+                    combo.addItem(nov, nov)
+                if val:
+                    combo.setCurrentText(str(val))
+                    
+                add_btn = QPushButton("➕ 新增作品")
+                add_btn.setFixedWidth(90)
+                add_btn.clicked.connect(lambda _, c=combo: self.add_novel_dialog(c))
+                
+                combo_box_layout.addWidget(combo)
+                combo_box_layout.addWidget(add_btn)
+                
+                self.scroll_layout.addWidget(lbl)
+                self.scroll_layout.addLayout(combo_box_layout)
+                self.dynamic_widgets[field_name] = ("combo_custom", combo)
+                
+            # 專屬邏輯：所屬門派/陣營欄位 (affiliation) 升級為動態資料庫下拉選單 + ➕ 新增按鈕
+            elif field_name == "affiliation":
+                lbl = QLabel(f"{field_label} ({field_name}):")
+                lbl.setStyleSheet("color: #a2a2ab; font-weight: bold;")
+                
+                combo_box_layout = QHBoxLayout()
+                combo = QComboBox()
+                combo.setEditable(True)
+                factions_list = self.get_factions_list()
+                
+                combo.addItem("-- 請選擇或手動輸入 --", "")
+                for fac in factions_list:
+                    combo.addItem(fac, fac)
+                if val:
+                    combo.setCurrentText(str(val))
+                    
+                add_btn = QPushButton("➕ 新增門派")
+                add_btn.setFixedWidth(90)
+                add_btn.clicked.connect(lambda _, c=combo: self.add_faction_dialog(c))
+                
+                combo_box_layout.addWidget(combo)
+                combo_box_layout.addWidget(add_btn)
+                
+                self.scroll_layout.addWidget(lbl)
+                self.scroll_layout.addLayout(combo_box_layout)
+                self.dynamic_widgets[field_name] = ("combo_custom", combo)
+                
+            elif field_type == "text":
                 if field_info.get("multiline", False):
                     # 多行文字
                     lbl = QLabel(f"{field_label} ({field_name}):")
@@ -867,6 +1023,8 @@ class MainWindow(QMainWindow):
                 data[field_name] = widget.date().toString("yyyy-MM-dd")
             elif field_type == "select":
                 data[field_name] = widget.currentData()
+            elif field_type == "combo_custom":
+                data[field_name] = widget.currentText().strip()
             elif field_type == "array":
                 data[field_name] = widget.get_values()
             elif field_type in ["url", "image"]:

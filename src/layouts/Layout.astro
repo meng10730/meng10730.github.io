@@ -83,7 +83,7 @@ const {
                 href={`${import.meta.env.BASE_URL}keystatic`}
                 class="ink-link nav-item admin-login-btn"
                 id="admin-login-btn"
-                data-astro-reload>莊主登入</a
+                data-astro-reload>登入</a
               >
             </li>
             <li id="admin-logout-item" style="display: none;">
@@ -149,7 +149,7 @@ const {
                 btn.title = "您已登入 GitHub 管理者帳號";
                 if (logoutItem) logoutItem.style.display = "block";
               } else {
-                btn.textContent = "莊主登入";
+                btn.textContent = "登入";
                 btn.title = "登入 GitHub 進行文章編輯";
                 if (logoutItem) logoutItem.style.display = "none";
               }
@@ -447,7 +447,7 @@ const {
       <!-- 頁尾 -->
       <footer class="site-footer">
         <div class="footer-content">
-          <p>© {new Date().getFullYear()} 唐門弟子. 琴音繚繞，水墨乾坤.</p>
+          <p>© {new Date().getFullYear()} 吞文吐墨</p>
         </div>
       </footer>
     </div>
@@ -463,7 +463,8 @@ const {
 
       function initGlobalMotionState() {
         // 從 localStorage 同步狀態至 body 和 gsap
-        const motionEnabled = localStorage.getItem("global_motion_enabled") !== "false";
+        const motionEnabled =
+          localStorage.getItem("global_motion_enabled") !== "false";
         if (motionEnabled) {
           document.body.classList.remove("no-motion");
           gsap.globalTimeline.timeScale(1);
@@ -474,11 +475,20 @@ const {
       }
 
       function initAnimations() {
-        const motionEnabled = localStorage.getItem("global_motion_enabled") !== "false";
+        const motionEnabled =
+          localStorage.getItem("global_motion_enabled") !== "false";
         if (!motionEnabled) {
           // 動畫關閉時，直接設定最終狀態，防止頁面加載時的布局與字體抖動
-          gsap.set(".site-main", { opacity: 1, y: 0, clearProps: "transform,opacity" });
-          gsap.set(".nav-links li", { opacity: 1, y: 0, clearProps: "transform,opacity" });
+          gsap.set(".site-main", {
+            opacity: 1,
+            y: 0,
+            clearProps: "transform,opacity",
+          });
+          gsap.set(".nav-links li", {
+            opacity: 1,
+            y: 0,
+            clearProps: "transform,opacity",
+          });
           return;
         }
 
@@ -489,7 +499,7 @@ const {
           duration: 0.4,
           stagger: 0.04,
           ease: "power1.out",
-          clearProps: "transform,opacity"
+          clearProps: "transform,opacity",
         });
 
         // 2. 極簡內容分層漸現動畫 (位移與透明度)，只清除 transform 與 opacity 屬性，保障原生排版樣式不被擦除
@@ -499,7 +509,7 @@ const {
           opacity: 0,
           duration: 0.5,
           ease: "power2.out",
-          clearProps: "transform,opacity"
+          clearProps: "transform,opacity",
         });
 
         // 隨後淡入其餘內容
@@ -509,7 +519,7 @@ const {
           duration: 0.5,
           delay: 0.12,
           ease: "power2.out",
-          clearProps: "transform,opacity"
+          clearProps: "transform,opacity",
         });
       }
 
@@ -640,11 +650,9 @@ const {
     }
   }
 
-
-
   /* 當動畫關閉時，強行停用全站 CSS 過渡與關鍵幀動畫 */
-  body.no-motion *, 
-  body.no-motion *::before, 
+  body.no-motion *,
+  body.no-motion *::before,
   body.no-motion *::after {
     transition: none !important;
     animation: none !important;
