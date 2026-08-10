@@ -380,6 +380,18 @@ function importDocument(filePath, collectionChoice, dataJSON) {
   
   const cleanSlug = pinyinSlugify(textForSlug);
   
+  // 當有自訂標題/名稱時，自動同步修正正文第一個 # H1 標題
+  const customTitle = data.title || data.name;
+  if (customTitle && typeof customTitle === "string" && customTitle.trim()) {
+    const cleanTitle = customTitle.trim();
+    bodyContent = bodyContent.replace(/^#\s+(.+)$/m, (match, oldHeading) => {
+      if (oldHeading.startsWith("角色誌：")) {
+        return `# 角色誌：${cleanTitle}`;
+      }
+      return `# ${cleanTitle}`;
+    });
+  }
+  
   // 執行 Wiki-links 解析標準化
   console.log("⌛ 正在建立標題對照表並解析雙括號連結...");
   const titleMap = buildTitleMap();

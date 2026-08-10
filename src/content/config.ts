@@ -39,13 +39,34 @@ const novels = defineCollection({
   }),
 });
 
+const aliasItemSchema = z.union([
+  z.string(),
+  z.object({
+    category: z
+      .enum(["title", "realName", "courtesyName", "nickname", "other"])
+      .default("title"),
+    name: z.string().min(1).max(20),
+  }),
+]);
+
 // 山莊 → 人物設定
 const characters = defineCollection({
   type: "content",
   schema: z.object({
     name: z.string(), // 人物名稱
     description: z.string().nullish(), // 人物簡介 (用於懸浮氣泡)
-    alias: z.array(z.string()).default([]), // 別名 / 江湖稱號
+    alias: z
+      .array(aliasItemSchema)
+      .default([])
+      .refine(
+        (items) => {
+          const names = items
+            .map((item) => (typeof item === "string" ? item : item?.name)?.trim())
+            .filter((n): n is string => Boolean(n));
+          return new Set(names).size === names.length;
+        },
+        { message: "角色別名名稱不能重複！請檢查並移除重複的稱號名稱。" }
+      ), // 別名 / 江湖稱號 (支援舊字串與新結構化物件，並警示重複資料)
     affiliation: z.string().nullish(), // 所屬門派或陣營 (指向 factions 的 slug)
     novel: z.string().nullish(), // 所屬小說名稱（選填）
     tags: z.array(z.string()).default([]), // 標籤（主角、反派…）

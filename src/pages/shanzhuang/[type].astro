@@ -163,7 +163,7 @@ const guoxueCatMap: Record<string, string> = {
                 <a href={`${import.meta.env.BASE_URL}shanzhuang/${type}/${slug}`}>
                   {data.title || data.name}
                   {type === 'characters' && data.alias && data.alias.length > 0 && (
-                    <span class="alias-title">（{data.alias.join(' / ')}）</span>
+                    <span class="alias-title">（{data.alias[0]}）</span>
                   )}
                 </a>
               </h3>

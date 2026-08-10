@@ -213,9 +213,19 @@ const guoxueCatMap = {
 
         <h1 class="detail-title cursive-title">{(entry.data as any).title || (entry.data as any).name}</h1>
         
-        {type === 'characters' && (entry.data as any).alias && (entry.data as any).alias.length > 0 && (
-          <p class="detail-subtitle">別名 / 江湖稱號：{(entry.data as any).alias.join('、')}</p>
-        )}
+        {type === 'characters' && (() => {
+          const rawAliases = (entry.data as any).alias || [];
+          const aliasNames = Array.from(
+            new Set(
+              rawAliases
+                .map((a: any) => (typeof a === 'string' ? a : a?.name)?.trim())
+                .filter((n: any): n is string => Boolean(n))
+            )
+          );
+          return aliasNames.length > 0 ? (
+            <p class="detail-subtitle">別名 / 江湖稱號：{aliasNames.join('、')}</p>
+          ) : null;
+        })()}
       </header>
 
       <div class="mountain-line"></div>

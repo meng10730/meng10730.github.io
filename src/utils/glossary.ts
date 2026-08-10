@@ -42,7 +42,13 @@ export async function getGlossary(): Promise<GlossaryItem[]> {
       slug: entry.slug,
       type: 'characters',
       desc,
-      aliases: entry.data.alias || [],
+      aliases: Array.from(
+        new Set(
+          (entry.data.alias || [])
+            .map((a: any) => (typeof a === 'string' ? a : a?.name)?.trim())
+            .filter((n: any): n is string => Boolean(n))
+        )
+      ),
     });
   }
 

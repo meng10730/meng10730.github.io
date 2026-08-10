@@ -856,7 +856,7 @@ const isDev = import.meta.env.DEV;
   <!-- ========================================================
        視圖一：Keystatic 本地端後台
        ======================================================== -->
-  <Keystatic config={keystaticConfig} appSlug={appSlug} client:only="react" />
+  <Keystatic config={keystaticConfig as any} appSlug={appSlug} client:only="react" />
 
   <!-- ========================================================
        視圖二：自訂 藏書移置閣 嵌入介面

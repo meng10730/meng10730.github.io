@@ -300,10 +300,42 @@ export default config({
           label: "人物簡介 (用於前台懸浮氣泡，選填)",
           multiline: true,
         }),
-        alias: fields.array(fields.text({ label: "別名 / 江湖稱號" }), {
-          label: "別名",
-          itemLabel: (props) => props.value,
-        }),
+        alias: fields.array(
+          fields.object({
+            category: fields.select({
+              label: "稱號類別",
+              options: [
+                { label: "江湖稱號 / 封號", value: "title" },
+                { label: "本名 / 舊名", value: "realName" },
+                { label: "字 / 號 / 尊稱", value: "courtesyName" },
+                { label: "暱稱 / 綽號 / 代號", value: "nickname" },
+                { label: "其他別稱", value: "other" },
+              ],
+              defaultValue: "title",
+            }),
+            name: fields.text({
+              label: "稱號 / 別名名稱",
+              description: "填寫角色稱號或別名，長度限 1 ~ 20 字",
+              validation: { length: { min: 1, max: 20 } },
+            }),
+          }),
+          {
+            label: "別名與稱號設定",
+            itemLabel: (props) => {
+              const categoryMap: Record<string, string> = {
+                title: "江湖稱號",
+                realName: "本名/舊名",
+                courtesyName: "字號尊稱",
+                nickname: "暱稱綽號",
+                other: "別稱",
+              };
+              const cat = categoryMap[props.fields.category.value] || "別稱";
+              const val = props.fields.name.value?.trim() || "未命名";
+              return `[${cat}] ${val}`;
+            },
+            validation: { length: { max: 10 } },
+          }
+        ),
         affiliation: fields.text({ label: "所屬門派或陣營" }),
         novel: fields.text({ label: "所屬小說名稱" }),
         tags: fields.array(fields.text({ label: "標籤 (主角、反派…)" }), {

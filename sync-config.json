@@ -35,6 +35,21 @@
       "title": "07_角色_掩半扉",
       "slug": "0-7-jiao-se",
       "category": "characters"
+    },
+    "08_角色_斬荒飲劫.md": {
+      "title": "斬荒飲劫",
+      "slug": "zhan-huang-yin-jie",
+      "category": "characters"
+    },
+    "09_角色_白檀.md": {
+      "title": "白檀",
+      "slug": "bai-tan",
+      "category": "characters"
+    },
+    "10_角色_歧南歿古.md": {
+      "title": "歧南歿古",
+      "slug": "qi-nan-mo-gu",
+      "category": "characters"
     }
   }
 }

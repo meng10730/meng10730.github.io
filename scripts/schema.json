@@ -77,8 +77,8 @@
     "label": "人物設定 (characters，例如：人物誌)",
     "fields": {
       "name": {
-        "type": "slug",
-        "label": "人物名稱",
+        "type": "text",
+        "label": "稱號 / 別名名稱",
         "multiline": false
       },
       "description": {
@@ -88,8 +88,35 @@
       },
       "alias": {
         "type": "array",
-        "label": "別名 / 江湖稱號",
+        "label": "稱號類別",
         "multiline": false
+      },
+      "category": {
+        "type": "select",
+        "label": "稱號類別",
+        "multiline": false,
+        "options": [
+          {
+            "label": "江湖稱號 / 封號",
+            "value": "title"
+          },
+          {
+            "label": "本名 / 舊名",
+            "value": "realName"
+          },
+          {
+            "label": "字 / 號 / 尊稱",
+            "value": "courtesyName"
+          },
+          {
+            "label": "暱稱 / 綽號 / 代號",
+            "value": "nickname"
+          },
+          {
+            "label": "其他別稱",
+            "value": "other"
+          }
+        ]
       },
       "affiliation": {
         "type": "text",

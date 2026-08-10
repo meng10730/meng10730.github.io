@@ -735,6 +735,60 @@ class MainWindow(QMainWindow):
             combo.setCurrentText(clean_name)
             self.log(f"✅ 已成功新增門派至選單: {clean_name}")
 
+    def add_alias_dialog(self, array_widget):
+        name, ok = QInputDialog.getText(self, "新增自訂稱號/別名", "請輸入江湖稱號或別名:")
+        if ok and name.strip():
+            clean_name = name.strip()
+            array_widget.add_item(clean_name)
+            self.log(f"✅ 已成功新增自訂稱號/別名: {clean_name}")
+
+    def slugify_text(self, text):
+        if not text or not text.strip():
+            return ""
+        try:
+            creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
+            res = subprocess.run(
+                ["node", os.path.join(self.project_dir, "scripts", "gui-helper.js"), "--slugify", text.strip()],
+                capture_output=True, text=True, encoding="utf-8", creationflags=creationflags
+            )
+            return res.stdout.strip()
+        except Exception:
+            return text.strip().lower().replace(" ", "-")
+
+    def on_title_editing_finished(self, edit_widget, edit_slug_widget, original_title):
+        try:
+            new_title = edit_widget.text().strip()
+        except Exception:
+            return
+            
+        if new_title and new_title != original_title:
+            from PySide6.QtCore import QTimer
+            QTimer.singleShot(100, lambda: self._safe_ask_sync_slug(edit_widget, edit_slug_widget, new_title))
+
+    def _safe_ask_sync_slug(self, edit_widget, edit_slug_widget, new_title):
+        try:
+            current_title = edit_widget.text().strip()
+            current_slug = edit_slug_widget.text().strip()
+        except Exception:
+            return
+            
+        if current_title != new_title:
+            return
+            
+        new_slug = self.slugify_text(new_title)
+        if new_slug and new_slug != current_slug:
+            reply = QMessageBox.question(
+                self, "同步更新網頁別名 (slug)",
+                f"偵測到標題/名稱已修改為：「{new_title}」\n是否同步將網頁別名 (slug) 更新為拼音：「{new_slug}」？",
+                QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes
+            )
+            if reply == QMessageBox.Yes:
+                try:
+                    edit_slug_widget.setText(new_slug)
+                    self.log(f"✅ 已同步更新網頁別名 (slug) 為: {new_slug}")
+                except Exception:
+                    pass
+
     def populate_form(self, defaults={}):
         # 清除現有動態表單欄位
         for i in reversed(range(self.scroll_layout.count())):
@@ -827,7 +881,7 @@ class MainWindow(QMainWindow):
                 self.scroll_layout.addLayout(combo_box_layout)
                 self.dynamic_widgets[field_name] = ("combo_custom", combo)
                 
-            elif field_type == "text":
+            elif field_type in ["text", "slug"]:
                 if field_info.get("multiline", False):
                     # 多行文字
                     lbl = QLabel(f"{field_label} ({field_name}):")
@@ -839,10 +893,21 @@ class MainWindow(QMainWindow):
                     self.scroll_layout.addWidget(edit)
                     self.dynamic_widgets[field_name] = ("text_multi", edit)
                 else:
-                    # 單行文字
-                    lbl = QLabel(f"{field_label} ({field_name}):")
-                    lbl.setStyleSheet("color: #a2a2ab; font-weight: bold;")
+                    # 單行文字 / 標題與名稱自訂欄位
+                    is_title_or_name = field_name in ["title", "name"] or field_type == "slug"
+                    lbl_text = f"⭐ 自訂{field_label} ({field_name}):" if is_title_or_name else f"{field_label} ({field_name}):"
+                    lbl = QLabel(lbl_text)
+                    if is_title_or_name:
+                        lbl.setStyleSheet("color: #00ff88; font-weight: bold; font-size: 13px;")
+                    else:
+                        lbl.setStyleSheet("color: #a2a2ab; font-weight: bold;")
+                    
                     edit = QLineEdit(str(val))
+                    if is_title_or_name:
+                        edit.setPlaceholderText("請輸入自訂標題 / 人物名稱...")
+                        edit.setStyleSheet("border: 1.5px solid #00ff88; padding: 5px; font-weight: bold; color: #ffffff; background: #1a1a24;")
+                        orig_val = str(val)
+                        edit.editingFinished.connect(lambda e=edit, s=edit_slug, o=orig_val: self.on_title_editing_finished(e, s, o))
                     self.scroll_layout.addWidget(lbl)
                     self.scroll_layout.addWidget(edit)
                     self.dynamic_widgets[field_name] = ("text_single", edit)
@@ -887,9 +952,22 @@ class MainWindow(QMainWindow):
                 self.dynamic_widgets[field_name] = ("select", combo)
                 
             elif field_type == "array":
-                # 動態陣列欄位
+                # 動態陣列欄位 (例: 別名/江湖稱號 alias, 標籤 tags)
                 array_widget = ArrayFieldWidget(f"{field_label} ({field_name})")
                 array_widget.set_values(val)
+                
+                # 專屬增強：若是別名/江湖稱號 (alias)，且目前無值，預設為其新增一個空白的自訂輸入框
+                if field_name == "alias" and not val:
+                    array_widget.add_item("")
+                    
+                # 專屬增強：如果是別名/江湖稱號 (alias)，在其標頭新增 [➕ 新增稱號] 按鈕
+                if field_name == "alias":
+                    add_alias_btn = QPushButton("➕ 新增稱號")
+                    add_alias_btn.setFixedWidth(90)
+                    add_alias_btn.setStyleSheet("font-size: 11px; padding: 4px; background-color: #2d5f5a; color: #ffffff;")
+                    add_alias_btn.clicked.connect(lambda _, w=array_widget: self.add_alias_dialog(w))
+                    array_widget.header_layout.addWidget(add_alias_btn)
+                    
                 self.scroll_layout.addWidget(array_widget)
                 self.dynamic_widgets[field_name] = ("array", array_widget)
                 
