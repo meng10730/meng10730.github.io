@@ -1,7 +1,6 @@
 ---
 name: 掩半扉
 alias: []
-affiliation: '-- 請選擇或手動輸入 --'
 novel: 長生劫
 tags: []
 pubDate: 2026-08-10
