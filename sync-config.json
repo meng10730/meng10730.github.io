@@ -20,6 +20,21 @@
       "title": "04_角色_江無岸",
       "slug": "0-4-jiao-se-jiang-wu-an",
       "category": "characters"
+    },
+    "05_角色_蘇挽風.md": {
+      "title": "05_角色_蘇挽風",
+      "slug": "0-5-jiao-se-su-wan-feng",
+      "category": "characters"
+    },
+    "06_角色_樓深闕.md": {
+      "title": "06_角色_樓深闕",
+      "slug": "0-6-jiao-se-lou-shen-que",
+      "category": "characters"
+    },
+    "07_角色_掩半扉.md": {
+      "title": "07_角色_掩半扉",
+      "slug": "0-7-jiao-se",
+      "category": "characters"
     }
   }
 }

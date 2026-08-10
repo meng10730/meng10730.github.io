@@ -506,34 +506,39 @@ class MainWindow(QMainWindow):
         self.dynamic_widgets = {}
 
     def log(self, text):
-        escaped_text = html.escape(str(text))
-        
-        # 高對比螢光色彩風格分類
-        if any(kw in text for kw in ["🎉", "✓", "✅", "成功"]):
-            color = "#00ff88"  # 亮綠
-        elif any(kw in text for kw in ["🚀", "🔄", "⌛", "正在", "進程"]):
-            color = "#00d4ff"  # 天空亮藍
-        elif any(kw in text for kw in ["⚠️", "ℹ️", "提示"]):
-            color = "#ffcc00"  # 金黃
-        elif any(kw in text for kw in ["❌", "ERROR", "衝突", "失敗"]):
-            color = "#ff4d4d"  # 亮紅
-        else:
-            color = "#e2e2e9"  # 純白
+        try:
+            if not hasattr(self, "console_log") or self.console_log is None:
+                return
+            escaped_text = html.escape(str(text))
+            
+            # 高對比螢光色彩風格分類
+            if any(kw in text for kw in ["🎉", "✓", "✅", "成功"]):
+                color = "#00ff88"  # 亮綠
+            elif any(kw in text for kw in ["🚀", "🔄", "⌛", "正在", "進程"]):
+                color = "#00d4ff"  # 天空亮藍
+            elif any(kw in text for kw in ["⚠️", "ℹ️", "提示"]):
+                color = "#ffcc00"  # 金黃
+            elif any(kw in text for kw in ["❌", "ERROR", "衝突", "失敗"]):
+                color = "#ff4d4d"  # 亮紅
+            else:
+                color = "#e2e2e9"  # 純白
 
-        formatted_html = f'<span style="color: {color};">{escaped_text}</span>'
-        self.console_log.appendHtml(formatted_html)
-        
-        # 移動游標至末端以自動捲動
-        cursor = self.console_log.textCursor()
-        cursor.movePosition(QTextCursor.MoveOperation.End)
-        self.console_log.setTextCursor(cursor)
-        
-        # 控制台維持最大 1000 行
-        if self.console_log.blockCount() > 1000:
-            cursor.movePosition(QTextCursor.MoveOperation.Start)
-            cursor.select(QTextCursor.SelectionType.BlockUnderCursor)
-            cursor.removeSelectedText()
-            cursor.deleteChar()
+            formatted_html = f'<span style="color: {color};">{escaped_text}</span>'
+            self.console_log.appendHtml(formatted_html)
+            
+            # 移動游標至末端以自動捲動
+            cursor = self.console_log.textCursor()
+            cursor.movePosition(QTextCursor.MoveOperation.End)
+            self.console_log.setTextCursor(cursor)
+            
+            # 控制台維持最大 1000 行
+            if self.console_log.blockCount() > 1000:
+                cursor.movePosition(QTextCursor.MoveOperation.Start)
+                cursor.select(QTextCursor.SelectionType.BlockUnderCursor)
+                cursor.removeSelectedText()
+                cursor.deleteChar()
+        except Exception:
+            pass
 
     def clear_logs(self):
         self.console_log.clear()
@@ -672,6 +677,25 @@ class MainWindow(QMainWindow):
         name, ok = QInputDialog.getText(self, "新增作品", "請輸入小說作品名稱:")
         if ok and name.strip():
             clean_name = name.strip()
+            
+            # 檢查是否與既有作品資料重複
+            existing_novels = self.get_novels_list()
+            combo_items = [combo.itemText(i) for i in range(combo.count())]
+            all_existing = set(existing_novels + combo_items)
+            
+            if clean_name in all_existing:
+                QMessageBox.warning(
+                    self, "同名資料重複警告",
+                    f"⚠️ 偵測到已有同名作品「{clean_name}」！\n已自動為您定位並選取該作品，請勿重複建立。"
+                )
+                idx = combo.findText(clean_name)
+                if idx >= 0:
+                    combo.setCurrentIndex(idx)
+                else:
+                    combo.setCurrentText(clean_name)
+                self.log(f"⚠️ [警告] 輸入的作品「{clean_name}」已存在於選單中，已自動定位選取。")
+                return
+
             if not hasattr(self, "custom_novels"):
                 self.custom_novels = []
             if clean_name not in self.custom_novels:
@@ -684,6 +708,25 @@ class MainWindow(QMainWindow):
         name, ok = QInputDialog.getText(self, "新增門派/陣營", "請輸入門派或陣營名稱:")
         if ok and name.strip():
             clean_name = name.strip()
+            
+            # 檢查是否與既有門派/陣營資料重複
+            existing_factions = self.get_factions_list()
+            combo_items = [combo.itemText(i) for i in range(combo.count())]
+            all_existing = set(existing_factions + combo_items)
+            
+            if clean_name in all_existing:
+                QMessageBox.warning(
+                    self, "同名資料重複警告",
+                    f"⚠️ 偵測到已有同名門派/陣營「{clean_name}」！\n已自動為您定位並選取該門派，請勿重複建立。"
+                )
+                idx = combo.findText(clean_name)
+                if idx >= 0:
+                    combo.setCurrentIndex(idx)
+                else:
+                    combo.setCurrentText(clean_name)
+                self.log(f"⚠️ [警告] 輸入的門派/陣營「{clean_name}」已存在於選單中，已自動定位選取。")
+                return
+
             if not hasattr(self, "custom_factions"):
                 self.custom_factions = []
             if clean_name not in self.custom_factions:
@@ -1086,7 +1129,10 @@ class MainWindow(QMainWindow):
         proc.setWorkingDirectory(self.project_dir)
         
         def handle_finish(exit_code, exit_status):
-            p = self.sender() or proc
+            try:
+                p = self.sender() or proc
+            except Exception:
+                p = proc
             try:
                 stdout = p.readAllStandardOutput().data().decode("utf-8", errors="ignore").strip()
             except Exception:
