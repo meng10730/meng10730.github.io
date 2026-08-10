@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import html
 import subprocess
 
 # 自動在啟動時安裝 PySide6 依賴
@@ -11,12 +12,13 @@ except ImportError:
     subprocess.run([sys.executable, "-m", "pip", "install", "PySide6"])
 
 from PySide6.QtCore import Qt, QProcess, QSize, QUrl
-from PySide6.QtGui import QIcon, QDesktopServices, QFont
+from PySide6.QtGui import QIcon, QDesktopServices, QFont, QTextCursor
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QListWidget, QListWidgetItem, QLabel, QComboBox, QLineEdit,
     QPlainTextEdit, QPushButton, QScrollArea, QFileDialog, QMessageBox,
-    QDateEdit, QDialog, QInputDialog, QFrame, QSplitter
+    QDateEdit, QDialog, QInputDialog, QFrame, QSplitter,
+    QProgressBar, QSystemTrayIcon, QStyle
 )
 
 # 視窗精美深色樣式表
@@ -259,7 +261,16 @@ class MainWindow(QMainWindow):
         self.current_astro_port = 4321
         self.browser_opened = False
         self.auto_open_keystatic_after_start = False
+        self.is_busy = False
         
+        # 初始化 Windows 系統桌面通知托盤
+        self.tray_icon = QSystemTrayIcon(self)
+        try:
+            self.tray_icon.setIcon(self.style().standardIcon(QStyle.SP_ComputerIcon))
+            self.tray_icon.show()
+        except Exception:
+            pass
+
         self.load_config()
         self.load_schema()
         self.setup_ui()
@@ -355,6 +366,28 @@ class MainWindow(QMainWindow):
         self.publish_btn.setObjectName("primaryButton")
         self.publish_btn.clicked.connect(self.confirm_publish)
         sidebar_layout.addWidget(self.publish_btn)
+
+        # 於主發布按鈕正下方建立進度條
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setStyleSheet("""
+            QProgressBar {
+                border: 1px solid #3a3a4c;
+                border-radius: 4px;
+                background-color: #121216;
+                text-align: center;
+                color: #ffffff;
+                font-weight: bold;
+                font-size: 11px;
+                height: 18px;
+            }
+            QProgressBar::chunk {
+                background-color: #e5a93b;
+                border-radius: 3px;
+            }
+        """)
+        self.progress_bar.setValue(0)
+        self.progress_bar.hide()
+        sidebar_layout.addWidget(self.progress_bar)
         
         sidebar_layout.addWidget(QLabel("── 進階網頁維護 ──"))
         
@@ -473,7 +506,34 @@ class MainWindow(QMainWindow):
         self.dynamic_widgets = {}
 
     def log(self, text):
-        self.console_log.appendPlainText(text)
+        escaped_text = html.escape(str(text))
+        
+        # 高對比螢光色彩風格分類
+        if any(kw in text for kw in ["🎉", "✓", "✅", "成功"]):
+            color = "#00ff88"  # 亮綠
+        elif any(kw in text for kw in ["🚀", "🔄", "⌛", "正在", "進程"]):
+            color = "#00d4ff"  # 天空亮藍
+        elif any(kw in text for kw in ["⚠️", "ℹ️", "提示"]):
+            color = "#ffcc00"  # 金黃
+        elif any(kw in text for kw in ["❌", "ERROR", "衝突", "失敗"]):
+            color = "#ff4d4d"  # 亮紅
+        else:
+            color = "#e2e2e9"  # 純白
+
+        formatted_html = f'<span style="color: {color};">{escaped_text}</span>'
+        self.console_log.appendHtml(formatted_html)
+        
+        # 移動游標至末端以自動捲動
+        cursor = self.console_log.textCursor()
+        cursor.movePosition(QTextCursor.MoveOperation.End)
+        self.console_log.setTextCursor(cursor)
+        
+        # 控制台維持最大 1000 行
+        if self.console_log.blockCount() > 1000:
+            cursor.movePosition(QTextCursor.MoveOperation.Start)
+            cursor.select(QTextCursor.SelectionType.BlockUnderCursor)
+            cursor.removeSelectedText()
+            cursor.deleteChar()
 
     def clear_logs(self):
         self.console_log.clear()
@@ -938,30 +998,103 @@ class MainWindow(QMainWindow):
             self.log(f"🚀 開始執行發布程序，提交訊息: \"{commit_msg}\"")
             self.run_publish_flow(commit_msg)
 
+    def set_ui_busy(self, busy: bool):
+        self.is_busy = busy
+        buttons = [
+            self.test_server_btn, self.open_cms_btn, self.open_mover_btn,
+            self.sync_btn, self.publish_btn, self.fix_env_btn, self.restore_backup_btn,
+            self.import_btn, self.change_workspace_btn
+        ]
+        for btn in buttons:
+            btn.setEnabled(not busy)
+            
+        if busy:
+            self.publish_btn.setText("🚀 發布上線中...")
+            self.progress_bar.setValue(0)
+            self.progress_bar.show()
+        else:
+            self.publish_btn.setText("🚀 一鍵發布上線")
+            self.progress_bar.setValue(0)
+            self.progress_bar.hide()
+
+    def closeEvent(self, event):
+        if getattr(self, "is_busy", False):
+            reply = QMessageBox.question(
+                self, "發布進行中",
+                "網站發布程序仍在背景進行中，確定要關閉視窗嗎？",
+                QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+            )
+            if reply == QMessageBox.No:
+                event.ignore()
+                return
+        event.accept()
+
     def run_publish_flow(self, commit_message):
         # 執行一鍵發布上線流程: git add . -> git commit -> git pull --rebase -> git push
+        self.set_ui_busy(True)
+        self.progress_bar.setValue(10)
+
+        def finish_publish(success=True):
+            self.set_ui_busy(False)
+            if success:
+                self.refresh_file_list()
+                if hasattr(self, "tray_icon") and self.tray_icon.isSystemTrayAvailable():
+                    self.tray_icon.showMessage("網站發布完成", "網站發布完成", QSystemTrayIcon.Information, 3000)
+
         def step_push():
             self.log("🚀 正在將代碼推送到 GitHub 儲存庫...")
-            self.run_git_process(["push"], "🎉 網站發布成功！已順利上傳至線上個人網站。", "❌ 發布推送失敗！可能是遠端有更新，請先點擊「同步線上編輯」按鈕。", on_finish=self.refresh_file_list)
+            self.progress_bar.setValue(75)
+            self.run_git_process(
+                ["push"],
+                "🎉 網站發布成功！已順利上傳至線上個人網站。",
+                "❌ 發布推送失敗！可能是遠端有更新，請先點擊「同步線上編輯」按鈕。",
+                on_finish=lambda: finish_publish(True),
+                on_error_finish=lambda: finish_publish(False)
+            )
 
         def step_pull():
             self.log("🔄 正在進行安全拉取同步，防範衝突...")
-            self.run_git_process(["pull", "--rebase"], step_push, "❌ 同步拉取時發生衝突！請點擊「進階網頁維護」修復衝突。", next_on_error=True)
+            self.progress_bar.setValue(50)
+            self.run_git_process(
+                ["pull", "--rebase"],
+                step_push,
+                "❌ 同步拉取時發生衝突！已自動還原本地狀態。",
+                next_on_error=True,
+                on_error_finish=lambda: finish_publish(False)
+            )
 
         def step_commit():
             self.log("📝 正在儲存本地變更...")
-            self.run_git_process(["commit", "-m", commit_message], step_pull, step_pull, next_on_error=True) # 若沒東西 commit 亦繼續 pull/push
+            self.progress_bar.setValue(25)
+            self.run_git_process(
+                ["commit", "-m", commit_message],
+                step_pull,
+                step_pull,
+                next_on_error=True
+            )
 
         self.log("📥 正在準備暫存所有變更...")
-        self.run_git_process(["add", "."], step_commit, "❌ Git 暫存失敗！")
+        self.run_git_process(
+            ["add", "."],
+            step_commit,
+            "❌ Git 暫存失敗！",
+            on_error_finish=lambda: finish_publish(False)
+        )
 
-    def run_git_process(self, args, on_success, on_error, next_on_error=False):
-        proc = QProcess()
+    def run_git_process(self, args, on_success, on_error, next_on_error=False, on_finish=None, on_error_finish=None):
+        proc = QProcess(self)
         proc.setWorkingDirectory(self.project_dir)
         
         def handle_finish(exit_code, exit_status):
-            stdout = proc.readAllStandardOutput().data().decode("utf-8", errors="ignore").strip()
-            stderr = proc.readAllStandardError().data().decode("utf-8", errors="ignore").strip()
+            p = self.sender() or proc
+            try:
+                stdout = p.readAllStandardOutput().data().decode("utf-8", errors="ignore").strip()
+            except Exception:
+                stdout = ""
+            try:
+                stderr = p.readAllStandardError().data().decode("utf-8", errors="ignore").strip()
+            except Exception:
+                stderr = ""
             if stdout: self.log(stdout)
             if stderr: self.log(stderr)
             
@@ -970,13 +1103,32 @@ class MainWindow(QMainWindow):
                     on_success()
                 else:
                     self.log(f"✓ {on_success}")
+                if callable(on_finish):
+                    try: on_finish()
+                    except Exception as e: self.log(f"⚠️ 回調異常: {e}")
             else:
+                # 自動安全還原防呆衝突處理
+                if "conflict" in stdout.lower() or "conflict" in stderr.lower() or ("pull" in args and "--rebase" in args):
+                    self.log("⚠️ 偵測到與線上內容衝突，自動執行安全性還原 (git rebase --abort)...")
+                    try:
+                        subprocess.run(["git", "rebase", "--abort"], cwd=self.project_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                        self.log("✓ 已自動撤銷衝突同步，本地專案保持乾淨完好。請點擊「同步線上編輯」查看。")
+                    except Exception as e:
+                        self.log(f"⚠️ 撤銷失敗: {e}")
+
                 if next_on_error and callable(on_error):
                     on_error()
                 else:
                     self.log(f"❌ {on_error if isinstance(on_error, str) else 'Git 指令執行失敗'}")
                     if "conflict" in stdout.lower() or "conflict" in stderr.lower():
-                        QMessageBox.critical(self, "Git 衝突警告", "偵測到與線上編輯內容衝突！\n請點擊左下角「還原開發環境」或手動排解 Git 衝突。")
+                        QMessageBox.critical(self, "Git 衝突警告", "偵測到與線上編輯內容衝突！已自動還原本地狀態。")
+
+                if callable(on_error_finish):
+                    try: on_error_finish()
+                    except Exception as e: self.log(f"⚠️ 錯誤回調異常: {e}")
+                elif callable(on_finish):
+                    try: on_finish()
+                    except Exception as e: self.log(f"⚠️ 回調異常: {e}")
         
         proc.finished.connect(handle_finish)
         proc.start("git", args)
