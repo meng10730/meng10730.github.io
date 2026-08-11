@@ -207,11 +207,11 @@ class ArrayFieldWidget(QWidget):
 
 
 class PublishDialog(QDialog):
-    """發布確認對話框：顯示即將變更的檔案清單與輸入 Commit Message"""
+    """發布確認對話框：顯示即將變更的檔案清單與選擇/填寫 Commit Message"""
     def __init__(self, changed_files, parent=None):
         super().__init__(parent)
         self.setWindowTitle("🚀 確認發布上線")
-        self.setFixedSize(500, 400)
+        self.setFixedSize(520, 430)
         
         layout = QVBoxLayout(self)
         layout.setSpacing(15)
@@ -228,12 +228,40 @@ class PublishDialog(QDialog):
         self.file_list.setStyleSheet("background-color: #15151c; font-family: Consolas; color: #a2a2ab;")
         layout.addWidget(self.file_list)
         
-        # Commit Message
-        layout.addWidget(QLabel("填寫本次提交訊息 (Commit Message):"))
-        self.msg_edit = QLineEdit()
+        # Commit Message (下拉選單選取 + 可自由打字微調)
+        layout.addWidget(QLabel("選擇或填寫本次提交訊息 (Commit Message):"))
+        self.msg_edit = QComboBox()
+        self.msg_edit.setEditable(True)
+        
         import datetime
         today_str = datetime.date.today().strftime("%Y-%m-%d")
-        self.msg_edit.setText(f"網站小更新 {today_str}")
+        
+        commit_templates = [
+            f"chore: 網站例行小更新 ({today_str})",
+            f"feat: 新增小說內容與章節 ({today_str})",
+            f"fix: 修正文字錯字與人物設定 ({today_str})",
+            f"style: 調整排版與介面樣式 ({today_str})",
+            f"docs: 更新藏書閣/門派檔案 ({today_str})",
+            f"refactor: 程式碼與架構重構 ({today_str})"
+        ]
+        
+        self.msg_edit.addItems(commit_templates)
+        self.msg_edit.setStyleSheet("""
+            QComboBox {
+                background-color: #22222b;
+                color: #00ff88;
+                border: 1px solid #3a3a4c;
+                border-radius: 6px;
+                padding: 6px 10px;
+                font-weight: bold;
+            }
+            QComboBox QAbstractItemView {
+                background-color: #22222b;
+                color: #e2e2e9;
+                selection-background-color: #005533;
+                selection-color: #00ff88;
+            }
+        """)
         layout.addWidget(self.msg_edit)
         
         # 按鈕
@@ -248,6 +276,11 @@ class PublishDialog(QDialog):
         btn_layout.addWidget(self.cancel_btn)
         btn_layout.addWidget(self.ok_btn)
         layout.addLayout(btn_layout)
+
+    def get_commit_message(self) -> str:
+        """取得最終輸入的 commit 訊息"""
+        return self.msg_edit.currentText().strip()
+
 
 
 class MainWindow(QMainWindow):
@@ -1222,7 +1255,7 @@ class MainWindow(QMainWindow):
             
         dialog = PublishDialog(files, self)
         if dialog.exec() == QDialog.Accepted:
-            commit_msg = dialog.msg_edit.text().strip()
+            commit_msg = dialog.get_commit_message()
             self.log(f"🚀 開始執行發布程序，提交訊息: \"{commit_msg}\"")
             self.run_publish_flow(commit_msg)
 
