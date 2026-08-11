@@ -40,16 +40,17 @@ function convertToTraditional(text) {
 
 // 拼音網址別名
 function pinyinSlugify(text) {
-  if (!text) return "";
+  if (!text) return "entry-" + Date.now();
   const hasChinese = /[\u4e00-\u9fa5]/.test(text);
   if (!hasChinese) {
-    return text
+    const slug = text
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)/g, "");
+    return slug || ("entry-" + Date.now());
   }
   const chars = Array.from(text);
-  const result = chars
+  let result = chars
     .map((char) => {
       if (/[a-zA-Z0-9]/.test(char)) return char.toLowerCase();
       if (PINYIN_MAP[char]) return PINYIN_MAP[char];
@@ -57,7 +58,13 @@ function pinyinSlugify(text) {
     })
     .filter(Boolean)
     .join("-");
-  return result.replace(/-+/g, "-").replace(/(^-|-$)/g, "");
+  result = result.replace(/-+/g, "-").replace(/(^-|-$)/g, "");
+  if (!result) {
+    // 降級備援：若拼音對照表欠缺此漢字，改用數字與文字去雜質
+    const cleanText = text.toLowerCase().replace(/[^a-z0-9\u4e00-\u9fa5]+/g, "-").replace(/(^-|-$)/g, "");
+    result = cleanText || ("entry-" + Date.now());
+  }
+  return result;
 }
 
 // 建立全站標題對照表，用於雙括號連結解析

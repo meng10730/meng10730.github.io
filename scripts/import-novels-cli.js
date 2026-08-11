@@ -12,6 +12,10 @@ const TARGET_BASE_DIR = path.join(__dirname, "..", "src", "content");
 
 // 常用小說與設定集漢字拼音對照表，供自動 Slugify 使用
 const PINYIN_MAP = {
+  獄: "yu",
+  煌: "huang",
+  玨: "jue",
+  穗: "sui",
   不: "bu",
   夜: "ye",
   侯: "hou",

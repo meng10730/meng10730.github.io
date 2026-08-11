@@ -138,7 +138,7 @@ class ArrayFieldWidget(QWidget):
         self.add_btn = QPushButton("+ 增加項目")
         self.add_btn.setFixedWidth(100)
         self.add_btn.setStyleSheet("font-size: 11px; padding: 4px;")
-        self.add_btn.clicked.connect(self.add_item)
+        self.add_btn.clicked.connect(lambda: self.add_item(""))
         
         self.header_layout.addWidget(self.label_widget)
         self.header_layout.addStretch()
@@ -152,6 +152,9 @@ class ArrayFieldWidget(QWidget):
         self.inputs = []
 
     def add_item(self, text=""):
+        if isinstance(text, bool) or text is None:
+            text = ""
+        text = str(text)
         item_widget = QWidget()
         item_layout = QHBoxLayout(item_widget)
         item_layout.setContentsMargins(0, 0, 0, 0)
@@ -230,7 +233,7 @@ class PublishDialog(QDialog):
         self.msg_edit = QLineEdit()
         import datetime
         today_str = datetime.date.today().strftime("%Y-%m-%d")
-        self.msg_edit.setText(f"更新山莊網站條目 {today_str}")
+        self.msg_edit.setText(f"網站小更新 {today_str}")
         layout.addWidget(self.msg_edit)
         
         # 按鈕
@@ -250,7 +253,7 @@ class PublishDialog(QDialog):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("唐門山莊綜合管理控制台")
+        self.setWindowTitle("github個人網站綜合管理控制台")
         self.setMinimumSize(1100, 750)
         
         self.project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -306,8 +309,25 @@ class MainWindow(QMainWindow):
                 with open(config_path, "r", encoding="utf-8") as f:
                     cfg = json.load(f)
                     self.workspace_dir = cfg.get("workspacePath", self.workspace_dir)
+                    self.custom_novels = cfg.get("customNovels", [])
+                    self.custom_factions = cfg.get("customFactions", [])
             except Exception as e:
                 self.log(f"⚠️ 載入設定檔失敗: {e}")
+
+    def save_config(self):
+        config_path = os.path.join(self.project_dir, "sync-config.json")
+        try:
+            cfg = {}
+            if os.path.exists(config_path):
+                with open(config_path, "r", encoding="utf-8") as f:
+                    cfg = json.load(f)
+            cfg["workspacePath"] = self.workspace_dir
+            cfg["customNovels"] = getattr(self, "custom_novels", [])
+            cfg["customFactions"] = getattr(self, "custom_factions", [])
+            with open(config_path, "w", encoding="utf-8") as f:
+                json.dump(cfg, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            self.log(f"⚠️ 寫入 sync-config.json 失敗: {e}")
 
     def load_schema(self):
         schema_path = os.path.join(self.project_dir, "scripts", "schema.json")
@@ -337,7 +357,7 @@ class MainWindow(QMainWindow):
         sidebar_layout.setContentsMargins(15, 20, 15, 20)
         sidebar_layout.setSpacing(15)
         
-        shanzhuang_title = QLabel("唐門山莊")
+        shanzhuang_title = QLabel("晚餐晚餐")
         shanzhuang_title.setFont(QFont("Segoe UI", 18, QFont.Bold))
         shanzhuang_title.setStyleSheet("color: #e5a93b;")
         shanzhuang_title.setAlignment(Qt.AlignCenter)
@@ -547,7 +567,7 @@ class MainWindow(QMainWindow):
     def get_existing_target_files_map(self):
         """建置山莊 content 資料夾內所有既有 .md 檔對照表"""
         content_dir = os.path.join(self.project_dir, "src", "content")
-        target_map = {} # filename_lower -> { path, collection, mtime }
+        target_map = {} # filename_lower/title_lower -> { path, collection, mtime, filename }
         if not os.path.exists(content_dir):
             return target_map
             
@@ -561,12 +581,49 @@ class MainWindow(QMainWindow):
                             mtime = os.path.getmtime(fpath)
                         except Exception:
                             mtime = 0
-                        target_map[fname.lower()] = {
+                        info = {
                             "filename": fname,
                             "path": fpath,
                             "collection": col,
                             "mtime": mtime
                         }
+                        target_map[fname.lower()] = info
+                        target_map[os.path.splitext(fname)[0].lower()] = info
+                        
+                        # 解析 Frontmatter 標題與名稱以進行中文比對
+                        fm, _ = self.parse_frontmatter(fpath)
+                        for key in ["title", "name", "slug"]:
+                            if key in fm and fm[key]:
+                                val = str(fm[key]).strip().lower()
+                                if val:
+                                    target_map[val] = info
+                                    target_map[f"{val}.md"] = info
+
+        # 同時載入 sync-config.json 中的映射對照 (來源檔名 ➔ 拼音/Slug 檔名)
+        config_path = os.path.join(self.project_dir, "sync-config.json")
+        if os.path.exists(config_path):
+            try:
+                with open(config_path, "r", encoding="utf-8") as f:
+                    cfg = json.load(f)
+                    novels_map = cfg.get("novels", {})
+                    for src_fname, meta in novels_map.items():
+                        slug = meta.get("slug")
+                        cat = meta.get("category", "")
+                        if slug:
+                            target_fname = f"{slug}.md" if not slug.endswith(".md") else slug
+                            target_path = os.path.join(content_dir, cat, target_fname)
+                            if os.path.exists(target_path):
+                                info = {
+                                    "filename": target_fname,
+                                    "path": target_path,
+                                    "collection": cat,
+                                    "mtime": os.path.getmtime(target_path)
+                                }
+                                target_map[src_fname.lower()] = info
+                                target_map[os.path.splitext(src_fname)[0].lower()] = info
+            except Exception:
+                pass
+
         return target_map
 
     def refresh_file_list(self):
@@ -583,16 +640,22 @@ class MainWindow(QMainWindow):
             item = QListWidgetItem(f)
             base_name = os.path.splitext(f)[0]
             possible_target = f"{base_name.lower()}.md"
-            slugified_target = f"{self.slugify_text(base_name).lower()}.md"
+            quick_slug = base_name.lower().replace(" ", "-").replace("_", "-")
+            slugified_target = f"{quick_slug}.md"
             
             # 檢查是否已存在於山莊 content 中
             matched_info = None
+            clean_title = base_name.split("_")[-1].lower() if "_" in base_name else base_name.lower()
             if f.lower() in target_map:
                 matched_info = target_map[f.lower()]
             elif possible_target in target_map:
                 matched_info = target_map[possible_target]
             elif slugified_target in target_map:
                 matched_info = target_map[slugified_target]
+            elif clean_title in target_map:
+                matched_info = target_map[clean_title]
+            elif f"{clean_title}.md" in target_map:
+                matched_info = target_map[f"{clean_title}.md"]
                 
             if matched_info:
                 imported_count += 1
@@ -621,14 +684,8 @@ class MainWindow(QMainWindow):
         self.workspace_dir = new_dir
         self.path_info.setText(f"工作區:\n{self.workspace_dir}")
         
-        # 寫回 sync-config.json 持久化
-        config_path = os.path.join(self.project_dir, "sync-config.json")
-        try:
-            with open(config_path, "w", encoding="utf-8") as f:
-                json.dump({"workspacePath": self.workspace_dir}, f, ensure_ascii=False, indent=2)
-            self.log(f"✅ 工作區已成功切換並寫入設定檔: {self.workspace_dir}")
-        except Exception as e:
-            self.log(f"⚠️ 寫入 sync-config.json 失敗: {e}")
+        self.save_config()
+        self.log(f"✅ 工作區已成功切換並寫入設定檔: {self.workspace_dir}")
             
         # 觸發即時熱更新
         self.refresh_file_list()
@@ -748,9 +805,10 @@ class MainWindow(QMainWindow):
                 self.custom_novels = []
             if clean_name not in self.custom_novels:
                 self.custom_novels.append(clean_name)
+                self.save_config()
             combo.addItem(clean_name, clean_name)
             combo.setCurrentText(clean_name)
-            self.log(f"✅ 已成功新增作品至選單: {clean_name}")
+            self.log(f"✅ 已成功新增作品至選單並永久儲存: {clean_name}")
 
     def add_faction_dialog(self, combo):
         name, ok = QInputDialog.getText(self, "新增門派/陣營", "請輸入門派或陣營名稱:")
@@ -779,9 +837,10 @@ class MainWindow(QMainWindow):
                 self.custom_factions = []
             if clean_name not in self.custom_factions:
                 self.custom_factions.append(clean_name)
+                self.save_config()
             combo.addItem(clean_name, clean_name)
             combo.setCurrentText(clean_name)
-            self.log(f"✅ 已成功新增門派至選單: {clean_name}")
+            self.log(f"✅ 已成功新增門派至選單並永久儲存: {clean_name}")
 
     def add_alias_dialog(self, array_widget):
         name, ok = QInputDialog.getText(self, "新增自訂稱號/別名", "請輸入江湖稱號或別名:")

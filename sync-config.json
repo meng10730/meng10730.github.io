@@ -50,6 +50,27 @@
       "title": "歧南歿古",
       "slug": "qi-nan-mo-gu",
       "category": "characters"
+    },
+    "11_角色_不夜侯.md": {
+      "title": "不夜侯",
+      "slug": "bu-ye-hou",
+      "category": "characters"
+    },
+    "12_角色_獄煌.md": {
+      "title": "獄煌",
+      "slug": "yu-huang",
+      "category": "characters"
+    },
+    "13_角色_司南.md": {
+      "title": "司南",
+      "slug": "si-nan",
+      "category": "characters"
     }
-  }
+  },
+  "customNovels": [
+    "長生劫"
+  ],
+  "customFactions": [
+    "無"
+  ]
 }
