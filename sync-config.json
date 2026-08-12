@@ -65,12 +65,41 @@
       "title": "司南",
       "slug": "si-nan",
       "category": "characters"
+    },
+    "14_角色_硯辭.md": {
+      "title": "硯辭",
+      "slug": "yan-ci",
+      "category": "characters"
+    },
+    "15_角色_戲長安.md": {
+      "title": "戲長安",
+      "slug": "xi-chang-an",
+      "category": "characters"
+    },
+    "16_角色_蒹葭.md": {
+      "title": "蒹葭",
+      "slug": "jian-jia",
+      "category": "characters"
+    },
+    "17_角色_摘雲.md": {
+      "title": "17_角色_摘雲",
+      "slug": "1-7-jue-se-zhai-yun",
+      "category": "characters"
+    },
+    "18_角色_晏雪.md": {
+      "title": "晏雪",
+      "slug": "yan-xue",
+      "category": "characters"
     }
   },
   "customNovels": [
     "長生劫"
   ],
   "customFactions": [
-    "無"
+    "無",
+    "無定碑",
+    "中陰界",
+    "鎮厄垣",
+    "淨月冰塚"
   ]
 }

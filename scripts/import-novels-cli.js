@@ -3,6 +3,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import readline from "readline";
 import { execSync } from "child_process";
+import { pinyin } from "pinyin-pro";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -396,24 +397,20 @@ function convertToTraditional(text) {
 }
 
 function pinyinSlugify(text) {
-  if (!text) return "";
-  const hasChinese = /[\u4e00-\u9fa5]/.test(text);
-  if (!hasChinese) {
-    return text
+  if (!text || typeof text !== "string") return "entry-" + Date.now();
+  try {
+    const py = pinyin(text, { toneType: "none", type: "array" });
+    const slug = py
+      .join("-")
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)/g, "");
+    if (slug) return slug;
+  } catch (e) {
+    // 降級備援
   }
-  const chars = Array.from(text);
-  const result = chars
-    .map((char) => {
-      if (/[a-zA-Z0-9]/.test(char)) return char.toLowerCase();
-      if (PINYIN_MAP[char]) return PINYIN_MAP[char];
-      return "";
-    })
-    .filter(Boolean)
-    .join("-");
-  return result.replace(/-+/g, "-").replace(/(^-|-$)/g, "");
+  const cleanText = text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  return cleanText || ("entry-" + Date.now());
 }
 
 function getExistingNovels() {

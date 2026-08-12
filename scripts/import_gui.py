@@ -12,18 +12,43 @@ except ImportError:
     subprocess.run([sys.executable, "-m", "pip", "install", "PySide6"])
 
 import datetime
-from PySide6.QtCore import Qt, QProcess, QSize, QUrl
-from PySide6.QtGui import QIcon, QDesktopServices, QFont, QTextCursor, QColor
+from PySide6.QtCore import Qt, QProcess, QSize, QUrl, QTimer
+from PySide6.QtGui import QIcon, QDesktopServices, QFont, QTextCursor, QColor, QKeySequence
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QListWidget, QListWidgetItem, QLabel, QComboBox, QLineEdit,
     QPlainTextEdit, QPushButton, QScrollArea, QFileDialog, QMessageBox,
     QDateEdit, QDialog, QInputDialog, QFrame, QSplitter,
-    QProgressBar, QSystemTrayIcon, QStyle
+    QProgressBar, QSystemTrayIcon, QStyle, QTabWidget, QMenu, QTextBrowser
 )
 
 # 視窗精美深色樣式表
 QSS_STYLE = """
+QTabWidget::pane {
+    border: 1px solid #2e2e3a;
+    background-color: #1a1a20;
+    border-radius: 6px;
+}
+QTabBar::tab {
+    background-color: #22222b;
+    border: 1px solid #2e2e3a;
+    padding: 8px 18px;
+    margin-right: 4px;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    color: #a2a2ab;
+    font-weight: bold;
+}
+QTabBar::tab:selected {
+    background-color: #e5a93b;
+    color: #1a1a20;
+    border: 1px solid #e5a93b;
+}
+QTabBar::tab:hover:!selected {
+    background-color: #2d2d3a;
+    color: #e2e2e9;
+}
+
 QWidget {
     background-color: #1a1a20;
     color: #e2e2e9;
@@ -206,6 +231,307 @@ class ArrayFieldWidget(QWidget):
                     self.add_item(v.strip())
 
 
+class EnhancedPlainTextEdit(QPlainTextEdit):
+    """強化的文字編輯器：修復 Windows 剪貼簿 U+2029 複製空白 Bug，並提供深色中文右鍵選單"""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.customContextMenuRequested.connect(self.show_custom_context_menu)
+
+    def keyPressEvent(self, event):
+        if event.matches(QKeySequence.Copy):
+            self.copy_selected_text()
+            event.accept()
+        elif event.matches(QKeySequence.Cut):
+            self.cut_selected_text()
+            event.accept()
+        else:
+            super().keyPressEvent(event)
+
+    def copy_selected_text(self):
+        cursor = self.textCursor()
+        if cursor.hasSelection():
+            selected_text = cursor.selectedText()
+            # 關鍵修復：將 Qt 特有段落分隔符 \u2029 轉譯為標準 Windows 換行符 \r\n
+            clean_text = selected_text.replace('\u2029', '\r\n').replace('\u2028', '\n')
+            QApplication.clipboard().setText(clean_text)
+
+    def cut_selected_text(self):
+        cursor = self.textCursor()
+        if cursor.hasSelection():
+            self.copy_selected_text()
+            if not self.isReadOnly():
+                cursor.removeSelectedText()
+
+    def copy_full_text(self):
+        full_text = self.toPlainText()
+        if full_text:
+            clean_text = full_text.replace('\u2029', '\r\n').replace('\u2028', '\n')
+            QApplication.clipboard().setText(clean_text)
+
+    def show_custom_context_menu(self, position):
+        menu = QMenu(self)
+        menu.setStyleSheet("""
+            QMenu {
+                background-color: #22222b;
+                color: #e2e2e9;
+                border: 1px solid #3a3a4c;
+                border-radius: 6px;
+                padding: 4px;
+            }
+            QMenu::item {
+                padding: 6px 20px;
+                border-radius: 4px;
+            }
+            QMenu::item:selected {
+                background-color: #e5a93b;
+                color: #1a1a20;
+                font-weight: bold;
+            }
+            QMenu::item:disabled {
+                color: #555566;
+            }
+            QMenu::separator {
+                height: 1px;
+                background: #2e2e3a;
+                margin: 4px 0px;
+            }
+        """)
+
+        cursor = self.textCursor()
+        has_selection = cursor.hasSelection()
+        is_read_only = self.isReadOnly()
+
+        copy_action = menu.addAction("📋 複製 (Ctrl+C)")
+        copy_action.setEnabled(has_selection)
+        copy_action.triggered.connect(self.copy_selected_text)
+
+        cut_action = menu.addAction("✂️ 剪下 (Ctrl+X)")
+        cut_action.setEnabled(has_selection and not is_read_only)
+        cut_action.triggered.connect(self.cut_selected_text)
+
+        paste_action = menu.addAction("📥 貼上 (Ctrl+V)")
+        clipboard_text = QApplication.clipboard().text()
+        paste_action.setEnabled(bool(clipboard_text) and not is_read_only)
+        paste_action.triggered.connect(self.paste)
+
+        menu.addSeparator()
+
+        select_all_action = menu.addAction("全選 (Ctrl+A)")
+        select_all_action.triggered.connect(self.selectAll)
+
+        copy_all_action = menu.addAction("📄 複製全文")
+        copy_all_action.triggered.connect(self.copy_full_text)
+
+        menu.exec(self.mapToGlobal(position))
+
+
+class FindReplaceDialog(QDialog):
+    """尋找與取代對話框"""
+    def __init__(self, editor: QPlainTextEdit, parent=None):
+        super().__init__(parent)
+        self.editor = editor
+        self.setWindowTitle("🔍 尋找與取代")
+        self.setFixedSize(380, 170)
+
+        layout = QVBoxLayout(self)
+        layout.setSpacing(10)
+
+        find_layout = QHBoxLayout()
+        find_layout.addWidget(QLabel("尋找目標:"))
+        self.find_input = QLineEdit()
+        find_layout.addWidget(self.find_input)
+        layout.addLayout(find_layout)
+
+        replace_layout = QHBoxLayout()
+        replace_layout.addWidget(QLabel("取代為:"))
+        self.replace_input = QLineEdit()
+        replace_layout.addWidget(self.replace_input)
+        layout.addLayout(replace_layout)
+
+        btn_layout = QHBoxLayout()
+        self.find_btn = QPushButton("尋找下一個")
+        self.find_btn.clicked.connect(self.find_next)
+        self.replace_btn = QPushButton("取代")
+        self.replace_btn.clicked.connect(self.replace_one)
+        self.replace_all_btn = QPushButton("全部取代")
+        self.replace_all_btn.clicked.connect(self.replace_all)
+
+        btn_layout.addWidget(self.find_btn)
+        btn_layout.addWidget(self.replace_btn)
+        btn_layout.addWidget(self.replace_all_btn)
+        layout.addLayout(btn_layout)
+
+    def find_next(self):
+        text = self.find_input.text()
+        if not text: return
+        found = self.editor.find(text)
+        if not found:
+            cursor = self.editor.textCursor()
+            cursor.movePosition(QTextCursor.Start)
+            self.editor.setTextCursor(cursor)
+            if not self.editor.find(text):
+                QMessageBox.information(self, "尋找結束", f"找不到「{text}」")
+
+    def replace_one(self):
+        text = self.find_input.text()
+        replace_text = self.replace_input.text()
+        if not text: return
+        cursor = self.editor.textCursor()
+        if cursor.hasSelection() and cursor.selectedText() == text:
+            cursor.insertText(replace_text)
+        self.find_next()
+
+    def replace_all(self):
+        text = self.find_input.text()
+        replace_text = self.replace_input.text()
+        if not text: return
+        content = self.editor.toPlainText()
+        count = content.count(text)
+        if count > 0:
+            new_content = content.replace(text, replace_text)
+            self.editor.setPlainText(new_content)
+            QMessageBox.information(self, "取代完成", f"已成功取代 {count} 處「{text}」")
+        else:
+            QMessageBox.information(self, "尋找結束", f"找不到「{text}」")
+
+
+class StandaloneTextEditorWindow(QMainWindow):
+    """獨立大視窗文字編輯器：支援雙欄 Markdown 預覽、搜尋取代、即時字數統計與備份"""
+    def __init__(self, title_info="獨立文字編輯器", initial_text="", on_save_callback=None, parent=None):
+        super().__init__(parent)
+        self.on_save_callback = on_save_callback
+        self.is_syncing = False
+        self.setWindowTitle(f"📄 [{title_info}] - 唐門山莊獨立寫作大視窗")
+        self.resize(1000, 700)
+
+        main_widget = QWidget()
+        self.setCentralWidget(main_widget)
+        main_layout = QVBoxLayout(main_widget)
+        main_layout.setContentsMargins(10, 10, 10, 10)
+        main_layout.setSpacing(8)
+
+        # 頂部工具列
+        toolbar_layout = QHBoxLayout()
+        toolbar_layout.setSpacing(8)
+
+        self.save_btn = QPushButton("💾 儲存變更 (Ctrl+S)")
+        self.save_btn.setObjectName("primaryButton")
+        self.save_btn.clicked.connect(self.save_content)
+
+        self.copy_all_btn = QPushButton("📋 複製全文")
+        self.copy_all_btn.clicked.connect(self.copy_full_text)
+
+        self.find_btn = QPushButton("🔍 尋找與取代 (Ctrl+F)")
+        self.find_btn.clicked.connect(self.open_find_dialog)
+
+        self.preview_toggle_btn = QPushButton("👁️ 切換 Markdown 雙欄預覽")
+        self.preview_toggle_btn.setCheckable(True)
+        self.preview_toggle_btn.toggled.connect(self.toggle_preview)
+
+        toolbar_layout.addWidget(self.save_btn)
+        toolbar_layout.addWidget(self.copy_all_btn)
+        toolbar_layout.addWidget(self.find_btn)
+        toolbar_layout.addWidget(self.preview_toggle_btn)
+        toolbar_layout.addStretch()
+
+        main_layout.addLayout(toolbar_layout)
+
+        # 雙欄 Splitter
+        self.splitter = QSplitter(Qt.Horizontal)
+
+        # 編輯區
+        self.editor = EnhancedPlainTextEdit()
+        self.editor.setPlainText(initial_text)
+        self.editor.setStyleSheet("background-color: #15151c; font-family: Consolas, monospace; font-size: 14px; color: #ffffff; padding: 10px;")
+        self.editor.textChanged.connect(self.on_text_changed)
+
+        self.splitter.addWidget(self.editor)
+
+        # 預覽區 (預設隱藏)
+        self.preview_browser = QTextBrowser()
+        self.preview_browser.setStyleSheet("background-color: #1a1a24; color: #e2e2e9; font-family: sans-serif; font-size: 14px; padding: 12px;")
+        self.preview_browser.hide()
+        self.splitter.addWidget(self.preview_browser)
+
+        main_layout.addWidget(self.splitter)
+
+        # 底部狀態列 (即時字數/行數統計)
+        self.status_bar_label = QLabel("📊 統計: 0 字 | 1 行")
+        self.status_bar_label.setStyleSheet("color: #00ff88; font-weight: bold; font-size: 12px; padding: 4px;")
+        main_layout.addWidget(self.status_bar_label)
+
+        # 定時器以實現字數統計防抖
+        self.stats_timer = QTimer(self)
+        self.stats_timer.setSingleShot(True)
+        self.stats_timer.timeout.connect(self.update_stats)
+
+        # 快捷鍵
+        save_shortcut = QKeySequence("Ctrl+S")
+        self.save_btn.setShortcut(save_shortcut)
+        find_shortcut = QKeySequence("Ctrl+F")
+        self.find_btn.setShortcut(find_shortcut)
+
+        self.update_stats()
+
+    def toggle_preview(self, checked):
+        if checked:
+            self.preview_browser.show()
+            self.splitter.setSizes([500, 500])
+            self.update_preview()
+        else:
+            self.preview_browser.hide()
+
+    def update_preview(self):
+        if not self.preview_toggle_btn.isChecked():
+            return
+        raw_text = self.editor.toPlainText()
+        body_text = raw_text
+        if raw_text.startswith("---") and "---" in raw_text[3:]:
+            parts = raw_text.split("---", 2)
+            if len(parts) >= 3:
+                body_text = parts[2]
+
+        formatted_html = html.escape(body_text)
+        formatted_html = formatted_html.replace("\n", "<br>")
+        formatted_html = f"<div style='color: #e2e2e9; line-height: 1.6;'>{formatted_html}</div>"
+        self.preview_browser.setHtml(formatted_html)
+
+    def on_text_changed(self):
+        self.stats_timer.start(300)
+        if self.preview_toggle_btn.isChecked():
+            self.update_preview()
+
+        if callable(self.on_save_callback) and not self.is_syncing:
+            self.is_syncing = True
+            try:
+                self.on_save_callback(self.editor.toPlainText(), save_to_disk=False)
+            finally:
+                self.is_syncing = False
+
+    def update_stats(self):
+        text = self.editor.toPlainText()
+        lines = text.count("\n") + 1 if text else 0
+        import re
+        cjk_count = len(re.findall(r'[\u4e00-\u9fff]', text))
+        non_cjk_words = len(re.findall(r'[a-zA-Z0-9_]+', text))
+        total_words = cjk_count + non_cjk_words
+        self.status_bar_label.setText(f"📊 統計: 約 {total_words} 字 ({cjk_count} 中文字, {non_cjk_words} 單詞) | {lines} 行")
+
+    def copy_full_text(self):
+        self.editor.copy_full_text()
+        QMessageBox.information(self, "複製成功", "已成功將全文複製至剪貼簿！")
+
+    def open_find_dialog(self):
+        dialog = FindReplaceDialog(self.editor, self)
+        dialog.exec()
+
+    def save_content(self):
+        if callable(self.on_save_callback):
+            self.on_save_callback(self.editor.toPlainText(), save_to_disk=True)
+            self.status_bar_label.setText(self.status_bar_label.text() + " | ✅ 已於 " + datetime.datetime.now().strftime("%H:%M:%S") + " 成功儲存！")
+
+
 class PublishDialog(QDialog):
     """發布確認對話框：顯示即將變更的檔案清單與選擇/填寫 Commit Message"""
     def __init__(self, changed_files, parent=None):
@@ -222,7 +548,7 @@ class PublishDialog(QDialog):
         
         # 變更檔案清單
         layout.addWidget(QLabel("即將提交的變更檔案清單:"))
-        self.file_list = QPlainTextEdit()
+        self.file_list = EnhancedPlainTextEdit()
         self.file_list.setReadOnly(True)
         self.file_list.setPlainText("\n".join(changed_files) if changed_files else "（無偵測到檔案變更）")
         self.file_list.setStyleSheet("background-color: #15151c; font-family: Consolas; color: #a2a2ab;")
@@ -528,7 +854,15 @@ class MainWindow(QMainWindow):
         form_layout.addWidget(self.import_btn)
         
         import_layout.addWidget(form_container)
-        right_splitter.addWidget(import_panel)
+        
+        # 建立雙欄頁籤分頁
+        self.main_tab_widget = QTabWidget()
+        self.main_tab_widget.addTab(import_panel, "📥 待處理檔案匯入")
+        
+        tab2_panel = self.setup_tab2_panel()
+        self.main_tab_widget.addTab(tab2_panel, "📚 網站既有文章管理")
+        
+        right_splitter.addWidget(self.main_tab_widget)
         
         # 下半部：日誌與控制台輸出面板
         console_panel = QFrame()
@@ -545,7 +879,7 @@ class MainWindow(QMainWindow):
         console_title_layout.addWidget(clear_log_btn)
         console_layout.addLayout(console_title_layout)
         
-        self.console_log = QPlainTextEdit()
+        self.console_log = EnhancedPlainTextEdit()
         self.console_log.setReadOnly(True)
         self.console_log.setStyleSheet("background-color: #121216; font-family: Consolas, monospace; font-size: 12px; color: #a2a2ab; border: 1px solid #1c1c24;")
         console_layout.addWidget(self.console_log)
@@ -558,6 +892,245 @@ class MainWindow(QMainWindow):
         
         # 保存動態生成的欄位控制件對照表
         self.dynamic_widgets = {}
+        self.tab2_dynamic_widgets = {}
+
+    def setup_tab2_panel(self):
+        tab2_panel = QFrame()
+        tab2_panel.setObjectName("cardFrame")
+        tab2_layout = QHBoxLayout(tab2_panel)
+        tab2_layout.setContentsMargins(10, 10, 10, 10)
+        tab2_layout.setSpacing(10)
+        
+        # 2.1 網站既有文章清單 (左側)
+        list_container = QWidget()
+        list_layout = QVBoxLayout(list_container)
+        list_layout.setContentsMargins(0, 0, 0, 0)
+        
+        col_select_layout = QHBoxLayout()
+        col_select_layout.addWidget(QLabel("選擇分區:"))
+        self.tab2_col_combo = QComboBox()
+        for col_name, col_info in self.schema.items():
+            self.tab2_col_combo.addItem(col_info["label"], col_name)
+        self.tab2_col_combo.currentIndexChanged.connect(self.refresh_tab2_file_list)
+        col_select_layout.addWidget(self.tab2_col_combo)
+        
+        refresh_btn = QPushButton("🔄")
+        refresh_btn.setFixedWidth(30)
+        refresh_btn.clicked.connect(self.refresh_tab2_file_list)
+        col_select_layout.addWidget(refresh_btn)
+        
+        list_layout.addLayout(col_select_layout)
+        
+        list_layout.addWidget(QLabel("網站已發布文章列表:"))
+        self.tab2_file_list_widget = QListWidget()
+        self.tab2_file_list_widget.setFixedWidth(260)
+        self.tab2_file_list_widget.itemSelectionChanged.connect(self.on_tab2_file_selected)
+        list_layout.addWidget(self.tab2_file_list_widget)
+        
+        tab2_layout.addWidget(list_container)
+        
+        # 2.2 既有文章修訂表單與內文編輯面板 (右側)
+        form_container = QWidget()
+        form_layout = QVBoxLayout(form_container)
+        form_layout.setContentsMargins(5, 0, 5, 0)
+        
+        self.tab2_scroll_area = QScrollArea()
+        self.tab2_scroll_area.setWidgetResizable(True)
+        self.tab2_scroll_area.setStyleSheet("background-color: #22222b; border: none;")
+        self.tab2_scroll_widget = QWidget()
+        self.tab2_scroll_widget.setStyleSheet("background-color: #22222b;")
+        self.tab2_scroll_layout = QVBoxLayout(self.tab2_scroll_widget)
+        self.tab2_scroll_layout.setSpacing(12)
+        self.tab2_scroll_layout.setContentsMargins(0, 5, 0, 5)
+        self.tab2_scroll_area.setWidget(self.tab2_scroll_widget)
+        form_layout.addWidget(self.tab2_scroll_area)
+        
+        # 儲存修改按鈕
+        self.tab2_save_btn = QPushButton("💾 儲存修訂內容至個人網站")
+        self.tab2_save_btn.setObjectName("primaryButton")
+        self.tab2_save_btn.clicked.connect(self.save_tab2_article)
+        form_layout.addWidget(self.tab2_save_btn)
+        
+        tab2_layout.addWidget(form_container)
+        
+        # 初始化載入首個分區之檔案清單
+        QTimer.singleShot(200, self.refresh_tab2_file_list)
+        
+        return tab2_panel
+
+    def refresh_tab2_file_list(self):
+        self.tab2_file_list_widget.clear()
+        col_name = self.tab2_col_combo.currentData()
+        if not col_name:
+            return
+        col_dir = os.path.join(self.project_dir, "src", "content", col_name)
+        if not os.path.exists(col_dir):
+            return
+        
+        files = [f for f in os.listdir(col_dir) if f.endswith(".md")]
+        files.sort()
+        
+        for f in files:
+            fpath = os.path.join(col_dir, f)
+            fm, _ = self.parse_frontmatter(fpath)
+            title = fm.get("title") or fm.get("name") or f
+            item = QListWidgetItem(f"📄 {title} ({f})")
+            item.setData(Qt.UserRole, fpath)
+            item.setToolTip(f"完整路徑: {fpath}")
+            self.tab2_file_list_widget.addItem(item)
+
+    def on_tab2_file_selected(self):
+        for i in reversed(range(self.tab2_scroll_layout.count())):
+            item = self.tab2_scroll_layout.itemAt(i)
+            if item.widget():
+                item.widget().deleteLater()
+        
+        self.tab2_dynamic_widgets = {}
+        
+        items = self.tab2_file_list_widget.selectedItems()
+        if not items:
+            return
+        
+        filepath = items[0].data(Qt.UserRole)
+        if not filepath or not os.path.exists(filepath):
+            return
+        
+        fm, body = self.parse_frontmatter(filepath)
+        col_name = self.tab2_col_combo.currentData()
+        fields = self.schema.get(col_name, {}).get("fields", {})
+        
+        fname_label = QLabel(f"📝 正在編輯文章檔: {os.path.basename(filepath)}")
+        fname_label.setStyleSheet("color: #e5a93b; font-weight: bold; font-size: 13px;")
+        self.tab2_scroll_layout.addWidget(fname_label)
+        
+        for field_name, field_info in fields.items():
+            field_type = field_info["type"]
+            field_label = field_info["label"]
+            val = fm.get(field_name, "")
+            
+            if field_type in ["text", "slug"]:
+                if field_info.get("multiline", False):
+                    lbl = QLabel(f"{field_label} ({field_name}):")
+                    lbl.setStyleSheet("color: #a2a2ab; font-weight: bold;")
+                    edit = EnhancedPlainTextEdit()
+                    edit.setPlainText(str(val))
+                    edit.setMinimumHeight(70)
+                    self.tab2_scroll_layout.addWidget(lbl)
+                    self.tab2_scroll_layout.addWidget(edit)
+                    self.tab2_dynamic_widgets[field_name] = ("text_multi", edit)
+                else:
+                    lbl = QLabel(f"{field_label} ({field_name}):")
+                    lbl.setStyleSheet("color: #00ff88; font-weight: bold;")
+                    edit = QLineEdit(str(val))
+                    self.tab2_scroll_layout.addWidget(lbl)
+                    self.tab2_scroll_layout.addWidget(edit)
+                    self.tab2_dynamic_widgets[field_name] = ("text_single", edit)
+            elif field_type == "array":
+                array_widget = ArrayFieldWidget(f"{field_label} ({field_name})")
+                array_widget.set_values(val if isinstance(val, list) else ([val] if val else []))
+                self.tab2_scroll_layout.addWidget(array_widget)
+                self.tab2_dynamic_widgets[field_name] = ("array", array_widget)
+            elif field_type == "select":
+                lbl = QLabel(f"{field_label} ({field_name}):")
+                lbl.setStyleSheet("color: #a2a2ab; font-weight: bold;")
+                combo = QComboBox()
+                opts = field_info.get("options", [])
+                for opt in opts:
+                    combo.addItem(opt["label"], opt["value"])
+                idx = combo.findData(val)
+                if idx >= 0:
+                    combo.setCurrentIndex(idx)
+                self.tab2_scroll_layout.addWidget(lbl)
+                self.tab2_scroll_layout.addWidget(combo)
+                self.tab2_dynamic_widgets[field_name] = ("select", combo)
+            else:
+                lbl = QLabel(f"{field_label} ({field_name}):")
+                lbl.setStyleSheet("color: #a2a2ab; font-weight: bold;")
+                edit = QLineEdit(str(val))
+                self.tab2_scroll_layout.addWidget(lbl)
+                self.tab2_scroll_layout.addWidget(edit)
+                self.tab2_dynamic_widgets[field_name] = (field_type, edit)
+        
+        body_header_layout = QHBoxLayout()
+        lbl_body = QLabel("⭐ 文章正文內容 (Markdown):")
+        lbl_body.setStyleSheet("color: #00ff88; font-weight: bold; font-size: 13px;")
+        
+        btn_open_win = QPushButton("↗️ 開啟獨立寫作大視窗")
+        btn_open_win.setStyleSheet("background-color: #e5a93b; color: #1a1a20; font-weight: bold; padding: 4px 10px; font-size: 12px;")
+        btn_open_win.clicked.connect(lambda _, fp=filepath: self.open_standalone_editor(tab_num=2, filepath=fp))
+        
+        body_header_layout.addWidget(lbl_body)
+        body_header_layout.addStretch()
+        body_header_layout.addWidget(btn_open_win)
+        
+        self.tab2_body_edit = EnhancedPlainTextEdit()
+        self.tab2_body_edit.setPlainText(body)
+        self.tab2_body_edit.setMinimumHeight(220)
+        self.tab2_body_edit.setStyleSheet("background-color: #15151c; font-family: Consolas; font-size: 13px; color: #ffffff;")
+        self.tab2_scroll_layout.addLayout(body_header_layout)
+        self.tab2_scroll_layout.addWidget(self.tab2_body_edit)
+
+    def save_tab2_article(self):
+        items = self.tab2_file_list_widget.selectedItems()
+        if not items:
+            QMessageBox.warning(self, "請選擇文章", "請先從左側列表中選擇欲修訂的文章！")
+            return
+        
+        filepath = items[0].data(Qt.UserRole)
+        if not filepath or not os.path.exists(filepath):
+            QMessageBox.warning(self, "檔案不存在", "找不到目標修訂檔案！")
+            return
+        
+        fm_data = {}
+        for fname, (ftype, widget) in getattr(self, "tab2_dynamic_widgets", {}).items():
+            if ftype == "text_single":
+                fm_data[fname] = widget.text().strip()
+            elif ftype == "text_multi":
+                fm_data[fname] = widget.toPlainText().strip()
+            elif ftype == "array":
+                fm_data[fname] = widget.get_values()
+            elif ftype == "select":
+                fm_data[fname] = widget.currentData()
+            else:
+                if hasattr(widget, "text"):
+                    fm_data[fname] = widget.text().strip()
+        
+        body_text = getattr(self, "tab2_body_edit", None)
+        body_content = body_text.toPlainText() if body_text else ""
+        
+        lines = ["---"]
+        for k, v in fm_data.items():
+            if isinstance(v, list):
+                if v:
+                    quoted_v = [f'"{x}"' for x in v if x]
+                    lines.append(f"{k}: [{', '.join(quoted_v)}]")
+            elif isinstance(v, str):
+                if "\n" in v:
+                    lines.append(f"{k}: |")
+                    for subline in v.split("\n"):
+                        lines.append(f"  {subline}")
+                else:
+                    lines.append(f'{k}: "{v}"')
+            else:
+                lines.append(f"{k}: {v}")
+        lines.append("---")
+        lines.append("")
+        lines.append(body_content)
+        
+        full_markdown = "\n".join(lines)
+        
+        try:
+            with open(filepath, "w", encoding="utf-8") as f:
+                f.write(full_markdown)
+            self.log(f"✓ 成功儲存修訂文章至網站: {os.path.basename(filepath)}")
+            
+            subprocess.run(["node", "scripts/gui-helper.js", "--extract"], cwd=self.project_dir, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            
+            QMessageBox.information(self, "儲存成功", f"文章【{os.path.basename(filepath)}】已成功更新！\n系統已完成自動格式維護與同步。")
+            self.refresh_tab2_file_list()
+        except Exception as e:
+            self.log(f"❌ 儲存修訂文章失敗: {e}")
+            QMessageBox.critical(self, "儲存失敗", f"儲存修訂文章時發生錯誤:\n{e}")
 
     def log(self, text):
         try:
@@ -740,8 +1313,8 @@ class MainWindow(QMainWindow):
         if "name" not in fm or not fm["name"]:
             fm["name"] = base_title
         
-        # 填入表單
-        self.populate_form(fm)
+        # 填入表單與正文編輯器
+        self.populate_form(fm, body, filepath)
 
     def parse_frontmatter(self, file_path):
         if not os.path.exists(file_path):
@@ -779,11 +1352,13 @@ class MainWindow(QMainWindow):
     def on_collection_changed(self):
         selected = self.file_list_widget.selectedItems()
         fm = {}
+        body = ""
+        filepath = ""
         if selected:
             filename = selected[0].text()
             filepath = os.path.join(self.workspace_dir, filename)
-            fm, _ = self.parse_frontmatter(filepath)
-        self.populate_form(fm)
+            fm, body = self.parse_frontmatter(filepath)
+        self.populate_form(fm, body, filepath)
 
     def get_novels_list(self):
         novels = set(getattr(self, "custom_novels", []))
@@ -929,7 +1504,7 @@ class MainWindow(QMainWindow):
                 except Exception:
                     pass
 
-    def populate_form(self, defaults={}):
+    def populate_form(self, defaults={}, body="", filepath=""):
         # 清除現有動態表單欄位
         for i in reversed(range(self.scroll_layout.count())):
             item = self.scroll_layout.itemAt(i)
@@ -1026,7 +1601,7 @@ class MainWindow(QMainWindow):
                     # 多行文字
                     lbl = QLabel(f"{field_label} ({field_name}):")
                     lbl.setStyleSheet("color: #a2a2ab; font-weight: bold;")
-                    edit = QPlainTextEdit()
+                    edit = EnhancedPlainTextEdit()
                     edit.setPlainText(str(val))
                     edit.setMinimumHeight(80)
                     self.scroll_layout.addWidget(lbl)
@@ -1119,6 +1694,119 @@ class MainWindow(QMainWindow):
                 self.scroll_layout.addWidget(lbl)
                 self.scroll_layout.addWidget(edit)
                 self.dynamic_widgets[field_name] = (field_type, edit)
+
+        # 專屬：待匯入文字檔正文內容編輯器
+        body_header_layout = QHBoxLayout()
+        lbl_body = QLabel("⭐ 待匯入文字檔正文內容 (直接編輯/修訂):")
+        lbl_body.setStyleSheet("color: #00ff88; font-weight: bold; font-size: 13px;")
+        
+        btn_open_win = QPushButton("↗️ 開啟獨立寫作大視窗")
+        btn_open_win.setStyleSheet("background-color: #e5a93b; color: #1a1a20; font-weight: bold; padding: 4px 10px; font-size: 12px;")
+        btn_open_win.clicked.connect(lambda _, fp=filepath: self.open_standalone_editor(tab_num=1, filepath=fp))
+        
+        body_header_layout.addWidget(lbl_body)
+        body_header_layout.addStretch()
+        body_header_layout.addWidget(btn_open_win)
+        
+        self.tab1_body_edit = EnhancedPlainTextEdit()
+        self.tab1_body_edit.setPlainText(body)
+        self.tab1_body_edit.setMinimumHeight(200)
+        self.tab1_body_edit.setStyleSheet("background-color: #15151c; font-family: Consolas; font-size: 13px; color: #ffffff;")
+        
+        self.scroll_layout.addLayout(body_header_layout)
+        self.scroll_layout.addWidget(self.tab1_body_edit)
+        
+        if filepath:
+            save_file_btn = QPushButton("💾 儲存修改至工作區原始文字檔")
+            save_file_btn.setStyleSheet("background-color: #2d5f5a; color: #ffffff; font-weight: bold; padding: 6px 12px;")
+            save_file_btn.clicked.connect(lambda _, fp=filepath: self.save_pending_file(fp))
+            self.scroll_layout.addWidget(save_file_btn)
+
+    def open_standalone_editor(self, tab_num=1, filepath=""):
+        if hasattr(self, "standalone_window") and self.standalone_window is not None and self.standalone_window.isVisible():
+            self.standalone_window.showNormal()
+            self.standalone_window.activateWindow()
+            return
+
+        initial_text = ""
+        title_info = os.path.basename(filepath) if filepath else "文字檔"
+
+        if tab_num == 1:
+            if hasattr(self, "tab1_body_edit") and self.tab1_body_edit:
+                initial_text = self.tab1_body_edit.toPlainText()
+            def on_save(new_text, save_to_disk=False):
+                if hasattr(self, "tab1_body_edit") and self.tab1_body_edit:
+                    self.tab1_body_edit.setPlainText(new_text)
+                if save_to_disk and filepath:
+                    self.save_pending_file(filepath)
+        else:
+            if hasattr(self, "tab2_body_edit") and self.tab2_body_edit:
+                initial_text = self.tab2_body_edit.toPlainText()
+            def on_save(new_text, save_to_disk=False):
+                if hasattr(self, "tab2_body_edit") and self.tab2_body_edit:
+                    self.tab2_body_edit.setPlainText(new_text)
+                if save_to_disk and filepath:
+                    self.save_tab2_article()
+
+        self.standalone_window = StandaloneTextEditorWindow(
+            title_info=title_info,
+            initial_text=initial_text,
+            on_save_callback=on_save,
+            parent=self
+        )
+        self.standalone_window.show()
+
+    def save_pending_file(self, filepath):
+        if not filepath or not os.path.exists(filepath):
+            QMessageBox.warning(self, "檔案不存在", "無法定位工作區原始文字檔！")
+            return
+            
+        body_text = getattr(self, "tab1_body_edit", None)
+        body_content = body_text.toPlainText() if body_text else ""
+        
+        # 收集 Frontmatter
+        fm_data = {}
+        for fname, (ftype, widget) in self.dynamic_widgets.items():
+            if ftype == "text_single":
+                fm_data[fname] = widget.text().strip()
+            elif ftype == "text_multi":
+                fm_data[fname] = widget.toPlainText().strip()
+            elif ftype == "array":
+                fm_data[fname] = widget.get_values()
+            elif ftype == "select":
+                fm_data[fname] = widget.currentData()
+            elif ftype == "combo_custom":
+                fm_data[fname] = widget.currentText().strip()
+            elif ftype in ["url", "image"]:
+                fm_data[fname] = widget.text().strip()
+                
+        # 組合 YAML Frontmatter + body
+        lines = ["---"]
+        for k, v in fm_data.items():
+            if isinstance(v, list):
+                if v:
+                    quoted_v = [f'"{x}"' for x in v if x]
+                    lines.append(f"{k}: [{', '.join(quoted_v)}]")
+            elif isinstance(v, str):
+                if v:
+                    lines.append(f'{k}: "{v}"')
+            else:
+                if v is not None and str(v):
+                    lines.append(f"{k}: {v}")
+        lines.append("---")
+        lines.append("")
+        lines.append(body_content)
+        
+        full_content = "\n".join(lines)
+        try:
+            with open(filepath, "w", encoding="utf-8") as f:
+                f.write(full_content)
+            self.log(f"✓ 成功儲存修改至工作區原始文字檔: {os.path.basename(filepath)}")
+            QMessageBox.information(self, "儲存成功", f"檔案【{os.path.basename(filepath)}】的修改已成功儲存至工作區！")
+            self.refresh_file_list()
+        except Exception as e:
+            self.log(f"❌ 儲存原始文字檔失敗: {e}")
+            QMessageBox.critical(self, "儲存失敗", f"儲存原始文字檔時發生錯誤:\n{e}")
 
     def toggle_test_server(self):
         if self.astro_process and self.astro_process.state() == QProcess.Running:

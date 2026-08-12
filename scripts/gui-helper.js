@@ -38,33 +38,24 @@ function convertToTraditional(text) {
     .join("");
 }
 
-// 拼音網址別名
+import { pinyin } from "pinyin-pro";
+
+// 拼音網址別名 (使用 pinyin-pro 支援 20,000+ 繁簡體與罕見字全字典覆蓋)
 function pinyinSlugify(text) {
-  if (!text) return "entry-" + Date.now();
-  const hasChinese = /[\u4e00-\u9fa5]/.test(text);
-  if (!hasChinese) {
-    const slug = text
+  if (!text || typeof text !== "string") return "entry-" + Date.now();
+  try {
+    const py = pinyin(text, { toneType: "none", type: "array" });
+    const slug = py
+      .join("-")
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)/g, "");
-    return slug || ("entry-" + Date.now());
+    if (slug) return slug;
+  } catch (e) {
+    // 降級防護
   }
-  const chars = Array.from(text);
-  let result = chars
-    .map((char) => {
-      if (/[a-zA-Z0-9]/.test(char)) return char.toLowerCase();
-      if (PINYIN_MAP[char]) return PINYIN_MAP[char];
-      return "";
-    })
-    .filter(Boolean)
-    .join("-");
-  result = result.replace(/-+/g, "-").replace(/(^-|-$)/g, "");
-  if (!result) {
-    // 降級備援：若拼音對照表欠缺此漢字，改用數字與文字去雜質
-    const cleanText = text.toLowerCase().replace(/[^a-z0-9\u4e00-\u9fa5]+/g, "-").replace(/(^-|-$)/g, "");
-    result = cleanText || ("entry-" + Date.now());
-  }
-  return result;
+  const cleanText = text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  return cleanText || ("entry-" + Date.now());
 }
 
 // 建立全站標題對照表，用於雙括號連結解析
