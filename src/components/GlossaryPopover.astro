@@ -238,16 +238,11 @@ const baseUrl = import.meta.env.BASE_URL;
 
   // 執行全站網狀詞條 DOM 替換
   function runGlossaryReplacement(glossaryList) {
-    const container = document.querySelector('.markdown-body');
-    if (!container) return;
+    const containers = document.querySelectorAll('.markdown-body, .novel-body, .chapter-content, .prose, .shanzhuang-content');
+    if (!containers || containers.length === 0) return;
 
     const pathParts = window.location.pathname.split('/');
     const currentSlug = decodeURIComponent(pathParts[pathParts.length - 1] || pathParts[pathParts.length - 2] || '');
-
-    let html = container.innerHTML;
-
-    // A3: 將可能殘留的 broken-link 標籤直接還原為純文字
-    html = html.replace(/<span class="broken-link"[^>]*>(.*?)<\/span>/g, '$1');
 
     const glossaryApplied = new Set(); // 紀錄此篇文章已匹配過的主條目 slug
 
@@ -257,80 +252,86 @@ const baseUrl = import.meta.env.BASE_URL;
     for (const item of glossaryList) {
       if (item.slug === currentSlug) continue; // 排除自身
 
-      // 主名稱
-      matchItems.push({
-        text: item.name,
-        slug: item.slug,
-        type: item.type
-      });
-
-      // 別名
-      for (const alias of item.aliases) {
-        if (!alias) continue;
+      // 主名稱 (最少 2 個字)
+      if (item.name && item.name.length >= 2) {
         matchItems.push({
-          text: alias,
+          text: item.name,
           slug: item.slug,
           type: item.type
         });
+      }
+
+      // 別名 (最少 2 個字)
+      if (Array.isArray(item.aliases)) {
+        for (const alias of item.aliases) {
+          if (!alias || alias.length < 2) continue;
+          matchItems.push({
+            text: alias,
+            slug: item.slug,
+            type: item.type
+          });
+        }
       }
     }
 
     // 按關鍵字長度排序，確保長詞優先匹配
     matchItems.sort((a, b) => b.text.length - a.text.length);
 
-    // HTML 標籤保護拆分法：以 HTML 標籤做正則切分
-    const parts = html.split(/(<\/?[^>]+>)/g);
-    let insideLink = false;
+    containers.forEach(container => {
+      let html = container.innerHTML;
 
-    const newParts = parts.map(part => {
-      // 若為 HTML 標籤，判定是否為 <a>，且直接回傳不處理
-      if (part.startsWith('<')) {
-        const lower = part.toLowerCase();
-        if (lower.startsWith('<a ') || lower === '<a>') {
-          insideLink = true;
+      // 將可能殘留的 broken-link 標籤直接還原為純文字
+      html = html.replace(/<span class="broken-link"[^>]*>(.*?)<\/span>/g, '$1');
+
+      // HTML 標籤保護拆分法：以 HTML 標籤做正則切分
+      const parts = html.split(/(<\/?[^>]+>)/g);
+      let insideLink = false;
+
+      const newParts = parts.map(part => {
+        if (part.startsWith('<')) {
+          const lower = part.toLowerCase();
+          if (lower.startsWith('<a ') || lower === '<a>') {
+            insideLink = true;
+          }
+          if (lower === '</a>') {
+            insideLink = false;
+          }
+          return part;
         }
-        if (lower === '</a>') {
-          insideLink = false;
-        }
-        return part;
-      }
 
-      // 若處於超連結 <a> 標籤內部，直接跳過比對，避免 nested links
-      if (insideLink) return part;
+        if (insideLink) return part;
 
-      const tokens = [];
-      let text = part;
+        const tokens = [];
+        let text = part;
 
-      // 比對所有的關鍵字，採用 Token 佔位符防護法避免二次匹配 HTML 屬性與標籤
-      for (const match of matchItems) {
-        if (glossaryApplied.has(match.slug)) continue; // A2: 此主條目（主稱或別名）只要已標記過，就跳過
+        for (const match of matchItems) {
+          if (glossaryApplied.has(match.slug)) continue;
 
-        if (text.includes(match.text)) {
-          const index = text.indexOf(match.text);
-          if (index !== -1) {
-            const left = text.substring(0, index);
-            const right = text.substring(index + match.text.length);
+          if (text.includes(match.text)) {
+            const index = text.indexOf(match.text);
+            if (index !== -1) {
+              const left = text.substring(0, index);
+              const right = text.substring(index + match.text.length);
 
-            // 產生唯一佔位符與包裹 span（按需載入，不含 data-desc 節省體積）
-            const tokenPlaceholder = `___GLOSSARY_TOKEN_${tokens.length}___`;
-            const spanHtml = `<span class="glossary-term" data-type="${match.type}" data-slug="${match.slug}">${match.text}</span>`;
-            tokens.push(spanHtml);
+              const tokenPlaceholder = `___GLOSSARY_TOKEN_${tokens.length}___`;
+              const spanHtml = `<span class="glossary-term" data-type="${match.type}" data-slug="${match.slug}">${match.text}</span>`;
+              tokens.push(spanHtml);
 
-            text = left + tokenPlaceholder + right;
-            glossaryApplied.add(match.slug); // 標記為已套用
+              text = left + tokenPlaceholder + right;
+              glossaryApplied.add(match.slug);
+            }
           }
         }
-      }
 
-      // 將該文本區塊內的佔位符還原為實體 HTML
-      for (let i = 0; i < tokens.length; i++) {
-        text = text.replace(`___GLOSSARY_TOKEN_${i}___`, tokens[i]);
-      }
+        for (let i = 0; i < tokens.length; i++) {
+          text = text.replace(`___GLOSSARY_TOKEN_${i}___`, tokens[i]);
+        }
 
-      return text;
+        return text;
+      });
+
+      container.innerHTML = newParts.join('');
     });
-
-    container.innerHTML = newParts.join('');
   }
 
   // 前端互動控制
@@ -388,7 +389,10 @@ const baseUrl = import.meta.env.BASE_URL;
     const typeMap = {
       characters: '人物誌',
       worldview: '設定集',
-      factions: '群雄會'
+      factions: '門派陣營',
+      techniques: '功法武學',
+      items: '神兵道具',
+      bestiary: '珍禽異獸'
     };
 
     // 關閉行動端抽屜

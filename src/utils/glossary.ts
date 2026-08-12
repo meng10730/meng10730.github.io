@@ -3,7 +3,7 @@ import { getCollection } from 'astro:content';
 interface GlossaryItem {
   name: string;
   slug: string;
-  type: 'characters' | 'worldview' | 'factions';
+  type: 'characters' | 'worldview' | 'factions' | 'techniques' | 'items' | 'bestiary';
   desc: string;
   aliases: string[];
 }
@@ -16,39 +16,46 @@ export async function getGlossary(): Promise<GlossaryItem[]> {
   const charEntries = await getCollection('characters');
   const worldEntries = await getCollection('worldview');
   const factionEntries = await getCollection('factions');
+  const techEntries = await getCollection('techniques');
+  const itemEntries = await getCollection('items');
+  const bestiaryEntries = await getCollection('bestiary');
 
   const list: GlossaryItem[] = [];
 
-  // 輔助函式：過濾 Markdown 格式，提取前 60 字純文字作為摘要 fallback
+  // 輔助函式：解構別名並過濾最少 2 個字之門檻
+  function parseAliases(rawAlias: any): string[] {
+    if (!rawAlias) return [];
+    const items = Array.isArray(rawAlias) ? rawAlias : [rawAlias];
+    return Array.from(
+      new Set(
+        items
+          .map((a: any) => (typeof a === 'string' ? a : a?.name || a?.title)?.trim())
+          .filter((n: any): n is string => Boolean(n) && n.length >= 2)
+      )
+    );
+  }
+
+  // 輔助函式：過濾 Markdown/HTML 格式，提取前 80 字純文字作為摘要
   function extractSummary(content: string): string {
     if (!content) return '';
-    // 1. 移除 Frontmatter
     let clean = content.replace(/^---[\s\S]*?---/, '');
-    // 2. 移除 HTML 註解與 MDX 註解
     clean = clean.replace(/<!--[\s\S]*?-->/g, '');
     clean = clean.replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
-    // 3. 移除 Markdown 標題、連結、列表符號
+    clean = clean.replace(/<[^>]+>/g, '');
     clean = clean.replace(/[#*`_~\[\]()\-]/g, ' ');
-    // 4. 合併多餘空白並修剪
     clean = clean.replace(/\s+/g, ' ').trim();
-    return clean.substring(0, 60);
+    return clean.substring(0, 80);
   }
 
   for (const entry of charEntries) {
     if (entry.id.startsWith('_')) continue;
     const desc = entry.data.description || extractSummary(entry.body);
     list.push({
-      name: entry.data.name,
+      name: entry.data.name || entry.data.title,
       slug: entry.slug,
       type: 'characters',
       desc,
-      aliases: Array.from(
-        new Set(
-          (entry.data.alias || [])
-            .map((a: any) => (typeof a === 'string' ? a : a?.name)?.trim())
-            .filter((n: any): n is string => Boolean(n))
-        )
-      ),
+      aliases: parseAliases(entry.data.alias),
     });
   }
 
@@ -56,11 +63,11 @@ export async function getGlossary(): Promise<GlossaryItem[]> {
     if (entry.id.startsWith('_')) continue;
     const desc = entry.data.description || extractSummary(entry.body);
     list.push({
-      name: entry.data.title,
+      name: entry.data.title || entry.data.name,
       slug: entry.slug,
       type: 'worldview',
       desc,
-      aliases: [],
+      aliases: parseAliases(entry.data.alias),
     });
   }
 
@@ -68,11 +75,47 @@ export async function getGlossary(): Promise<GlossaryItem[]> {
     if (entry.id.startsWith('_')) continue;
     const desc = entry.data.description || extractSummary(entry.body);
     list.push({
-      name: entry.data.title,
+      name: entry.data.title || entry.data.name,
       slug: entry.slug,
       type: 'factions',
       desc,
-      aliases: [],
+      aliases: parseAliases(entry.data.alias),
+    });
+  }
+
+  for (const entry of techEntries) {
+    if (entry.id.startsWith('_')) continue;
+    const desc = entry.data.description || extractSummary(entry.body);
+    list.push({
+      name: entry.data.title || entry.data.name,
+      slug: entry.slug,
+      type: 'techniques',
+      desc,
+      aliases: parseAliases(entry.data.alias),
+    });
+  }
+
+  for (const entry of itemEntries) {
+    if (entry.id.startsWith('_')) continue;
+    const desc = entry.data.description || extractSummary(entry.body);
+    list.push({
+      name: entry.data.title || entry.data.name,
+      slug: entry.slug,
+      type: 'items',
+      desc,
+      aliases: parseAliases(entry.data.alias),
+    });
+  }
+
+  for (const entry of bestiaryEntries) {
+    if (entry.id.startsWith('_')) continue;
+    const desc = entry.data.description || extractSummary(entry.body);
+    list.push({
+      name: entry.data.title || entry.data.name,
+      slug: entry.slug,
+      type: 'bestiary',
+      desc,
+      aliases: parseAliases(entry.data.alias),
     });
   }
 
