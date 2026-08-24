@@ -101,5 +101,10 @@
     "中陰界",
     "鎮厄垣",
     "淨月冰塚"
+  ],
+  "layoutOrientation": "vertical",
+  "layoutSizes": [
+    317,
+    159
   ]
 }

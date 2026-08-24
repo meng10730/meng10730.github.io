@@ -231,6 +231,15 @@ class ArrayFieldWidget(QWidget):
                     self.add_item(v.strip())
 
 
+class NoScrollComboBox(QComboBox):
+    """自訂 QComboBox：點開選單清單時啟用滾輪選取項目，未點開時鎖定滾輪避免頁面滑動時誤觸"""
+    def wheelEvent(self, event):
+        if self.view() and self.view().isVisible():
+            super().wheelEvent(event)
+        else:
+            event.ignore()
+
+
 class EnhancedPlainTextEdit(QPlainTextEdit):
     """強化的文字編輯器：修復 Windows 剪貼簿 U+2029 複製空白 Bug，並提供深色中文右鍵選單"""
     def __init__(self, parent=None):
@@ -402,6 +411,7 @@ class StandaloneTextEditorWindow(QMainWindow):
         super().__init__(parent)
         self.on_save_callback = on_save_callback
         self.is_syncing = False
+        self.is_modified = False
         self.setWindowTitle(f"📄 [{title_info}] - 唐門山莊獨立寫作大視窗")
         self.resize(1000, 700)
 
@@ -499,15 +509,9 @@ class StandaloneTextEditorWindow(QMainWindow):
 
     def on_text_changed(self):
         self.stats_timer.start(300)
+        self.is_modified = True
         if self.preview_toggle_btn.isChecked():
             self.update_preview()
-
-        if callable(self.on_save_callback) and not self.is_syncing:
-            self.is_syncing = True
-            try:
-                self.on_save_callback(self.editor.toPlainText(), save_to_disk=False)
-            finally:
-                self.is_syncing = False
 
     def update_stats(self):
         text = self.editor.toPlainText()
@@ -529,7 +533,29 @@ class StandaloneTextEditorWindow(QMainWindow):
     def save_content(self):
         if callable(self.on_save_callback):
             self.on_save_callback(self.editor.toPlainText(), save_to_disk=True)
-            self.status_bar_label.setText(self.status_bar_label.text() + " | ✅ 已於 " + datetime.datetime.now().strftime("%H:%M:%S") + " 成功儲存！")
+            self.is_modified = False
+            now_str = datetime.datetime.now().strftime("%H:%M:%S")
+            self.status_bar_label.setText(f"📊 統計中... | ✅ 已於 {now_str} 成功儲存並同步至控制台！")
+            self.update_stats()
+
+    def closeEvent(self, event):
+        if getattr(self, "is_modified", False):
+            reply = QMessageBox.question(
+                self,
+                "未儲存的變更",
+                "獨立寫作視窗內尚有未儲存的修改，請問是否在關閉前儲存？\n\n【是】儲存並同步至主頁面\n【否】放棄未儲存的修改直接關閉\n【取消】返回繼續寫作",
+                QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
+                QMessageBox.Yes
+            )
+            if reply == QMessageBox.Yes:
+                self.save_content()
+                event.accept()
+            elif reply == QMessageBox.No:
+                event.accept()
+            else:
+                event.ignore()
+        else:
+            event.accept()
 
 
 class PublishDialog(QDialog):
@@ -556,7 +582,7 @@ class PublishDialog(QDialog):
         
         # Commit Message (下拉選單選取 + 可自由打字微調)
         layout.addWidget(QLabel("選擇或填寫本次提交訊息 (Commit Message):"))
-        self.msg_edit = QComboBox()
+        self.msg_edit = NoScrollComboBox()
         self.msg_edit.setEditable(True)
         
         import datetime
@@ -670,6 +696,8 @@ class MainWindow(QMainWindow):
                     self.workspace_dir = cfg.get("workspacePath", self.workspace_dir)
                     self.custom_novels = cfg.get("customNovels", [])
                     self.custom_factions = cfg.get("customFactions", [])
+                    self.layout_orientation = cfg.get("layoutOrientation", "horizontal")
+                    self.layout_sizes = cfg.get("layoutSizes", [650, 450])
             except Exception as e:
                 self.log(f"⚠️ 載入設定檔失敗: {e}")
 
@@ -683,6 +711,8 @@ class MainWindow(QMainWindow):
             cfg["workspacePath"] = self.workspace_dir
             cfg["customNovels"] = getattr(self, "custom_novels", [])
             cfg["customFactions"] = getattr(self, "custom_factions", [])
+            cfg["layoutOrientation"] = getattr(self, "layout_orientation", "horizontal")
+            cfg["layoutSizes"] = getattr(self, "layout_sizes", [650, 450])
             with open(config_path, "w", encoding="utf-8") as f:
                 json.dump(cfg, f, ensure_ascii=False, indent=2)
         except Exception as e:
@@ -794,7 +824,8 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(sidebar)
         
         # 2. 右側主要內容區（採用 Splitter 分割「寫作匯入」與「控制台日誌」）
-        right_splitter = QSplitter(Qt.Vertical)
+        orientation = Qt.Horizontal if getattr(self, "layout_orientation", "horizontal") == "horizontal" else Qt.Vertical
+        self.right_splitter = QSplitter(orientation)
         
         # 上半部：寫作匯入面板
         import_panel = QFrame()
@@ -829,7 +860,7 @@ class MainWindow(QMainWindow):
         form_layout.setContentsMargins(5, 0, 5, 0)
         
         form_layout.addWidget(QLabel("選擇歸類網站分區:"))
-        self.collection_combo = QComboBox()
+        self.collection_combo = NoScrollComboBox()
         for col_name, col_info in self.schema.items():
             self.collection_combo.addItem(col_info["label"], col_name)
         self.collection_combo.currentIndexChanged.connect(self.on_collection_changed)
@@ -862,9 +893,9 @@ class MainWindow(QMainWindow):
         tab2_panel = self.setup_tab2_panel()
         self.main_tab_widget.addTab(tab2_panel, "📚 網站既有文章管理")
         
-        right_splitter.addWidget(self.main_tab_widget)
+        self.right_splitter.addWidget(self.main_tab_widget)
         
-        # 下半部：日誌與控制台輸出面板
+        # 下半部（現為右側）：日誌與控制台輸出面板
         console_panel = QFrame()
         console_panel.setObjectName("cardFrame")
         console_layout = QVBoxLayout(console_panel)
@@ -872,6 +903,13 @@ class MainWindow(QMainWindow):
         
         console_title_layout = QHBoxLayout()
         console_title_layout.addWidget(QLabel("控制台即時日誌:"))
+        
+        self.toggle_layout_btn = QPushButton("↔️ 左右並排")
+        self.toggle_layout_btn.setFixedWidth(100)
+        self.toggle_layout_btn.setStyleSheet("font-size: 11px; padding: 4px;")
+        self.toggle_layout_btn.clicked.connect(self.toggle_console_layout)
+        console_title_layout.addWidget(self.toggle_layout_btn)
+
         clear_log_btn = QPushButton("清除日誌")
         clear_log_btn.setFixedWidth(80)
         clear_log_btn.setStyleSheet("font-size: 11px; padding: 4px;")
@@ -884,11 +922,40 @@ class MainWindow(QMainWindow):
         self.console_log.setStyleSheet("background-color: #121216; font-family: Consolas, monospace; font-size: 12px; color: #a2a2ab; border: 1px solid #1c1c24;")
         console_layout.addWidget(self.console_log)
         
-        right_splitter.addWidget(console_panel)
+        self.right_splitter.addWidget(console_panel)
         
-        # 設定分割器初始權重大小
-        right_splitter.setSizes([500, 200])
-        main_layout.addWidget(right_splitter)
+        # 設定分割器初始權重大小與持久化配置
+        initial_sizes = getattr(self, "layout_sizes", [650, 450])
+        self.right_splitter.setSizes(initial_sizes)
+        self.toggle_layout_btn.setText("↔️ 左右並排" if orientation == Qt.Horizontal else "↕️ 上下分割")
+        main_layout.addWidget(self.right_splitter)
+        
+        # 保存動態生成的欄位控制件對照表
+        self.dynamic_widgets = {}
+        self.tab2_dynamic_widgets = {}
+
+    def toggle_console_layout(self):
+        if self.right_splitter.orientation() == Qt.Horizontal:
+            self.right_splitter.setOrientation(Qt.Vertical)
+            self.right_splitter.setSizes([500, 250])
+            self.toggle_layout_btn.setText("↕️ 上下分割")
+            self.layout_orientation = "vertical"
+        else:
+            self.right_splitter.setOrientation(Qt.Horizontal)
+            self.right_splitter.setSizes([650, 450])
+            self.toggle_layout_btn.setText("↔️ 左右並排")
+            self.layout_orientation = "horizontal"
+        self.layout_sizes = self.right_splitter.sizes()
+        self.save_config()
+
+    def closeEvent(self, event):
+        try:
+            self.layout_orientation = "horizontal" if self.right_splitter.orientation() == Qt.Horizontal else "vertical"
+            self.layout_sizes = self.right_splitter.sizes()
+            self.save_config()
+        except Exception:
+            pass
+        super().closeEvent(event)
         
         # 保存動態生成的欄位控制件對照表
         self.dynamic_widgets = {}
@@ -908,7 +975,7 @@ class MainWindow(QMainWindow):
         
         col_select_layout = QHBoxLayout()
         col_select_layout.addWidget(QLabel("選擇分區:"))
-        self.tab2_col_combo = QComboBox()
+        self.tab2_col_combo = NoScrollComboBox()
         for col_name, col_info in self.schema.items():
             self.tab2_col_combo.addItem(col_info["label"], col_name)
         self.tab2_col_combo.currentIndexChanged.connect(self.refresh_tab2_file_list)
@@ -1033,7 +1100,7 @@ class MainWindow(QMainWindow):
             elif field_type == "select":
                 lbl = QLabel(f"{field_label} ({field_name}):")
                 lbl.setStyleSheet("color: #a2a2ab; font-weight: bold;")
-                combo = QComboBox()
+                combo = NoScrollComboBox()
                 opts = field_info.get("options", [])
                 for opt in opts:
                     combo.addItem(opt["label"], opt["value"])
@@ -1122,7 +1189,8 @@ class MainWindow(QMainWindow):
         try:
             with open(filepath, "w", encoding="utf-8") as f:
                 f.write(full_markdown)
-            self.log(f"✓ 成功儲存修訂文章至網站: {os.path.basename(filepath)}")
+            now_time = datetime.datetime.now().strftime("%H:%M:%S")
+            self.log(f"✓ [{now_time}] 成功儲存修訂文章至網站: {os.path.basename(filepath)}")
             
             subprocess.run(["node", "scripts/gui-helper.js", "--extract"], cwd=self.project_dir, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             
@@ -1151,8 +1219,15 @@ class MainWindow(QMainWindow):
                 color = "#e2e2e9"  # 純白
 
             formatted_html = f'<span style="color: {color};">{escaped_text}</span>'
+            
+            sb = self.console_log.verticalScrollBar()
+            is_at_bottom = sb.value() >= sb.maximum() - 25
+            
             self.console_log.appendHtml(formatted_html)
             
+            if is_at_bottom:
+                sb.setValue(sb.maximum())
+
             # 移動游標至末端以自動捲動
             cursor = self.console_log.textCursor()
             cursor.movePosition(QTextCursor.MoveOperation.End)
@@ -1548,7 +1623,7 @@ class MainWindow(QMainWindow):
                 lbl.setStyleSheet("color: #a2a2ab; font-weight: bold;")
                 
                 combo_box_layout = QHBoxLayout()
-                combo = QComboBox()
+                combo = NoScrollComboBox()
                 combo.setEditable(True)
                 novels_list = self.get_novels_list()
                 
@@ -1575,7 +1650,7 @@ class MainWindow(QMainWindow):
                 lbl.setStyleSheet("color: #a2a2ab; font-weight: bold;")
                 
                 combo_box_layout = QHBoxLayout()
-                combo = QComboBox()
+                combo = NoScrollComboBox()
                 combo.setEditable(True)
                 factions_list = self.get_factions_list()
                 
@@ -1654,7 +1729,7 @@ class MainWindow(QMainWindow):
                 # 下拉選單
                 lbl = QLabel(f"{field_label} ({field_name}):")
                 lbl.setStyleSheet("color: #a2a2ab; font-weight: bold;")
-                combo = QComboBox()
+                combo = NoScrollComboBox()
                 opts = field_info.get("options", [])
                 
                 for idx, opt in enumerate(opts):

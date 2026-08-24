@@ -1,6 +1,5 @@
 ---
 name: 硯辭
-description: 
 alias: []
 category: other
 affiliation: 無定碑

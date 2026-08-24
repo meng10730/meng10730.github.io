@@ -1,6 +1,5 @@
 ---
 name: 戲長安
-description: 
 alias: []
 category: title
 affiliation: 無定碑

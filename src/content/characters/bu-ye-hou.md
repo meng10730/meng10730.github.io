@@ -1,6 +1,5 @@
 ---
 name: 不夜侯
-description: 
 alias: ["千鴆郎中"]
 category: title
 affiliation: 無間鴆獄
