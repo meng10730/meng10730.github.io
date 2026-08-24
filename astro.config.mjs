@@ -1,6 +1,7 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import mdx from '@astrojs/mdx';
+import sitemap from '@astrojs/sitemap';
 
 import react from '@astrojs/react';
 import keystatic from '@keystatic/astro';
@@ -16,7 +17,10 @@ export default defineConfig({
   integrations: [
     react(),
     ...(isDev ? [keystatic()] : []),
-    mdx()
+    mdx(),
+    sitemap({
+      filter: (page) => !page.includes('/keystatic'),
+    })
   ],
   output: isDev ? 'hybrid' : 'static',
 });

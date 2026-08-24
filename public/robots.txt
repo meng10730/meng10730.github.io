@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /keystatic/
+
+Sitemap: https://meng10730.github.io/sitemap-index.xml
