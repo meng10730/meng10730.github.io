@@ -5,12 +5,19 @@ import InkCanvas from "../components/InkCanvas.astro";
 import AudioPlayer from "../components/AudioPlayer.astro";
 import GlossaryPopover from "../components/GlossaryPopover.astro";
 
+interface BreadcrumbItem {
+  name: string;
+  url: string;
+}
+
 interface Props {
   title?: string;
   description?: string;
   image?: string;
   articleDate?: Date | string;
+  articleModified?: Date | string;
   type?: 'website' | 'article';
+  breadcrumbs?: BreadcrumbItem[];
 }
 
 const {
@@ -18,7 +25,9 @@ const {
   description = "吃墨水的晚餐之個人創作空間「晚餐後的書桌」，收錄東方玄幻小說、修仙世界觀設定集、人物誌與技術隨筆。",
   image = "/favicon.svg",
   articleDate,
+  articleModified,
   type = "website",
+  breadcrumbs = [],
 } = Astro.props;
 
 const siteUrl = "https://meng10730.github.io";
@@ -34,6 +43,17 @@ const authorData = {
   ]
 };
 
+const breadcrumbSchema = breadcrumbs && breadcrumbs.length > 0 ? {
+  "@type": "BreadcrumbList",
+  "@id": `${canonicalURL}#breadcrumb`,
+  "itemListElement": breadcrumbs.map((item, index) => ({
+    "@type": "ListItem",
+    "position": index + 1,
+    "name": item.name,
+    "item": item.url.startsWith("http") ? item.url : new URL(item.url, siteUrl).href
+  }))
+} : undefined;
+
 const jsonLd = {
   "@context": "https://schema.org",
   "@graph": [
@@ -46,6 +66,7 @@ const jsonLd = {
       "author": authorData,
       "inLanguage": "zh-Hant"
     },
+    ...(breadcrumbSchema ? [breadcrumbSchema] : []),
     ...(type === "article" || articleDate ? [
       {
         "@type": "Article",
@@ -55,6 +76,7 @@ const jsonLd = {
         "description": description,
         "mainEntityOfPage": canonicalURL,
         "datePublished": articleDate ? new Date(articleDate).toISOString() : undefined,
+        "dateModified": (articleModified || articleDate) ? new Date(articleModified || articleDate).toISOString() : undefined,
         "author": authorData,
         "publisher": authorData,
         "inLanguage": "zh-Hant"

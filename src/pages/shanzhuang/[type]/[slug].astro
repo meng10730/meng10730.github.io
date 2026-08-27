@@ -93,7 +93,7 @@ const novelStatusMap = {
   hiatus: '暫停中'
 };
 
-const guoxueCatMap = {
+const guoxueCatMap: Record<string, string> = {
   confucianism: '儒家',
   taoism: '道家',
   buddhism: '佛家',
@@ -101,13 +101,35 @@ const guoxueCatMap = {
   poetry: '詩詞',
   other: '其他'
 };
+
+const typeNameMap: Record<string, string> = {
+  novels: '小說連載',
+  characters: '人物誌設定',
+  guoxue: '國學筆記',
+  worldview: '世界觀設定',
+  factions: '勢力組織',
+  items: '神兵法寶',
+  techniques: '功法武學',
+  bestiary: '異獸奇珍'
+};
+
+const entryTitle = (entry.data as any).title || (entry.data as any).name || entry.slug;
+
+const breadcrumbs = [
+  { name: "首頁", url: "/" },
+  { name: "後山", url: "/shanzhuang" },
+  { name: typeNameMap[type] || type, url: `/shanzhuang/${type}` },
+  { name: entryTitle, url: `/shanzhuang/${type}/${entry.slug}` }
+];
 ---
 
 <Layout 
-  title={`${(entry.data as any).title || (entry.data as any).name} · 後山 | 晚餐後的書桌`} 
+  title={`${entryTitle} · 後山 | 晚餐後的書桌`} 
   description={(entry.data as any).description || `吃墨水的晚餐之創作專區「後山」文章內容`}
   type="article"
   articleDate={(entry.data as any).pubDate}
+  articleModified={(entry.data as any).updatedDate || (entry.data as any).pubDate}
+  breadcrumbs={breadcrumbs}
 >
   <article class="detail-container ink-fade-in">
     <div class="back-link-wrapper">
