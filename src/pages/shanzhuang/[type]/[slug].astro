@@ -7,6 +7,7 @@ export async function getStaticPaths() {
     const novels = await getCollection('novels', entry => !entry.id.startsWith('_'));
     const characters = await getCollection('characters', entry => !entry.id.startsWith('_'));
     const guoxue = await getCollection('guoxue', entry => !entry.id.startsWith('_'));
+    const dictionary = await getCollection('dictionary', entry => !entry.id.startsWith('_'));
     const worldview = await getCollection('worldview', entry => !entry.id.startsWith('_'));
     const factions = await getCollection('factions', entry => !entry.id.startsWith('_'));
 
@@ -26,6 +27,10 @@ export async function getStaticPaths() {
       ...guoxue.map(entry => ({
         params: { type: 'guoxue', slug: entry.slug },
         props: { entry, type: 'guoxue' }
+      })),
+      ...dictionary.map(entry => ({
+        params: { type: 'dictionary', slug: entry.slug },
+        props: { entry, type: 'dictionary' }
       })),
       ...worldview.map(entry => ({
         params: { type: 'worldview', slug: entry.slug },
@@ -105,7 +110,8 @@ const guoxueCatMap: Record<string, string> = {
 const typeNameMap: Record<string, string> = {
   novels: '小說連載',
   characters: '人物誌設定',
-  guoxue: '國學筆記',
+  guoxue: '經史引用詞',
+  dictionary: '典故引用字',
   worldview: '世界觀設定',
   factions: '勢力組織',
   items: '神兵法寶',
@@ -170,6 +176,29 @@ const breadcrumbs = [
               {(guoxueCatMap as any)[(entry.data as any).category] || (entry.data as any).category}
             </span>
             {(entry.data as any).source && <span class="source-badge">典籍：{(entry.data as any).source}</span>}
+          </div>
+        )}
+
+        {type === 'dictionary' && (
+          <div class="detail-meta">
+            {(entry.data as any).bopomofo && (
+              <span class="category-badge font-semibold">注音：{(entry.data as any).bopomofo}</span>
+            )}
+            {(entry.data as any).pinyin && (
+              <span class="source-badge">拼音：{(entry.data as any).pinyin}</span>
+            )}
+            {(entry.data as any).initial && (
+              <span class="source-badge">聲母：{(entry.data as any).initial}</span>
+            )}
+            {(entry.data as any).radical && (
+              <span class="source-badge">部首：{(entry.data as any).radical}</span>
+            )}
+            {(entry.data as any).strokes && (
+              <span class="source-badge">總筆畫：{(entry.data as any).strokes} 畫</span>
+            )}
+            {(entry.data as any).source && (
+              <span class="source-badge">經典出處：{(entry.data as any).source}</span>
+            )}
           </div>
         )}
 

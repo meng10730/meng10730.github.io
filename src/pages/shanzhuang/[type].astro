@@ -6,7 +6,8 @@ export async function getStaticPaths() {
   return [
     { params: { type: 'novels' }, props: { title: '藏書閣 · 小說列表', subtitle: '閣中存卷，江湖故事，躍然紙上。' } },
     { params: { type: 'characters' }, props: { title: '俠客譜 · 人物列表', subtitle: '江湖豪傑，正邪門派，群俠列傳。' } },
-    { params: { type: 'guoxue' }, props: { title: '研經室 · 國學筆記', subtitle: '幾案研經，讀書札記，修身齊家。' } },
+    { params: { type: 'guoxue' }, props: { title: '研經室 · 經史引用詞', subtitle: '幾案研經，讀書札記，引經據典。' } },
+    { params: { type: 'dictionary' }, props: { title: '字學閣 · 典故引用字', subtitle: '字斟句酌，辨正古音，以文載道。' } },
     { params: { type: 'worldview' }, props: { title: '風物誌 · 世界觀設定', subtitle: '玄理風物，天地運行，設定奧秘。' } },
     { params: { type: 'factions' }, props: { title: '群雄會 · 勢力組織', subtitle: '江湖割據，名門暗潮，群雄並起。' } },
     { params: { type: 'items' }, props: { title: '法寶神兵列表', subtitle: '江湖神兵，天地法寶記載。' } },
@@ -37,6 +38,37 @@ items.sort((a: any, b: any) => {
   const dateB = new Date((b.data as any).pubDate || 0).getTime();
   return dateB - dateA;
 });
+
+// 若為典故引用字，按標準注音聲母順序分組
+const BOPOMOFO_ORDER = ['ㄅ', 'ㄆ', 'ㄇ', 'ㄈ', 'ㄉ', 'ㄊ', 'ㄋ', 'ㄌ', 'ㄍ', 'ㄎ', 'ㄏ', 'ㄐ', 'ㄑ', 'ㄒ', 'ㄓ', 'ㄔ', 'ㄕ', 'ㄖ', 'ㄗ', 'ㄘ', 'ㄙ', 'ㄧ', 'ㄨ', 'ㄩ', 'ㄚ', 'ㄛ', 'ㄜ', 'ㄝ', 'ㄞ', 'ㄟ', 'ㄠ', 'ㄡ', 'ㄢ', 'ㄣ', 'ㄤ', 'ㄥ', 'ㄦ'];
+
+let dictGroups: { initial: string; items: any[] }[] = [];
+if (type === 'dictionary') {
+  const groupMap = new Map<string, any[]>();
+  items.forEach((item: any) => {
+    const init = item.data.initial || '其他';
+    if (!groupMap.has(init)) {
+      groupMap.set(init, []);
+    }
+    groupMap.get(init)!.push(item);
+  });
+
+  const sortedInitials = Array.from(groupMap.keys()).sort((a, b) => {
+    const idxA = BOPOMOFO_ORDER.indexOf(a);
+    const idxB = BOPOMOFO_ORDER.indexOf(b);
+    if (idxA === -1 && idxB === -1) return a.localeCompare(b, 'zh-Hant');
+    if (idxA === -1) return 1;
+    if (idxB === -1) return -1;
+    return idxA - idxB;
+  });
+
+  dictGroups = sortedInitials.map((initial) => ({
+    initial,
+    items: groupMap.get(initial)!.sort((a, b) =>
+      (a.data.title || a.slug).localeCompare(b.data.title || b.slug, 'zh-Hant')
+    )
+  }));
+}
 
 // 若為勢力分類，動態生成 Mermaid 勢力關係圖譜字串
 let mermaidCode = '';
@@ -98,7 +130,89 @@ const breadcrumbs = [
 
     <h1 class="page-title cursive-title">{title}</h1>
     <p class="page-subtitle cursive-title">「{subtitle}」</p>
+
+    <!-- 國學與字庫雙板塊切換標籤 -->
+    {(type === 'guoxue' || type === 'dictionary') && (
+      <div class="guoxue-tabs-nav ink-fade-in">
+        <a 
+          href={`${import.meta.env.BASE_URL}shanzhuang/guoxue`} 
+          class={`guoxue-tab-pill ${type === 'guoxue' ? 'active' : ''}`}
+        >
+          📜 經史引用詞
+        </a>
+        <a 
+          href={`${import.meta.env.BASE_URL}shanzhuang/dictionary`} 
+          class={`guoxue-tab-pill ${type === 'dictionary' ? 'active' : ''}`}
+        >
+          🀄 典故引用字
+        </a>
+      </div>
+    )}
+
     <div class="mountain-line"></div>
+
+    {type === 'dictionary' && dictGroups.length > 0 && (
+      <!-- 典故引用字：聲母快速跳轉導航列 -->
+      <div class="phonetic-nav-wrapper paper-card ink-fade-in">
+        <div class="phonetic-nav-header">
+          <span class="phonetic-nav-title cursive-title">注音聲母快速跳轉：</span>
+          <span class="phonetic-total-count">共收錄 {items.length} 個考據單字</span>
+        </div>
+        <div class="phonetic-nav-list">
+          {dictGroups.map((g) => (
+            <a href={`#initial-${g.initial}`} class="phonetic-jump-btn cursive-title">
+              {g.initial}
+              <span class="jump-count">{g.items.length}</span>
+            </a>
+          ))}
+        </div>
+      </div>
+
+      <!-- 典故引用字：按聲母分區展示 -->
+      <div class="dict-groups-container">
+        {dictGroups.map((group) => (
+          <div class="dict-group-section ink-fade-in" id={`initial-${group.initial}`}>
+            <div class="group-header">
+              <span class="group-initial-badge cursive-title">{group.initial}_聲母</span>
+              <span class="group-count-tag">{group.items.length} 字</span>
+              <div class="group-line"></div>
+            </div>
+            
+            <div class="dict-grid">
+              {group.items.map((item: any) => {
+                const data = item.data as any;
+                return (
+                  <a 
+                    href={`${import.meta.env.BASE_URL}shanzhuang/dictionary/${item.slug}`} 
+                    class="dict-char-card paper-card"
+                    title={`檢視「${data.title || data.character}」考據釋義與典籍引文`}
+                  >
+                    <div class="dict-char-main cursive-title">{data.character || data.title}</div>
+                    <div class="dict-char-details">
+                      <div class="dict-phonetics">
+                        <span class="dict-bopomofo">{data.bopomofo || ''}</span>
+                        <span class="dict-pinyin">{data.pinyin || ''}</span>
+                      </div>
+                      {data.radical && (
+                        <div class="dict-meta-extra">
+                          <span>{data.radical}</span>
+                          {data.strokes && <span>· {data.strokes}畫</span>}
+                        </div>
+                      )}
+                      {data.source && (
+                        <div class="dict-source-preview" title={data.source}>
+                          {data.source}
+                        </div>
+                      )}
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
 
     {type === 'factions' && items.length > 0 && (
       <div class="factions-chart-wrapper paper-card ink-fade-in">
@@ -111,104 +225,106 @@ const breadcrumbs = [
       </div>
     )}
 
-    {items.length === 0 ? (
-      <div class="empty-state paper-card">
-        <p>此閣目前尚無卷軸記載，待莊主提筆修書...</p>
-      </div>
-    ) : (
-      <div class="villa-grid">
-        {items.map((item: any) => {
-          const slug = item.slug;
-          const data = item.data as any;
-          return (
-            <div class="villa-card paper-card">
-              <div class="card-meta">
-                {type === 'novels' && (
-                  <>
-                    <span class={`status-badge ${data.status}`}>
-                      {novelStatusMap[data.status] || data.status}
-                    </span>
-                    {data.genre && (
-                      <span class="genre-tags">
-                        {data.genre.map((g: any) => (
-                          <span class="genre-tag">#{g}</span>
-                        ))}
+    {type !== 'dictionary' && (
+      items.length === 0 ? (
+        <div class="empty-state paper-card">
+          <p>此閣目前尚無卷軸記載，待莊主提筆修書...</p>
+        </div>
+      ) : (
+        <div class="villa-grid">
+          {items.map((item: any) => {
+            const slug = item.slug;
+            const data = item.data as any;
+            return (
+              <div class="villa-card paper-card">
+                <div class="card-meta">
+                  {type === 'novels' && (
+                    <>
+                      <span class={`status-badge ${data.status}`}>
+                        {novelStatusMap[data.status] || data.status}
                       </span>
-                    )}
-                  </>
-                )}
-                {type === 'characters' && (
-                  <>
-                    {data.affiliation && <span class="affiliation">{data.affiliation}</span>}
-                    {data.novel && <span class="novel-ref">《{data.novel}》</span>}
-                  </>
-                )}
-                {type === 'guoxue' && (
-                  <>
-                    <span class="category-badge">
-                      {guoxueCatMap[data.category] || data.category}
-                    </span>
-                    {data.source && <span class="source-ref">{data.source}</span>}
-                  </>
-                )}
-                {type === 'worldview' && (
-                  <>
-                    <span class="category-badge">世界觀</span>
-                    {data.category && <span class="source-ref">{data.category}</span>}
-                  </>
-                )}
-                {type === 'factions' && (
-                  <>
-                    <span class="category-badge">勢力</span>
-                    {data.category && <span class="source-ref">{data.category}</span>}
-                  </>
-                )}
-              </div>
-
-              <h3 class="card-title">
-                <a href={`${import.meta.env.BASE_URL}shanzhuang/${type}/${slug}`}>
-                  {data.title || data.name}
-                  {type === 'characters' && data.alias && data.alias.length > 0 && (
-                    <span class="alias-title">（{data.alias[0]}）</span>
+                      {data.genre && (
+                        <span class="genre-tags">
+                          {data.genre.map((g: any) => (
+                            <span class="genre-tag">#{g}</span>
+                          ))}
+                        </span>
+                      )}
+                    </>
                   )}
-                </a>
-              </h3>
-
-              {type === 'novels' && <p class="card-desc">{data.description}</p>}
-              {type === 'characters' && data.tags && (
-                <div class="char-tags">
-                  {data.tags.map((t: any) => (
-                    <span class="char-tag">{t}</span>
-                  ))}
+                  {type === 'characters' && (
+                    <>
+                      {data.affiliation && <span class="affiliation">{data.affiliation}</span>}
+                      {data.novel && <span class="novel-ref">《{data.novel}》</span>}
+                    </>
+                  )}
+                  {type === 'guoxue' && (
+                    <>
+                      <span class="category-badge">
+                        {guoxueCatMap[data.category] || data.category}
+                      </span>
+                      {data.source && <span class="source-ref">{data.source}</span>}
+                    </>
+                  )}
+                  {type === 'worldview' && (
+                    <>
+                      <span class="category-badge">世界觀</span>
+                      {data.category && <span class="source-ref">{data.category}</span>}
+                    </>
+                  )}
+                  {type === 'factions' && (
+                    <>
+                      <span class="category-badge">勢力</span>
+                      {data.category && <span class="source-ref">{data.category}</span>}
+                    </>
+                  )}
                 </div>
-              )}
-              {type === 'guoxue' && data.tags && (
-                <div class="note-tags">
-                  {data.tags.map((t: any) => (
-                    <span class="note-tag">{t}</span>
-                  ))}
-                </div>
-              )}
-              {type === 'worldview' && data.pubDate && (
-                <p class="card-desc text-xs text-ink-grey">發布於 {new Date(data.pubDate).toLocaleDateString('zh-TW')}</p>
-              )}
-              {type === 'factions' && data.pubDate && (
-                <p class="card-desc text-xs text-ink-grey">創建於 {new Date(data.pubDate).toLocaleDateString('zh-TW')}</p>
-              )}
 
-              <div class="card-footer">
-                <a href={`${import.meta.env.BASE_URL}shanzhuang/${type}/${slug}`} class="read-btn">
-                  {type === 'novels' && '翻閱小說 →'}
-                  {type === 'characters' && '人物誌 →'}
-                  {type === 'guoxue' && '研讀筆記 →'}
-                  {type === 'worldview' && '研讀設定 →'}
-                  {type === 'factions' && '探尋勢力 →'}
-                </a>
+                <h3 class="card-title">
+                  <a href={`${import.meta.env.BASE_URL}shanzhuang/${type}/${slug}`}>
+                    {data.title || data.name}
+                    {type === 'characters' && data.alias && data.alias.length > 0 && (
+                      <span class="alias-title">（{data.alias[0]}）</span>
+                    )}
+                  </a>
+                </h3>
+
+                {type === 'novels' && <p class="card-desc">{data.description}</p>}
+                {type === 'characters' && data.tags && (
+                  <div class="char-tags">
+                    {data.tags.map((t: any) => (
+                      <span class="char-tag">{t}</span>
+                    ))}
+                  </div>
+                )}
+                {type === 'guoxue' && data.tags && (
+                  <div class="note-tags">
+                    {data.tags.map((t: any) => (
+                      <span class="note-tag">{t}</span>
+                    ))}
+                  </div>
+                )}
+                {type === 'worldview' && data.pubDate && (
+                  <p class="card-desc text-xs text-ink-grey">發布於 {new Date(data.pubDate).toLocaleDateString('zh-TW')}</p>
+                )}
+                {type === 'factions' && data.pubDate && (
+                  <p class="card-desc text-xs text-ink-grey">創建於 {new Date(data.pubDate).toLocaleDateString('zh-TW')}</p>
+                )}
+
+                <div class="card-footer">
+                  <a href={`${import.meta.env.BASE_URL}shanzhuang/${type}/${slug}`} class="read-btn">
+                    {type === 'novels' && '翻閱小說 →'}
+                    {type === 'characters' && '人物誌 →'}
+                    {type === 'guoxue' && '研讀詞條 →'}
+                    {type === 'worldview' && '研讀設定 →'}
+                    {type === 'factions' && '探尋勢力 →'}
+                  </a>
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )
     )}
   </div>
 
@@ -476,5 +592,222 @@ const breadcrumbs = [
     padding: 2.5rem 1.5rem;
     color: var(--color-ink-grey);
     font-style: italic;
+  }
+
+  /* 國學與字庫雙板塊切換頁籤 */
+  .guoxue-tabs-nav {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin: 1.5rem 0 0.5rem;
+  }
+
+  .guoxue-tab-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.55rem 1.4rem;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid var(--color-border);
+    color: var(--color-ink-grey);
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+    text-decoration: none;
+  }
+
+  .guoxue-tab-pill:hover {
+    color: var(--color-mountain-cyan);
+    border-color: var(--color-mountain-cyan);
+    background: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+  }
+
+  .guoxue-tab-pill.active {
+    background: var(--color-mountain-cyan);
+    color: #fff;
+    border-color: var(--color-mountain-cyan);
+    box-shadow: 0 4px 12px rgba(45, 95, 90, 0.25);
+  }
+
+  /* 聲母快速跳轉導航列 */
+  .phonetic-nav-wrapper {
+    margin: 1.5rem 0 2.5rem;
+    padding: 1.2rem 1.5rem;
+    border-radius: 8px;
+    background: rgba(250, 248, 245, 0.9);
+    border: 1px solid var(--color-border);
+  }
+
+  .phonetic-nav-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.8rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .phonetic-nav-title {
+    font-size: 1.05rem;
+    color: var(--color-mountain-cyan);
+    font-weight: bold;
+  }
+
+  .phonetic-total-count {
+    font-size: 0.85rem;
+    color: var(--color-ink-grey);
+  }
+
+  .phonetic-nav-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .phonetic-jump-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+    min-width: 2.2rem;
+    padding: 0.3rem 0.55rem;
+    border-radius: 6px;
+    background: #fff;
+    border: 1px solid var(--color-border);
+    color: var(--color-ink-black);
+    font-size: 0.95rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    text-decoration: none;
+  }
+
+  .phonetic-jump-btn:hover {
+    background: var(--color-mountain-cyan);
+    color: #fff;
+    border-color: var(--color-mountain-cyan);
+    transform: scale(1.08);
+  }
+
+  .jump-count {
+    font-size: 0.7rem;
+    opacity: 0.7;
+    margin-left: 0.1rem;
+  }
+
+  /* 典故引用字：聲母分區與卡片 */
+  .dict-groups-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+  }
+
+  .dict-group-section {
+    scroll-margin-top: 5rem;
+  }
+
+  .group-header {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-bottom: 1.2rem;
+  }
+
+  .group-initial-badge {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--color-mountain-cyan);
+    background: rgba(45, 95, 90, 0.08);
+    padding: 0.2rem 0.8rem;
+    border-radius: 6px;
+    border-left: 4px solid var(--color-mountain-cyan);
+  }
+
+  .group-count-tag {
+    font-size: 0.85rem;
+    color: var(--color-ink-grey);
+    font-weight: 600;
+  }
+
+  .group-line {
+    flex-grow: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--color-border), transparent);
+  }
+
+  .dict-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1.2rem;
+  }
+
+  .dict-char-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.2rem;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .dict-char-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(45, 95, 90, 0.12);
+    border-color: var(--color-mountain-cyan);
+  }
+
+  .dict-char-main {
+    font-size: 2.2rem;
+    font-weight: 900;
+    color: var(--color-mountain-cyan);
+    line-height: 1;
+    min-width: 2.5rem;
+    text-align: center;
+  }
+
+  .dict-char-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+    flex-grow: 1;
+  }
+
+  .dict-phonetics {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+  }
+
+  .dict-bopomofo {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--color-ink-black);
+  }
+
+  .dict-pinyin {
+    font-size: 0.8rem;
+    color: var(--color-ink-grey);
+    font-family: var(--font-body);
+  }
+
+  .dict-meta-extra {
+    font-size: 0.75rem;
+    color: var(--color-mountain-accent);
+  }
+
+  .dict-source-preview {
+    font-size: 0.75rem;
+    color: var(--color-ink-grey);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 </style>

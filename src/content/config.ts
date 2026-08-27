@@ -152,6 +152,23 @@ const bestiary = defineCollection({
   }),
 });
 
+// 山莊 → 典故引用字 (字庫考據)
+const dictionary = defineCollection({
+  type: "content",
+  schema: z.object({
+    title: z.string(), // 單字標題，如 "璧"
+    character: z.string().optional(), // 單字本身
+    bopomofo: z.string().optional(), // 審定注音
+    pinyin: z.string().optional(), // 漢語拼音
+    initial: z.string().optional(), // 聲母分組（ㄅ、ㄇ、ㄈ...）
+    radical: z.string().optional(), // 部首
+    strokes: z.union([z.number(), z.string()]).optional(), // 筆畫
+    source: z.string().optional(), // 主要經籍出處
+    tags: z.array(z.string()).default([]),
+    pubDate: z.coerce.date().default(() => new Date()),
+  }),
+});
+
 // [ADD_NEW_COLLECTION_DEFINITION_HERE]
 
 export const collections = {
@@ -165,6 +182,7 @@ export const collections = {
   items,
   techniques,
   bestiary,
+  dictionary,
 
   // [ADD_NEW_COLLECTION_EXPORT_HERE]
 };

@@ -14,6 +14,10 @@ const guoxue = await getCollection(
   "guoxue",
   (entry) => !entry.id.startsWith("_"),
 );
+const dictionary = await getCollection(
+  "dictionary",
+  (entry) => !entry.id.startsWith("_"),
+);
 const worldview = await getCollection(
   "worldview",
   (entry) => !entry.id.startsWith("_"),
@@ -47,12 +51,22 @@ const categories = [
   {
     id: "guoxue",
     title: "研經室",
-    name: "國學筆記",
-    desc: "存放晚餐到處爬國學典籍的筆記，或許可用來加入至小說設定？",
+    name: "經史引用詞",
+    desc: "收錄小說創作時所引用之經史典籍與成語詞組考據。",
     count: guoxue.length,
-    unit: "則筆記",
+    unit: "則詞條",
     link: "guoxue",
     icon: "✍️",
+  },
+  {
+    id: "dictionary",
+    title: "字學閣",
+    name: "典故引用字",
+    desc: "字斟句酌，辨正古音，收錄長生劫小說古典典故單字庫。",
+    count: dictionary.length,
+    unit: "個單字",
+    link: "dictionary",
+    icon: "🀄",
   },
   {
     id: "worldview",
