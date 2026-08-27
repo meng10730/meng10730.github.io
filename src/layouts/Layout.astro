@@ -43,6 +43,9 @@ const authorData = {
   ]
 };
 
+const copyrightNotice = "版權所有 © 2026 吃墨水的晚餐，未經書面許可嚴禁任何形式之轉載、重製或用於 AI 機器學習訓練。";
+const copyrightUrl = `${siteUrl}/copyright`;
+
 const breadcrumbSchema = breadcrumbs && breadcrumbs.length > 0 ? {
   "@type": "BreadcrumbList",
   "@id": `${canonicalURL}#breadcrumb`,
@@ -64,6 +67,10 @@ const jsonLd = {
       "name": "晚餐後的書桌",
       "description": "吃墨水的晚餐之個人創作空間，收錄東方玄幻小說、修仙世界觀設定集、人物誌與技術隨筆",
       "author": authorData,
+      "publisher": authorData,
+      "copyrightHolder": authorData,
+      "copyrightNotice": copyrightNotice,
+      "license": copyrightUrl,
       "inLanguage": "zh-Hant"
     },
     ...(breadcrumbSchema ? [breadcrumbSchema] : []),
@@ -79,6 +86,9 @@ const jsonLd = {
         "dateModified": (articleModified || articleDate) ? new Date(articleModified || articleDate).toISOString() : undefined,
         "author": authorData,
         "publisher": authorData,
+        "copyrightHolder": authorData,
+        "copyrightNotice": copyrightNotice,
+        "license": copyrightUrl,
         "inLanguage": "zh-Hant"
       }
     ] : [])
@@ -514,11 +524,110 @@ const jsonLd = {
           document.addEventListener("click", initOnFirstClick);
         }
 
+        // --- 全站原創正文防複製與版權保護機制 (1秒冷卻防抖) ---
+        let lastToastTime = 0;
+        const TOAST_COOLDOWN = 1000;
+
+        function showCopyrightToast() {
+          const now = Date.now();
+          if (now - lastToastTime < TOAST_COOLDOWN) return;
+          lastToastTime = now;
+
+          const toast = document.getElementById("ink-toast");
+          if (!toast) return;
+
+          toast.classList.add("show");
+          setTimeout(() => {
+            toast.classList.remove("show");
+          }, 2200);
+        }
+
+        function isProtectedTarget(targetEl) {
+          if (!targetEl) return false;
+          // 豁免白名單：輸入框、代碼區塊、按鈕、管理員後台、Giscus 留言區、頁首導覽列
+          if (
+            targetEl.closest(
+              "pre, code, input, textarea, select, [contenteditable='true'], #giscus-container, #giscus-container *, .site-header, .site-footer, .admin-login-btn, .admin-logout-btn, a, button"
+            )
+          ) {
+            return false;
+          }
+          // 受保護區域：小說正文、設定集、國學筆記、部落格文章、關於我回答
+          if (
+            targetEl.closest(
+              ".markdown-body, .post-markdown-body, .about-card .answer, .content-card, .post-content-card"
+            )
+          ) {
+            return true;
+          }
+          return false;
+        }
+
+        function globalContextMenuListener(e) {
+          if (isProtectedTarget(e.target)) {
+            e.preventDefault();
+            showCopyrightToast();
+          }
+        }
+
+        function globalCopyListener(e) {
+          const selection = window.getSelection();
+          const selectedNode =
+            selection && selection.anchorNode
+              ? selection.anchorNode.parentElement
+              : null;
+          if (isProtectedTarget(e.target) || isProtectedTarget(selectedNode)) {
+            e.preventDefault();
+            showCopyrightToast();
+          }
+        }
+
+        function globalKeyDownListener(e) {
+          const isCtrlOrCmd = e.ctrlKey || e.metaKey;
+          if (!isCtrlOrCmd) return;
+          const key = (e.key || "").toLowerCase();
+          // 攔截 Ctrl+C, Ctrl+A, Ctrl+U, Ctrl+S
+          if (key === "c" || key === "a" || key === "u" || key === "s") {
+            const selection = window.getSelection();
+            const selectedNode =
+              selection && selection.anchorNode
+                ? selection.anchorNode.parentElement
+                : null;
+            if (
+              isProtectedTarget(document.activeElement) ||
+              isProtectedTarget(e.target) ||
+              isProtectedTarget(selectedNode)
+            ) {
+              e.preventDefault();
+              showCopyrightToast();
+            }
+          }
+        }
+
+        function globalDragStartListener(e) {
+          if (isProtectedTarget(e.target)) {
+            e.preventDefault();
+          }
+        }
+
+        function setupAntiCopyProtection() {
+          document.removeEventListener("contextmenu", globalContextMenuListener);
+          document.removeEventListener("copy", globalCopyListener);
+          document.removeEventListener("keydown", globalKeyDownListener);
+          document.removeEventListener("dragstart", globalDragStartListener);
+
+          document.addEventListener("contextmenu", globalContextMenuListener);
+          document.addEventListener("copy", globalCopyListener);
+          document.addEventListener("keydown", globalKeyDownListener);
+          document.addEventListener("dragstart", globalDragStartListener);
+        }
+
         function initAdminNav() {
           checkAdminStatus();
           setupLogout();
           initScrollTracker();
           setupGlobalClickSfx();
+          setupAntiCopyProtection();
         }
 
         document.addEventListener("astro:page-load", initAdminNav);
@@ -533,7 +642,7 @@ const jsonLd = {
       <!-- 頁尾 -->
       <footer class="site-footer">
         <div class="footer-content">
-          <p>© {new Date().getFullYear()} 吃墨水的晚餐 · 晚餐後的書桌 | <a href="https://github.com/meng10730" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: underline;">GitHub</a> · All Rights Reserved.</p>
+          <p>© {new Date().getFullYear()} 吃墨水的晚餐 · 晚餐後的書桌 | <a href={`${import.meta.env.BASE_URL}copyright`} style="color: inherit; text-decoration: underline;">版權與使用條款</a> | <a href="https://github.com/meng10730" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: underline;">GitHub</a> · All Rights Reserved.</p>
         </div>
       </footer>
     </div>
@@ -543,6 +652,12 @@ const jsonLd = {
 
     <!-- 全站百科懸浮氣泡 -->
     <GlossaryPopover />
+
+    <!-- 水墨風防複製提示框 -->
+    <div id="ink-toast" class="ink-toast-container" aria-live="polite">
+      <span class="ink-toast-icon">印</span>
+      <span class="ink-toast-text">手下留情，本站原創內容版權所有，嚴禁複製轉載</span>
+    </div>
 
     <script>
       import { gsap } from "gsap";

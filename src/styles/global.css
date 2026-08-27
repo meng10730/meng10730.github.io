@@ -176,3 +176,94 @@ a:hover {
   opacity: 1;
 }
 
+/* ==========================================================================
+   正文防複製與版權保護體系 (Copyright & Anti-Scraping Protection)
+   ========================================================================== */
+
+/* 僅針對小說正文、設定集、國學筆記、部落格文章與關於我回答限制選取 */
+.markdown-body,
+.post-markdown-body,
+.about-card .answer {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* 明確豁免：程式碼區塊、輸入框、文字區域、後台操作項與可編輯元件 */
+pre, code, pre *, code *,
+input, textarea, select, [contenteditable="true"],
+.admin-login-btn, #giscus-container, #giscus-container * {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+}
+
+/* 列印防護與版權宣告浮水印 */
+@media print {
+  body::after {
+    content: "晚餐後的書桌 · 版權所有 · 嚴禁未經許可轉載或翻印 (https://meng10730.github.io)";
+    position: fixed;
+    bottom: 12mm;
+    right: 12mm;
+    font-size: 9pt;
+    color: rgba(0, 0, 0, 0.4);
+    font-family: var(--font-serif);
+  }
+}
+
+/* 水墨風防複製浮動提示框 (Ink Toast) */
+.ink-toast-container {
+  position: fixed;
+  bottom: 2.5rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(30px);
+  background: rgba(253, 252, 247, 0.96);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--color-border);
+  border-left: 4px solid #b73a3a; /* 硃砂印泥紅邊框 */
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  border-radius: 4px;
+  padding: 0.75rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  z-index: 99999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.ink-toast-container.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+
+.ink-toast-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 3px;
+  background: #b73a3a;
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-family: var(--font-cursive);
+  font-weight: bold;
+  box-shadow: 0 1px 3px rgba(183, 58, 58, 0.35);
+  flex-shrink: 0;
+}
+
+.ink-toast-text {
+  font-family: var(--font-cursive);
+  font-size: 1rem;
+  color: var(--color-ink-black);
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+

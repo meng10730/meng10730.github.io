@@ -1,0 +1,180 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+const breadcrumbs = [
+  { name: "首頁", url: "/" },
+  { name: "版權與使用條款", url: "/copyright" }
+];
+---
+
+<Layout
+  title="版權宣告與使用條款 | 晚餐後的書桌"
+  description="「晚餐後的書桌」原創文學作品、世界觀設定集、國學筆記與技術文章之版權宣告、轉載授權規範與 AI 訓練爬蟲使用政策。"
+  breadcrumbs={breadcrumbs}
+>
+  <div class="copyright-container ink-fade-in">
+    <h1 class="page-title cursive-title">版權宣告與使用條款</h1>
+    <p class="page-subtitle">晚餐後的書桌 · 原創內容保護與授權方針</p>
+    <div class="mountain-line"></div>
+
+    <div class="copyright-card paper-card">
+      <div class="policy-section">
+
+        <!-- 1. 著作權歸屬 -->
+        <div class="policy-item">
+          <div class="policy-header cursive-title">一、 著作權歸屬聲明 (Copyright Notice)</div>
+          <div class="policy-body">
+            本網站「<strong>晚餐後的書桌</strong>」（以下簡稱「本站」）內刊載之所有原創內容，包括但不限於：連載小說正文、世界觀架構、人物誌生平、門派與法寶設定、國學考據筆記、技術隨筆以及視覺設計排版，其著作權與智慧財產權均屬原作者「<strong>吃墨水的晚餐</strong>」所有，受中華民國著作權法及國際著作權公約之完全保護。本站保留一切法律權利（All Rights Reserved）。
+          </div>
+        </div>
+
+        <!-- 2. 嚴格禁止未經許可之轉載與商用 -->
+        <div class="policy-item">
+          <div class="policy-header cursive-title">二、 轉載、改作與商業使用限制</div>
+          <div class="policy-body">
+            <ul>
+              <li><strong>嚴禁全篇轉載</strong>：未經作者事前正式書面授權，任何個人、團體、網站或應用程式，均<strong>不得以任何形式</strong>（包括但不限於複製、轉貼、截圖、排版再發布、錄音轉換或製成電子書）重製、轉載或分發本站內容。</li>
+              <li><strong>嚴禁商業營利</strong>：本站所有文字與設定嚴禁直接或間接用於任何商業營利行為（包含出版、改編劇本、付費閱讀平台轉載、遊戲企劃套用等）。</li>
+              <li><strong>禁止鏡像與搬運</strong>：嚴格禁止任何自動化爬蟲程式、數據採集工具對本站建立鏡像站（Mirror Sites）或內容農場搬運。</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- 3. AI 訓練與數據採集禁止政策 -->
+        <div class="policy-item">
+          <div class="policy-header cursive-title">三、 人工智慧 (AI) 訓練與數據挖掘禁止政策</div>
+          <div class="policy-body">
+            <ul>
+              <li><strong>禁止機器學習訓練</strong>：本站所有小說情節、人物設定與原創文學語料，<strong>明確保留文字與數據探勘權利（Text and Data Mining Rights Reservation）</strong>。嚴禁任何實體將本站內容輸入、導入或用於訓練、微調任何大型語言模型（LLM）、生成式 AI、文字生成模型或相關演算法。</li>
+              <li><strong>爬蟲存取約束</strong>：本站已於 <code>robots.txt</code> 明確宣告封鎖各大 AI 訓練爬蟲。未遵守規範之未授權抓取行為均屬侵權。</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- 4. 合理引用規範 -->
+        <div class="policy-item">
+          <div class="policy-header cursive-title">四、 合理引用與讀者交流方針</div>
+          <div class="policy-body">
+            若讀者因學術研究、書評探討、推薦分享等非商業目的需要引用本站內容，須嚴格遵守以下條件：
+            <ul>
+              <li>引用篇幅應符合合理使用原則（單篇引用文字不得超過 200 字，且不得構成該評論之主要實質主體）。</li>
+              <li>必須以顯著方式明確標註作者筆名「<strong>吃墨水的晚餐</strong>」、作品名稱，並附上指向本站該篇文章之<strong>原始永久網址 (Canonical URL)</strong>。</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- 5. 侵權通報與勘誤聯絡 -->
+        <div class="policy-item">
+          <div class="policy-header cursive-title">五、 侵權檢舉、勘誤與聯繫管道</div>
+          <div class="policy-body">
+            若您發現任何未經授權搬運、侵犯本站著作權之情事，或對內容有考據上的勘誤建議，歡迎透過以下管道聯繫作者：
+            <div class="contact-box">
+              <p>官方交流與回報管道：<a href="https://github.com/meng10730/meng10730.github.io/issues" target="_blank" rel="noopener noreferrer" class="ink-link">GitHub Issues 專區</a></p>
+              <p class="update-time">最後修訂發布日期：2026 年 8 月 27 日</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .copyright-container {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .page-title {
+    text-align: center;
+    font-size: 2.3rem;
+    margin-bottom: 0.3rem;
+    color: var(--color-ink-black);
+  }
+
+  .page-subtitle {
+    text-align: center;
+    font-family: var(--font-serif);
+    font-size: 0.95rem;
+    color: var(--color-ink-grey);
+    margin-bottom: 0.5rem;
+  }
+
+  .copyright-card {
+    margin-top: 2rem;
+    padding: 3rem 2.5rem;
+    border-top: 4px solid var(--color-ink-black);
+  }
+
+  .policy-section {
+    display: flex;
+    flex-direction: column;
+    gap: 2.2rem;
+  }
+
+  .policy-item {
+    border-bottom: 1px dashed var(--color-border);
+    padding-bottom: 1.8rem;
+  }
+
+  .policy-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .policy-header {
+    font-size: 1.25rem;
+    color: var(--color-mountain-cyan);
+    margin-bottom: 0.8rem;
+    font-weight: 600;
+  }
+
+  .policy-body {
+    line-height: 1.9;
+    color: var(--color-ink-text);
+    padding-left: 0.8rem;
+    border-left: 2px solid var(--color-mountain-green);
+    font-size: 0.98rem;
+  }
+
+  .policy-body ul {
+    margin-top: 0.5rem;
+    padding-left: 1.3rem;
+  }
+
+  .policy-body li {
+    margin-bottom: 0.5rem;
+  }
+
+  .policy-body code {
+    background: rgba(230, 223, 204, 0.35);
+    padding: 0.15rem 0.4rem;
+    border-radius: 3px;
+    font-size: 0.9rem;
+    color: #b73a3a;
+  }
+
+  .contact-box {
+    margin-top: 1rem;
+    background: rgba(230, 223, 204, 0.2);
+    padding: 1rem 1.2rem;
+    border-radius: 4px;
+    border: 1px solid var(--color-border);
+  }
+
+  .update-time {
+    font-size: 0.85rem;
+    color: var(--color-ink-grey);
+    margin-top: 0.4rem;
+  }
+
+  @media (max-width: 768px) {
+    .copyright-card {
+      padding: 2rem 1.5rem;
+    }
+    .page-title {
+      font-size: 1.8rem;
+    }
+  }
+</style>
