@@ -180,7 +180,7 @@ export function getStaticPaths() {
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>莊主後台 | 唐門山莊</title>
+  <title>管理後台 | 晚餐後的書桌</title>
   <script is:inline>
     (function() {
       var params = new URLSearchParams(window.location.search);
@@ -246,8 +246,8 @@ export function getStaticPaths() {
 </head>
 <body>
   <!-- 返回前台水墨圓章按鈕 -->
-  <a href="/" class="back-to-site-btn" id="back-to-site-btn" title="返回唐門山莊前台">
-    <span class="btn-stamp-text">返回山莊</span>
+  <a href="/" class="back-to-site-btn" id="back-to-site-btn" title="返回晚餐後的書桌">
+    <span class="btn-stamp-text">返回書桌</span>
   </a>
 
   <KeystaticApp client:only="react" />

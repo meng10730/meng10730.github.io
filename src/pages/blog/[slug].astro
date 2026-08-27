@@ -24,7 +24,12 @@ const formatDate = (date: Date) => {
 };
 ---
 
-<Layout title={`${post.data.title} | 後山`} description={post.data.description}>
+<Layout 
+  title={`${post.data.title} · 觀其文 | 晚餐後的書桌`} 
+  description={post.data.description}
+  type="article"
+  articleDate={post.data.pubDate}
+>
   <article class="post-detail-container">
     
     <!-- 返回列表按鈕 -->

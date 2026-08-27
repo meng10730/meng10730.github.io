@@ -8,12 +8,60 @@ import GlossaryPopover from "../components/GlossaryPopover.astro";
 interface Props {
   title?: string;
   description?: string;
+  image?: string;
+  articleDate?: Date | string;
+  type?: 'website' | 'article';
 }
 
 const {
-  title = "筆墨涓流，臨淵探賾 | 晚餐的個人網站",
-  description = "晚餐終於擁有瘋狂自言自語的機會啦!",
+  title = "立於岳麓，伏案浸墨 | 晚餐後的書桌",
+  description = "吃墨水的晚餐之個人創作空間「晚餐後的書桌」，收錄東方玄幻小說、修仙世界觀設定集、人物誌與技術隨筆。",
+  image = "/favicon.svg",
+  articleDate,
+  type = "website",
 } = Astro.props;
+
+const siteUrl = "https://meng10730.github.io";
+const canonicalURL = new URL(Astro.url.pathname, siteUrl).href;
+const socialImageURL = new URL(image, siteUrl).href;
+
+const authorData = {
+  "@type": "Person",
+  "name": "吃墨水的晚餐",
+  "url": siteUrl,
+  "sameAs": [
+    "https://github.com/meng10730"
+  ]
+};
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": `${siteUrl}/#website`,
+      "url": siteUrl,
+      "name": "晚餐後的書桌",
+      "description": "吃墨水的晚餐之個人創作空間，收錄東方玄幻小說、修仙世界觀設定集、人物誌與技術隨筆",
+      "author": authorData,
+      "inLanguage": "zh-Hant"
+    },
+    ...(type === "article" || articleDate ? [
+      {
+        "@type": "Article",
+        "@id": `${canonicalURL}#article`,
+        "isPartOf": { "@id": `${siteUrl}/#website` },
+        "headline": title,
+        "description": description,
+        "mainEntityOfPage": canonicalURL,
+        "datePublished": articleDate ? new Date(articleDate).toISOString() : undefined,
+        "author": authorData,
+        "publisher": authorData,
+        "inLanguage": "zh-Hant"
+      }
+    ] : [])
+  ]
+};
 ---
 
 <!doctype html>
@@ -24,12 +72,28 @@ const {
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
 
-    <!-- SEO 優化 -->
+    <!-- 基礎 SEO & E-E-A-T 標籤 -->
     <title>{title}</title>
     <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalURL} />
+    <meta name="author" content="吃墨水的晚餐" />
+
+    <!-- Open Graph (Facebook, LINE, Discord) -->
+    <meta property="og:site_name" content="晚餐後的書桌" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content={type} />
+    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:image" content={socialImageURL} />
+
+    <!-- Twitter / X Cards -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={socialImageURL} />
+
+    <!-- Google 結構化資料 (Schema.org / JSON-LD) -->
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
 
     <!-- 啟用 Astro 的客戶端路由（前身為 ViewTransitions）以達成無縫音樂與動畫 -->
     <ViewTransitions />
@@ -45,7 +109,7 @@ const {
         <nav class="nav-container">
           <div class="nav-logo">
             <a href={import.meta.env.BASE_URL} class="cursive-title ink-logo"
-              >吃墨水的晚餐</a
+              >晚餐後的書桌</a
             >
           </div>
           <ul class="nav-links">
@@ -447,7 +511,7 @@ const {
       <!-- 頁尾 -->
       <footer class="site-footer">
         <div class="footer-content">
-          <p>© {new Date().getFullYear()} 吞文吐墨</p>
+          <p>© {new Date().getFullYear()} 吃墨水的晚餐 · 晚餐後的書桌 | <a href="https://github.com/meng10730" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: underline;">GitHub</a> · All Rights Reserved.</p>
         </div>
       </footer>
     </div>
