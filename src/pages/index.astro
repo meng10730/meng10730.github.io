@@ -13,7 +13,7 @@ let commitLogs: CommitLog[] = [];
 try {
   const rawLog = execFileSync(
     "git",
-    ["log", "-n", "4", "--pretty=format:%H|%h|%as|%s"],
+    ["log", "-n", "5", "--pretty=format:%H|%h|%as|%s"],
     {
       encoding: "utf8",
       timeout: 5000,
@@ -36,6 +36,7 @@ try {
 } catch (e) {
   commitLogs = [];
 }
+
 ---
 
 <Layout
@@ -97,7 +98,7 @@ try {
                 全卷檢閱 ➔
               </a>
             </div>
-            <ul class="commit-list">
+            <ul class="commit-list" id="home-commit-list">
               {commitLogs.map((log) => (
                 <li class="commit-item">
                   <div class="commit-dot" />
@@ -123,6 +124,57 @@ try {
         </section>
       )
     }
+
+    <script is:inline>
+      async function syncLiveCommits() {
+        const listEl = document.getElementById("home-commit-list");
+        if (!listEl) return;
+        try {
+          const cacheKey = "meng_site_live_commits_v1";
+          const cacheTimeKey = "meng_site_live_commits_time_v1";
+          const cached = sessionStorage.getItem(cacheKey);
+          const cacheTime = sessionStorage.getItem(cacheTimeKey);
+          let commits = null;
+
+          if (cached && cacheTime && Date.now() - Number(cacheTime) < 180000) {
+            commits = JSON.parse(cached);
+          } else {
+            const res = await fetch("https://api.github.com/repos/meng10730/meng10730.github.io/commits?per_page=5");
+            if (res.ok) {
+              commits = await res.json();
+              sessionStorage.setItem(cacheKey, JSON.stringify(commits));
+              sessionStorage.setItem(cacheTimeKey, String(Date.now()));
+            }
+          }
+
+          if (commits && Array.isArray(commits) && commits.length > 0) {
+            listEl.innerHTML = commits.map(item => {
+              const hash = item.sha || "";
+              const shortHash = hash.substring(0, 7);
+              const rawDate = item.commit?.author?.date || "";
+              const date = rawDate ? rawDate.split("T")[0] : "";
+              const rawMsg = (item.commit?.message || "").split("\n")[0];
+              return `
+                <li class="commit-item">
+                  <div class="commit-dot"></div>
+                  <div class="commit-content">
+                    <div class="commit-meta">
+                      <span class="commit-date">${date}</span>
+                      <a href="https://github.com/meng10730/meng10730.github.io/commit/${hash}" target="_blank" rel="noopener noreferrer" class="commit-hash-link" title="檢視 Commit ${shortHash}">#${shortHash}</a>
+                    </div>
+                    <p class="commit-message">${rawMsg}</p>
+                  </div>
+                </li>
+              `;
+            }).join("");
+          }
+        } catch (err) {}
+      }
+
+      document.addEventListener("astro:page-load", syncLiveCommits);
+      syncLiveCommits();
+    </script>
+
 
     <!-- 快速導覽按鈕區 -->
     <section
