@@ -27,6 +27,7 @@ initial: "ㄅ"
 radical: "玉部"
 strokes: 18
 source: "《詩經》"
+reference: "教育部《重編國語辭典修訂本》"
 tags: ["古典典故", "字音考據", "ㄅ_聲母"]
 pubDate: 2026-08-27
 ---
@@ -40,6 +41,7 @@ pubDate: 2026-08-27
 
 ## 2. 古籍出處與經典引文
 - 經史子集出處：
+- 辭典資料考據：中華民國教育部《重編國語辭典修訂本》
 `;
 fs.writeFileSync(path.join(TARGET_DIR, '_template.md'), templateContent, 'utf8');
 

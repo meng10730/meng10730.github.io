@@ -301,6 +301,18 @@ const breadcrumbs = [
         <Content />
       </div>
 
+      {(type === 'dictionary' || type === 'guoxue') && (
+        <div class="moe-citation-card paper-card ink-fade-in">
+          <div class="moe-citation-header">
+            <span class="moe-citation-icon">📚</span>
+            <span class="moe-citation-title cursive-title">考據與典籍資料來源出處</span>
+          </div>
+          <p class="moe-citation-text">
+            本條目所記載之審定字音（注音/拼音）、部首筆畫、本義訓詁與古籍引文，依據<strong>中華民國教育部《重編國語辭典修訂本》</strong>（採用創用 CC 姓名標示-禁止改作 3.0 臺灣授權條款，CC BY-ND 3.0 TW）進行整理收錄；相關先秦兩漢經史子集之原典著作權屬公有領域，本站基於文獻所衍生之原創小說設定與創作意境則屬作者所有。
+          </p>
+        </div>
+      )}
+
       {type === 'factions' && factionMembers.length > 0 && (
         <div class="faction-members-section">
           <div class="mountain-line"></div>
@@ -634,5 +646,39 @@ const breadcrumbs = [
 
   .ink-expand-btn:active {
     transform: translateY(1px);
+  }
+
+  /* 教育部辭典考據出處卡片 */
+  .moe-citation-card {
+    margin-top: 3rem;
+    padding: 1.2rem 1.6rem;
+    border-radius: 8px;
+    background: rgba(250, 248, 245, 0.85);
+    border: 1px solid var(--color-border);
+    border-left: 4px solid var(--color-mountain-cyan);
+  }
+
+  .moe-citation-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .moe-citation-icon {
+    font-size: 1.1rem;
+  }
+
+  .moe-citation-title {
+    font-size: 1rem;
+    color: var(--color-mountain-cyan);
+    font-weight: bold;
+  }
+
+  .moe-citation-text {
+    font-size: 0.85rem;
+    color: var(--color-ink-grey);
+    line-height: 1.7;
+    margin: 0;
   }
 </style>

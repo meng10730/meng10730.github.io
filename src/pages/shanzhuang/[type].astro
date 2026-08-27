@@ -326,6 +326,12 @@ const breadcrumbs = [
         </div>
       )
     )}
+
+    {(type === 'dictionary' || type === 'guoxue') && (
+      <div class="moe-list-footer ink-fade-in">
+        <p>※ 本專區收錄之審定字音、部首筆畫與經典引文考據，整理自中華民國教育部《重編國語辭典修訂本》（CC BY-ND 3.0 TW）及歷代公有領域經籍文獻。</p>
+      </div>
+    )}
   </div>
 
   {type === 'factions' && (
@@ -809,5 +815,20 @@ const breadcrumbs = [
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  /* 列表底部教育部考據出處致謝 */
+  .moe-list-footer {
+    margin-top: 3.5rem;
+    padding: 1rem 1.5rem;
+    text-align: center;
+    border-top: 1px dashed var(--color-border);
+  }
+
+  .moe-list-footer p {
+    font-size: 0.82rem;
+    color: var(--color-ink-grey);
+    line-height: 1.6;
+    margin: 0;
   }
 </style>
