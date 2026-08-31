@@ -1,0 +1,192 @@
+---
+interface Props {
+  href?: string;
+  variant?: 'primary' | 'secondary' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  class?: string;
+  target?: string;
+  rel?: string;
+  title?: string;
+  type?: 'button' | 'submit' | 'reset';
+  ariaLabel?: string;
+}
+
+const {
+  href,
+  variant = 'primary',
+  size = 'md',
+  class: className = '',
+  target,
+  rel,
+  title,
+  type = 'button',
+  ariaLabel,
+  ...rest
+} = Astro.props;
+
+const Tag = href ? 'a' : 'button';
+---
+
+<Tag
+  href={href}
+  type={!href ? type : undefined}
+  target={target}
+  rel={rel}
+  title={title}
+  aria-label={ariaLabel}
+  class={`ink-btn ink-btn-${variant} ink-btn-${size} ${className}`}
+  {...rest}
+>
+  <span class="ink-btn-glow" aria-hidden="true"></span>
+  <span class="ink-btn-inner">
+    <slot name="prefix" />
+    <span class="ink-btn-label">
+      <slot />
+    </span>
+    <slot name="suffix" />
+  </span>
+</Tag>
+
+<style>
+  .ink-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.6rem 1.4rem;
+    font-family: var(--font-cursive, serif);
+    font-size: 1.05rem;
+    letter-spacing: 0.08em;
+    text-decoration: none;
+    cursor: pointer;
+    border-radius: 8px;
+    border: 1px solid var(--color-border, #e6dfcc);
+    background: var(--color-paper-light, #fdfcf7);
+    color: var(--color-ink-black, #1a1a1a);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+    transition: transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1),
+                box-shadow 0.25s cubic-bezier(0.25, 0.8, 0.25, 1),
+                border-color 0.25s ease,
+                background-color 0.25s ease;
+    overflow: hidden;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .ink-btn-inner {
+    position: relative;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .ink-btn-label {
+    display: inline-block;
+  }
+
+  /* 背景動態微光光暈 (Galaxy 特效的水墨適配版) */
+  .ink-btn-glow {
+    position: absolute;
+    inset: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(
+      circle at center,
+      rgba(45, 95, 90, 0.12) 0%,
+      rgba(61, 126, 90, 0.05) 40%,
+      transparent 70%
+    );
+    opacity: 0;
+    transform: scale(0.6);
+    transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* 變體：Primary 主按鈕 */
+  .ink-btn-primary {
+    background: linear-gradient(135deg, var(--color-paper-light, #fdfcf7) 0%, var(--color-paper-bg, #faf7ee) 100%);
+    border-color: var(--color-mountain-cyan, #2d5f5a);
+    color: var(--color-mountain-cyan, #2d5f5a);
+  }
+
+  .ink-btn-primary:hover {
+    transform: translateY(-2px);
+    border-color: var(--color-mountain-green, #3d7e5a);
+    color: var(--color-mountain-green, #3d7e5a);
+    box-shadow: 0 4px 14px rgba(45, 95, 90, 0.15);
+  }
+
+  .ink-btn-primary:hover .ink-btn-glow {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  /* 變體：Secondary 次按鈕 */
+  .ink-btn-secondary {
+    background: var(--color-paper-light, #fdfcf7);
+    border-color: var(--color-border, #e6dfcc);
+    color: var(--color-ink-text, #2c2c2c);
+  }
+
+  .ink-btn-secondary:hover {
+    transform: translateY(-2px);
+    border-color: var(--color-ink-grey, #5c5c5c);
+    color: var(--color-ink-black, #1a1a1a);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+  }
+
+  /* 變體：Ghost 幽靈按鈕 */
+  .ink-btn-ghost {
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+    color: var(--color-ink-grey, #5c5c5c);
+  }
+
+  .ink-btn-ghost:hover {
+    background: rgba(45, 95, 90, 0.05);
+    color: var(--color-mountain-cyan, #2d5f5a);
+  }
+
+  /* 尺寸規範 */
+  .ink-btn-sm {
+    padding: 0.4rem 0.9rem;
+    font-size: 0.9rem;
+    border-radius: 6px;
+  }
+
+  .ink-btn-md {
+    padding: 0.6rem 1.4rem;
+    font-size: 1.05rem;
+    border-radius: 8px;
+  }
+
+  .ink-btn-lg {
+    padding: 0.8rem 1.8rem;
+    font-size: 1.2rem;
+    border-radius: 10px;
+  }
+
+  /* 按壓態反饋 */
+  .ink-btn:active {
+    transform: translateY(1px);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+
+  /* 無障礙焦點 */
+  .ink-btn:focus-visible {
+    outline: 2px solid var(--color-mountain-cyan, #2d5f5a);
+    outline-offset: 2px;
+  }
+
+  /* 減少動態偏好適配 */
+  @media (prefers-reduced-motion: reduce) {
+    .ink-btn,
+    .ink-btn-glow {
+      transition: none !important;
+      transform: none !important;
+    }
+  }
+</style>

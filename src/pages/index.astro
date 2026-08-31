@@ -1,6 +1,8 @@
 ---
 import { execFileSync } from "node:child_process";
 import Layout from "../layouts/Layout.astro";
+import InkButton from "../components/ui/InkButton.astro";
+import ShimmerBadge from "../components/ui/ShimmerBadge.astro";
 
 interface CommitLog {
   hash: string;
@@ -62,18 +64,9 @@ try {
         </p>
 
         <div class="skills-showcase">
-          <div class="skill-tag">
-            <span class="tag-icon">⚡</span>
-            <span>網頁代碼</span>
-          </div>
-          <div class="skill-tag">
-            <span class="tag-icon">🎨</span>
-            <span>水墨寫意</span>
-          </div>
-          <div class="skill-tag">
-            <span class="tag-icon">🎵</span>
-            <span>絲竹樂音</span>
-          </div>
+          <ShimmerBadge icon="⚡" variant="cyan">網頁代碼</ShimmerBadge>
+          <ShimmerBadge icon="🎨" variant="default">水墨寫意</ShimmerBadge>
+          <ShimmerBadge icon="🎵" variant="accent">絲竹樂音</ShimmerBadge>
         </div>
       </div>
     </section>
@@ -182,9 +175,10 @@ try {
       style="animation-delay: 0.4s;"
     >
       <div class="action-buttons">
-        <a href="/blog" class="action-btn primary-btn">
+        <InkButton href="/blog" variant="primary" size="md">
           <span>觀文揣墨</span>
           <svg
+            slot="suffix"
             xmlns="http://www.w3.org/2000/svg"
             width="16"
             height="16"
@@ -197,15 +191,16 @@ try {
               d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"
             ></path>
           </svg>
-        </a>
-        <a
+        </InkButton>
+        <InkButton
           href="https://github.com/meng10730"
           target="_blank"
           rel="noopener noreferrer"
-          class="action-btn secondary-btn"
+          variant="secondary"
+          size="md"
         >
-          <span>探源究微 </span>
-        </a>
+          <span>探源究微</span>
+        </InkButton>
       </div>
     </section>
   </div>

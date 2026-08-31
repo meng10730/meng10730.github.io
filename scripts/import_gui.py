@@ -823,96 +823,50 @@ class MainWindow(QMainWindow):
         
         main_layout.addWidget(sidebar)
         
-        # 2. 右側主要內容區（採用 Splitter 分割「寫作匯入」與「控制台日誌」）
+        # 2. 右側主要內容區（採用 Splitter 分割「多功能分頁」與「控制台日誌」）
         orientation = Qt.Horizontal if getattr(self, "layout_orientation", "horizontal") == "horizontal" else Qt.Vertical
         self.right_splitter = QSplitter(orientation)
         
-        # 上半部：寫作匯入面板
-        import_panel = QFrame()
-        import_panel.setObjectName("cardFrame")
-        import_layout = QHBoxLayout(import_panel)
-        import_layout.setContentsMargins(10, 10, 10, 10)
-        import_layout.setSpacing(10)
-        
-        # 2.1 待匯入檔案列表 (左側)
-        list_container = QWidget()
-        list_layout = QVBoxLayout(list_container)
-        list_layout.setContentsMargins(0, 0, 0, 0)
-        
-        title_box = QHBoxLayout()
-        title_box.addWidget(QLabel("待處理文字檔清單:"))
-        refresh_btn = QPushButton("🔄")
-        refresh_btn.setFixedWidth(30)
-        refresh_btn.clicked.connect(self.refresh_file_list)
-        title_box.addWidget(refresh_btn)
-        list_layout.addLayout(title_box)
-        
-        self.file_list_widget = QListWidget()
-        self.file_list_widget.setFixedWidth(250)
-        self.file_list_widget.itemSelectionChanged.connect(self.on_file_selected)
-        list_layout.addWidget(self.file_list_widget)
-        
-        import_layout.addWidget(list_container)
-        
-        # 2.2 動態表單面板 (右側)
-        form_container = QWidget()
-        form_layout = QVBoxLayout(form_container)
-        form_layout.setContentsMargins(5, 0, 5, 0)
-        
-        form_layout.addWidget(QLabel("選擇歸類網站分區:"))
-        self.collection_combo = NoScrollComboBox()
-        for col_name, col_info in self.schema.items():
-            self.collection_combo.addItem(col_info["label"], col_name)
-        self.collection_combo.currentIndexChanged.connect(self.on_collection_changed)
-        form_layout.addWidget(self.collection_combo)
-        
-        # 用於動態欄位的 ScrollArea
-        self.scroll_area = QScrollArea()
-        self.scroll_area.setWidgetResizable(True)
-        self.scroll_area.setStyleSheet("background-color: #22222b; border: none;")
-        self.scroll_widget = QWidget()
-        self.scroll_widget.setStyleSheet("background-color: #22222b;")
-        self.scroll_layout = QVBoxLayout(self.scroll_widget)
-        self.scroll_layout.setSpacing(12)
-        self.scroll_layout.setContentsMargins(0, 5, 0, 5)
-        self.scroll_area.setWidget(self.scroll_widget)
-        form_layout.addWidget(self.scroll_area)
-        
-        # 匯入按鈕
-        self.import_btn = QPushButton("📥 匯入選中檔案至個人網站")
-        self.import_btn.setObjectName("primaryButton")
-        self.import_btn.clicked.connect(self.import_selected_file)
-        form_layout.addWidget(self.import_btn)
-        
-        import_layout.addWidget(form_container)
-        
         # 建立雙欄頁籤分頁
         self.main_tab_widget = QTabWidget()
-        self.main_tab_widget.addTab(import_panel, "📥 待處理檔案匯入")
+        
+        tab1_panel = self.setup_tab1_panel()
+        self.main_tab_widget.addTab(tab1_panel, "📥 待處理檔案匯入")
         
         tab2_panel = self.setup_tab2_panel()
         self.main_tab_widget.addTab(tab2_panel, "📚 網站既有文章管理")
         
         self.right_splitter.addWidget(self.main_tab_widget)
         
-        # 下半部（現為右側）：日誌與控制台輸出面板
-        console_panel = QFrame()
-        console_panel.setObjectName("cardFrame")
-        console_layout = QVBoxLayout(console_panel)
-        console_layout.setContentsMargins(15, 10, 15, 10)
+        # 下半部（現為右側）：日誌與控制台輸出面板 (支援一鍵折疊)
+        self.console_panel = QFrame()
+        self.console_panel.setObjectName("cardFrame")
+        console_layout = QVBoxLayout(self.console_panel)
+        console_layout.setContentsMargins(12, 8, 12, 8)
+        console_layout.setSpacing(6)
         
         console_title_layout = QHBoxLayout()
-        console_title_layout.addWidget(QLabel("控制台即時日誌:"))
+        lbl_console = QLabel("📋 控制台即時日誌:")
+        lbl_console.setStyleSheet("color: #e5a93b; font-weight: bold; font-size: 12px;")
+        console_title_layout.addWidget(lbl_console)
+        
+        console_title_layout.addStretch()
         
         self.toggle_layout_btn = QPushButton("↔️ 左右並排")
-        self.toggle_layout_btn.setFixedWidth(100)
-        self.toggle_layout_btn.setStyleSheet("font-size: 11px; padding: 4px;")
+        self.toggle_layout_btn.setFixedWidth(90)
+        self.toggle_layout_btn.setStyleSheet("font-size: 11px; padding: 3px;")
         self.toggle_layout_btn.clicked.connect(self.toggle_console_layout)
         console_title_layout.addWidget(self.toggle_layout_btn)
 
-        clear_log_btn = QPushButton("清除日誌")
-        clear_log_btn.setFixedWidth(80)
-        clear_log_btn.setStyleSheet("font-size: 11px; padding: 4px;")
+        self.btn_collapse_console = QPushButton("🔽 收折日誌")
+        self.btn_collapse_console.setFixedWidth(80)
+        self.btn_collapse_console.setStyleSheet("font-size: 11px; padding: 3px; background-color: #2b2b38;")
+        self.btn_collapse_console.clicked.connect(self.toggle_console_panel)
+        console_title_layout.addWidget(self.btn_collapse_console)
+
+        clear_log_btn = QPushButton("清除")
+        clear_log_btn.setFixedWidth(50)
+        clear_log_btn.setStyleSheet("font-size: 11px; padding: 3px;")
         clear_log_btn.clicked.connect(self.clear_logs)
         console_title_layout.addWidget(clear_log_btn)
         console_layout.addLayout(console_title_layout)
@@ -922,7 +876,7 @@ class MainWindow(QMainWindow):
         self.console_log.setStyleSheet("background-color: #121216; font-family: Consolas, monospace; font-size: 12px; color: #a2a2ab; border: 1px solid #1c1c24;")
         console_layout.addWidget(self.console_log)
         
-        self.right_splitter.addWidget(console_panel)
+        self.right_splitter.addWidget(self.console_panel)
         
         # 設定分割器初始權重大小與持久化配置
         initial_sizes = getattr(self, "layout_sizes", [650, 450])
@@ -933,6 +887,15 @@ class MainWindow(QMainWindow):
         # 保存動態生成的欄位控制件對照表
         self.dynamic_widgets = {}
         self.tab2_dynamic_widgets = {}
+
+    def toggle_console_panel(self):
+        if not self.console_panel.isHidden():
+            self.console_panel.hide()
+            self.btn_collapse_console.setText("📋 展開日誌")
+        else:
+            self.console_panel.show()
+            self.btn_collapse_console.setText("🔽 收折日誌")
+            self.right_splitter.setSizes(getattr(self, "layout_sizes", [650, 450]))
 
     def toggle_console_layout(self):
         if self.right_splitter.orientation() == Qt.Horizontal:
@@ -961,20 +924,382 @@ class MainWindow(QMainWindow):
         self.dynamic_widgets = {}
         self.tab2_dynamic_widgets = {}
 
+    def setup_tab1_panel(self):
+        tab1_panel = QFrame()
+        tab1_panel.setObjectName("cardFrame")
+        tab1_layout = QVBoxLayout(tab1_panel)
+        tab1_layout.setContentsMargins(0, 0, 0, 0)
+        tab1_layout.setSpacing(0)
+        
+        # 狀態控制變數
+        self.is_tab1_loading = False
+        self.is_tab1_dirty = False
+        self.tab1_current_filepath = None
+        self.tab1_current_font_size = 15
+        
+        # 60 秒無感自動儲存計時器 (草稿)
+        self.tab1_autosave_timer = QTimer(self)
+        self.tab1_autosave_timer.setSingleShot(True)
+        self.tab1_autosave_timer.timeout.connect(self.auto_save_tab1_file)
+        
+        # 三欄式主分割器 (QSplitter)
+        self.tab1_splitter = QSplitter(Qt.Horizontal)
+        self.tab1_splitter.setChildrenCollapsible(False)
+        
+        # ----------------------------------------------------
+        # 欄 1：左側待處理文字檔清單 (220px)
+        # ----------------------------------------------------
+        list_container = QWidget()
+        list_layout = QVBoxLayout(list_container)
+        list_layout.setContentsMargins(8, 8, 8, 8)
+        list_layout.setSpacing(6)
+        
+        title_box = QHBoxLayout()
+        title_box.addWidget(QLabel("待處理文字檔:"))
+        refresh_btn = QPushButton("🔄")
+        refresh_btn.setFixedWidth(28)
+        refresh_btn.clicked.connect(self.refresh_file_list)
+        title_box.addWidget(refresh_btn)
+        list_layout.addLayout(title_box)
+        
+        self.tab1_search_input = QLineEdit()
+        self.tab1_search_input.setPlaceholderText("🔍 搜尋待處理檔案...")
+        self.tab1_search_input.textChanged.connect(self.filter_tab1_files)
+        list_layout.addWidget(self.tab1_search_input)
+        
+        self.file_list_widget = QListWidget()
+        self.file_list_widget.currentItemChanged.connect(self.on_tab1_file_item_changed)
+        list_layout.addWidget(self.file_list_widget)
+        
+        list_container.setMinimumWidth(180)
+        list_container.setMaximumWidth(280)
+        self.tab1_splitter.addWidget(list_container)
+        
+        # ----------------------------------------------------
+        # 欄 2：中欄匯入屬性面板 (可一鍵收折，280px)
+        # ----------------------------------------------------
+        self.tab1_prop_panel = QFrame()
+        self.tab1_prop_panel.setObjectName("cardFrame")
+        self.tab1_prop_panel.setStyleSheet("background-color: #1e1e26; border-right: 1px solid #2b2b38;")
+        prop_main_layout = QVBoxLayout(self.tab1_prop_panel)
+        prop_main_layout.setContentsMargins(8, 8, 8, 8)
+        prop_main_layout.setSpacing(6)
+        
+        prop_header = QHBoxLayout()
+        lbl_prop_title = QLabel("⚙️ 匯入屬性設定")
+        lbl_prop_title.setStyleSheet("color: #e5a93b; font-weight: bold; font-size: 12px;")
+        prop_header.addWidget(lbl_prop_title)
+        prop_header.addStretch()
+        
+        btn_collapse_prop = QPushButton("◀ 收折屬性")
+        btn_collapse_prop.setFixedHeight(24)
+        btn_collapse_prop.setStyleSheet("font-size: 11px; padding: 2px 6px; background-color: #2b2b38;")
+        btn_collapse_prop.clicked.connect(self.toggle_tab1_prop_panel)
+        prop_header.addWidget(btn_collapse_prop)
+        prop_main_layout.addLayout(prop_header)
+        
+        # 分區選擇
+        col_select_box = QHBoxLayout()
+        col_select_box.addWidget(QLabel("分區:"))
+        self.collection_combo = NoScrollComboBox()
+        for col_name, col_info in self.schema.items():
+            self.collection_combo.addItem(col_info["label"], col_name)
+        self.collection_combo.currentIndexChanged.connect(self.on_collection_changed)
+        col_select_box.addWidget(self.collection_combo)
+        prop_main_layout.addLayout(col_select_box)
+        
+        # 動態屬性欄位 ScrollArea
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setStyleSheet("background-color: transparent; border: none;")
+        self.scroll_widget = QWidget()
+        self.scroll_widget.setStyleSheet("background-color: transparent;")
+        self.scroll_layout = QVBoxLayout(self.scroll_widget)
+        self.scroll_layout.setSpacing(10)
+        self.scroll_layout.setContentsMargins(2, 4, 2, 4)
+        self.scroll_area.setWidget(self.scroll_widget)
+        prop_main_layout.addWidget(self.scroll_area)
+        
+        self.tab1_prop_panel.setMinimumWidth(220)
+        self.tab1_prop_panel.setMaximumWidth(360)
+        self.tab1_splitter.addWidget(self.tab1_prop_panel)
+        
+        # ----------------------------------------------------
+        # 欄 3：右側待處理純文字大稿紙編輯區 (佔滿剩餘所有空間)
+        # ----------------------------------------------------
+        self.tab1_editor_panel = QFrame()
+        self.tab1_editor_panel.setStyleSheet("background-color: #14141a;")
+        editor_panel_layout = QVBoxLayout(self.tab1_editor_panel)
+        editor_panel_layout.setContentsMargins(12, 8, 12, 8)
+        editor_panel_layout.setSpacing(8)
+        
+        # 編輯器頂部工具列
+        editor_top_bar = QHBoxLayout()
+        
+        self.tab1_btn_expand_prop = QPushButton("▶ 展開屬性")
+        self.tab1_btn_expand_prop.setFixedHeight(26)
+        self.tab1_btn_expand_prop.setStyleSheet("font-size: 11px; padding: 2px 8px; background-color: #282836;")
+        self.tab1_btn_expand_prop.clicked.connect(self.toggle_tab1_prop_panel)
+        self.tab1_btn_expand_prop.hide()
+        editor_top_bar.addWidget(self.tab1_btn_expand_prop)
+        
+        self.tab1_file_lbl = QLabel("請選擇左側待處理文字檔以開啟編輯")
+        self.tab1_file_lbl.setFont(QFont("Segoe UI", 11, QFont.Bold))
+        self.tab1_file_lbl.setStyleSheet("color: #f0f0f5;")
+        editor_top_bar.addWidget(self.tab1_file_lbl)
+        
+        editor_top_bar.addStretch()
+        
+        # 字級縮放按鈕組
+        btn_font_minus = QPushButton("A-")
+        btn_font_minus.setFixedSize(28, 26)
+        btn_font_minus.setToolTip("縮小字級")
+        btn_font_minus.clicked.connect(lambda: self.change_tab1_font_size(-1))
+        editor_top_bar.addWidget(btn_font_minus)
+        
+        self.tab1_lbl_font_size = QLabel(f"{self.tab1_current_font_size}px")
+        self.tab1_lbl_font_size.setStyleSheet("color: #a2a2ab; font-size: 11px; margin: 0 4px;")
+        editor_top_bar.addWidget(self.tab1_lbl_font_size)
+        
+        btn_font_plus = QPushButton("A+")
+        btn_font_plus.setFixedSize(28, 26)
+        btn_font_plus.setToolTip("放大字級")
+        btn_font_plus.clicked.connect(lambda: self.change_tab1_font_size(1))
+        editor_top_bar.addWidget(btn_font_plus)
+        
+        btn_font_reset = QPushButton("↺")
+        btn_font_reset.setFixedSize(28, 26)
+        btn_font_reset.setToolTip("重置為預設 15px")
+        btn_font_reset.clicked.connect(self.reset_tab1_font_size)
+        editor_top_bar.addWidget(btn_font_reset)
+        
+        # 儲存狀態指示燈
+        self.tab1_save_status_lbl = QLabel("● 尚未選擇檔案")
+        self.tab1_save_status_lbl.setStyleSheet("color: #6edb8f; font-size: 11px; margin-left: 8px; margin-right: 6px;")
+        editor_top_bar.addWidget(self.tab1_save_status_lbl)
+        
+        # 儲存草稿按鈕
+        self.tab1_save_draft_btn = QPushButton("💾 儲存草稿 (Ctrl+S)")
+        self.tab1_save_draft_btn.setFixedHeight(28)
+        self.tab1_save_draft_btn.setStyleSheet("background-color: #2b3b48; color: #e2e2ee; font-size: 11px; padding: 4px 10px;")
+        self.tab1_save_draft_btn.clicked.connect(lambda: self.save_pending_file(silent=False))
+        editor_top_bar.addWidget(self.tab1_save_draft_btn)
+        
+        # 匯入按鈕
+        self.import_btn = QPushButton("📥 匯入個人網站")
+        self.import_btn.setObjectName("primaryButton")
+        self.import_btn.setFixedHeight(28)
+        self.import_btn.clicked.connect(self.import_selected_file)
+        editor_top_bar.addWidget(self.import_btn)
+        
+        editor_panel_layout.addLayout(editor_top_bar)
+        
+        # 正文編輯框 (文字靠左佔滿右邊區塊)
+        self.tab1_body_edit = EnhancedPlainTextEdit()
+        self.tab1_body_edit.textChanged.connect(self.on_tab1_text_changed)
+        self.tab1_body_edit.cursorPositionChanged.connect(self.update_tab1_cursor_pos)
+        self.apply_tab1_editor_style()
+        editor_panel_layout.addWidget(self.tab1_body_edit, 1)
+        
+        # 編輯器底部微型狀態列
+        tab1_bottom_bar = QHBoxLayout()
+        tab1_bottom_bar.setContentsMargins(4, 2, 4, 2)
+        
+        self.tab1_lbl_char_count = QLabel("字數: 0 字")
+        self.tab1_lbl_char_count.setStyleSheet("color: #8c8c9e; font-size: 11px;")
+        self.tab1_lbl_para_count = QLabel("段落: 0")
+        self.tab1_lbl_para_count.setStyleSheet("color: #8c8c9e; font-size: 11px;")
+        self.tab1_lbl_cursor_pos = QLabel("行 1, 欄 1")
+        self.tab1_lbl_cursor_pos.setStyleSheet("color: #8c8c9e; font-size: 11px;")
+        self.tab1_lbl_autosave_hint = QLabel("⏱️ 停頓 60 秒自動存檔")
+        self.tab1_lbl_autosave_hint.setStyleSheet("color: #6a6a7c; font-size: 11px;")
+        
+        tab1_bottom_bar.addWidget(self.tab1_lbl_char_count)
+        tab1_bottom_bar.addWidget(QLabel("<span style='color:#3a3a48;'> | </span>"))
+        tab1_bottom_bar.addWidget(self.tab1_lbl_para_count)
+        tab1_bottom_bar.addWidget(QLabel("<span style='color:#3a3a48;'> | </span>"))
+        tab1_bottom_bar.addWidget(self.tab1_lbl_cursor_pos)
+        tab1_bottom_bar.addStretch()
+        tab1_bottom_bar.addWidget(self.tab1_lbl_autosave_hint)
+        
+        editor_panel_layout.addLayout(tab1_bottom_bar)
+        
+        self.tab1_editor_panel.setMinimumWidth(380)
+        self.tab1_splitter.addWidget(self.tab1_editor_panel)
+        
+        # 預設三欄分割權重 (200px : 260px : 740px)
+        self.tab1_splitter.setSizes([200, 260, 740])
+        tab1_layout.addWidget(self.tab1_splitter)
+        
+        return tab1_panel
+
+    def toggle_tab1_prop_panel(self):
+        if not self.tab1_prop_panel.isHidden():
+            self.tab1_prop_panel.hide()
+            self.tab1_btn_expand_prop.show()
+        else:
+            self.tab1_prop_panel.show()
+            self.tab1_btn_expand_prop.hide()
+
+    def change_tab1_font_size(self, delta):
+        new_size = max(12, min(28, self.tab1_current_font_size + delta))
+        if new_size != self.tab1_current_font_size:
+            self.tab1_current_font_size = new_size
+            self.tab1_lbl_font_size.setText(f"{new_size}px")
+            self.apply_tab1_editor_style()
+
+    def reset_tab1_font_size(self):
+        self.tab1_current_font_size = 15
+        self.tab1_lbl_font_size.setText("15px")
+        self.apply_tab1_editor_style()
+
+    def apply_tab1_editor_style(self):
+        style = f"""
+        QPlainTextEdit {{
+            background-color: #16161e;
+            border: 1px solid #242430;
+            border-radius: 6px;
+            padding: 16px 20px;
+            color: #f0f0f8;
+            font-family: 'Segoe UI', 'Microsoft JhengHei', 'PingFang TC', sans-serif;
+            font-size: {self.tab1_current_font_size}px;
+            line-height: 1.6;
+            selection-background-color: #4a3a20;
+            selection-color: #ffd980;
+        }}
+        QPlainTextEdit:focus {{
+            border: 1px solid #e5a93b;
+            background-color: #181822;
+        }}
+        """
+        self.tab1_body_edit.setStyleSheet(style)
+
+    def filter_tab1_files(self, text):
+        keyword = text.strip().lower()
+        for i in range(self.file_list_widget.count()):
+            item = self.file_list_widget.item(i)
+            item.setHidden(keyword not in item.text().lower())
+
+    def on_tab1_file_item_changed(self, current, previous):
+        if previous and self.is_tab1_dirty:
+            ret = QMessageBox.question(
+                self,
+                "未儲存草稿確認",
+                "當前待處理檔案內容已修改但尚未儲存草稿，是否立即儲存？",
+                QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel,
+                QMessageBox.Save
+            )
+            if ret == QMessageBox.Save:
+                self.save_pending_file(silent=True)
+            elif ret == QMessageBox.Cancel:
+                self.file_list_widget.blockSignals(True)
+                self.file_list_widget.setCurrentItem(previous)
+                self.file_list_widget.blockSignals(False)
+                return
+        
+        if not current:
+            return
+        
+        filename = current.text()
+        filepath = os.path.join(self.workspace_dir, filename)
+        self.load_tab1_file(filepath)
+
+    def load_tab1_file(self, filepath):
+        if not filepath or not os.path.exists(filepath):
+            return
+        
+        self.is_tab1_loading = True
+        self.tab1_autosave_timer.stop()
+        self.tab1_current_filepath = filepath
+        
+        filename = os.path.basename(filepath)
+        self.tab1_file_lbl.setText(f"📄  {filename}")
+        
+        fm, body = self.parse_frontmatter(filepath)
+        base_title = os.path.splitext(filename)[0]
+        if "title" not in fm or not fm["title"]:
+            fm["title"] = base_title
+        if "name" not in fm or not fm["name"]:
+            fm["name"] = base_title
+            
+        self.populate_form(fm, body, filepath)
+        self.tab1_body_edit.setPlainText(body)
+        
+        self.is_tab1_loading = False
+        self.is_tab1_dirty = False
+        
+        self.tab1_save_status_lbl.setText("● 已同步最新內容")
+        self.tab1_save_status_lbl.setStyleSheet("color: #6edb8f; font-size: 11px; margin-left: 8px; margin-right: 6px;")
+        self.update_tab1_statistics()
+
+    def mark_tab1_dirty(self):
+        if self.is_tab1_loading:
+            return
+        self.is_tab1_dirty = True
+        self.tab1_save_status_lbl.setText("● 編輯中 (未儲存草稿)")
+        self.tab1_save_status_lbl.setStyleSheet("color: #e5a93b; font-size: 11px; margin-left: 8px; margin-right: 6px;")
+        self.tab1_autosave_timer.start(60000)
+
+    def on_tab1_text_changed(self):
+        if self.is_tab1_loading:
+            return
+        self.mark_tab1_dirty()
+        self.update_tab1_statistics()
+
+    def update_tab1_statistics(self):
+        text = self.tab1_body_edit.toPlainText()
+        char_count = len(text.replace(" ", "").replace("\n", "").replace("\r", ""))
+        lines = text.splitlines()
+        para_count = len([line for line in lines if line.strip()])
+        
+        self.tab1_lbl_char_count.setText(f"字數: {char_count} 字")
+        self.tab1_lbl_para_count.setText(f"段落: {para_count}")
+
+    def update_tab1_cursor_pos(self):
+        cursor = self.tab1_body_edit.textCursor()
+        line = cursor.blockNumber() + 1
+        col = cursor.columnNumber() + 1
+        self.tab1_lbl_cursor_pos.setText(f"行 {line}, 欄 {col}")
+
+    def auto_save_tab1_file(self):
+        if self.is_tab1_dirty and self.tab1_current_filepath:
+            self.save_pending_file(silent=True)
+            now_str = datetime.datetime.now().strftime("%H:%M:%S")
+            self.tab1_save_status_lbl.setText(f"✓ 60秒自動存檔 ({now_str})")
+            self.tab1_save_status_lbl.setStyleSheet("color: #6edb8f; font-size: 11px; margin-left: 8px; margin-right: 6px;")
+
     def setup_tab2_panel(self):
         tab2_panel = QFrame()
         tab2_panel.setObjectName("cardFrame")
-        tab2_layout = QHBoxLayout(tab2_panel)
-        tab2_layout.setContentsMargins(10, 10, 10, 10)
-        tab2_layout.setSpacing(10)
+        tab2_layout = QVBoxLayout(tab2_panel)
+        tab2_layout.setContentsMargins(0, 0, 0, 0)
+        tab2_layout.setSpacing(0)
         
-        # 2.1 網站既有文章清單 (左側)
+        # 狀態控制變數
+        self.is_tab2_loading = False
+        self.is_tab2_dirty = False
+        self.tab2_current_filepath = None
+        self.tab2_current_font_size = 15
+        
+        # 60 秒無感自動儲存計時器
+        self.tab2_autosave_timer = QTimer(self)
+        self.tab2_autosave_timer.setSingleShot(True)
+        self.tab2_autosave_timer.timeout.connect(self.auto_save_tab2_article)
+        
+        # 三欄式主分割器 (QSplitter)
+        self.tab2_splitter = QSplitter(Qt.Horizontal)
+        self.tab2_splitter.setChildrenCollapsible(False)
+        
+        # ----------------------------------------------------
+        # 欄 1：左側分區與檔案清單 (220px)
+        # ----------------------------------------------------
         list_container = QWidget()
         list_layout = QVBoxLayout(list_container)
-        list_layout.setContentsMargins(0, 0, 0, 0)
+        list_layout.setContentsMargins(8, 8, 8, 8)
+        list_layout.setSpacing(6)
         
         col_select_layout = QHBoxLayout()
-        col_select_layout.addWidget(QLabel("選擇分區:"))
+        col_select_layout.addWidget(QLabel("分區:"))
         self.tab2_col_combo = NoScrollComboBox()
         for col_name, col_info in self.schema.items():
             self.tab2_col_combo.addItem(col_info["label"], col_name)
@@ -982,48 +1307,213 @@ class MainWindow(QMainWindow):
         col_select_layout.addWidget(self.tab2_col_combo)
         
         refresh_btn = QPushButton("🔄")
-        refresh_btn.setFixedWidth(30)
+        refresh_btn.setFixedWidth(28)
         refresh_btn.clicked.connect(self.refresh_tab2_file_list)
         col_select_layout.addWidget(refresh_btn)
-        
         list_layout.addLayout(col_select_layout)
         
-        list_layout.addWidget(QLabel("網站已發布文章列表:"))
+        self.tab2_search_input = QLineEdit()
+        self.tab2_search_input.setPlaceholderText("🔍 搜尋檔案...")
+        self.tab2_search_input.textChanged.connect(self.filter_tab2_files)
+        list_layout.addWidget(self.tab2_search_input)
+        
         self.tab2_file_list_widget = QListWidget()
-        self.tab2_file_list_widget.setFixedWidth(260)
-        self.tab2_file_list_widget.itemSelectionChanged.connect(self.on_tab2_file_selected)
+        self.tab2_file_list_widget.currentItemChanged.connect(self.on_tab2_file_item_changed)
         list_layout.addWidget(self.tab2_file_list_widget)
         
-        tab2_layout.addWidget(list_container)
+        list_container.setMinimumWidth(180)
+        list_container.setMaximumWidth(280)
+        self.tab2_splitter.addWidget(list_container)
         
-        # 2.2 既有文章修訂表單與內文編輯面板 (右側)
-        form_container = QWidget()
-        form_layout = QVBoxLayout(form_container)
-        form_layout.setContentsMargins(5, 0, 5, 0)
+        # ----------------------------------------------------
+        # 欄 2：中欄屬性面板 (可一鍵收折，280px)
+        # ----------------------------------------------------
+        self.tab2_prop_panel = QFrame()
+        self.tab2_prop_panel.setObjectName("cardFrame")
+        self.tab2_prop_panel.setStyleSheet("background-color: #1e1e26; border-right: 1px solid #2b2b38;")
+        prop_main_layout = QVBoxLayout(self.tab2_prop_panel)
+        prop_main_layout.setContentsMargins(8, 8, 8, 8)
+        prop_main_layout.setSpacing(6)
+        
+        prop_header = QHBoxLayout()
+        lbl_prop_title = QLabel("⚙️ 屬性設定")
+        lbl_prop_title.setStyleSheet("color: #e5a93b; font-weight: bold; font-size: 12px;")
+        prop_header.addWidget(lbl_prop_title)
+        prop_header.addStretch()
+        
+        btn_collapse_prop = QPushButton("◀ 收折屬性")
+        btn_collapse_prop.setFixedHeight(24)
+        btn_collapse_prop.setStyleSheet("font-size: 11px; padding: 2px 6px; background-color: #2b2b38;")
+        btn_collapse_prop.clicked.connect(self.toggle_tab2_prop_panel)
+        prop_header.addWidget(btn_collapse_prop)
+        prop_main_layout.addLayout(prop_header)
         
         self.tab2_scroll_area = QScrollArea()
         self.tab2_scroll_area.setWidgetResizable(True)
-        self.tab2_scroll_area.setStyleSheet("background-color: #22222b; border: none;")
+        self.tab2_scroll_area.setStyleSheet("background-color: transparent; border: none;")
         self.tab2_scroll_widget = QWidget()
-        self.tab2_scroll_widget.setStyleSheet("background-color: #22222b;")
+        self.tab2_scroll_widget.setStyleSheet("background-color: transparent;")
         self.tab2_scroll_layout = QVBoxLayout(self.tab2_scroll_widget)
-        self.tab2_scroll_layout.setSpacing(12)
-        self.tab2_scroll_layout.setContentsMargins(0, 5, 0, 5)
+        self.tab2_scroll_layout.setSpacing(10)
+        self.tab2_scroll_layout.setContentsMargins(2, 4, 2, 4)
         self.tab2_scroll_area.setWidget(self.tab2_scroll_widget)
-        form_layout.addWidget(self.tab2_scroll_area)
+        prop_main_layout.addWidget(self.tab2_scroll_area)
         
-        # 儲存修改按鈕
-        self.tab2_save_btn = QPushButton("💾 儲存修訂內容至個人網站")
+        self.tab2_prop_panel.setMinimumWidth(220)
+        self.tab2_prop_panel.setMaximumWidth(360)
+        self.tab2_splitter.addWidget(self.tab2_prop_panel)
+        
+        # ----------------------------------------------------
+        # 欄 3：右側沉浸式純文字大稿紙編輯區 (佔滿剩餘所有空間)
+        # ----------------------------------------------------
+        self.tab2_editor_panel = QFrame()
+        self.tab2_editor_panel.setStyleSheet("background-color: #14141a;")
+        editor_panel_layout = QVBoxLayout(self.tab2_editor_panel)
+        editor_panel_layout.setContentsMargins(12, 8, 12, 8)
+        editor_panel_layout.setSpacing(8)
+        
+        # 編輯器頂部工具列
+        editor_top_bar = QHBoxLayout()
+        
+        self.tab2_btn_expand_prop = QPushButton("▶ 展開屬性")
+        self.tab2_btn_expand_prop.setFixedHeight(26)
+        self.tab2_btn_expand_prop.setStyleSheet("font-size: 11px; padding: 2px 8px; background-color: #282836;")
+        self.tab2_btn_expand_prop.clicked.connect(self.toggle_tab2_prop_panel)
+        self.tab2_btn_expand_prop.hide()
+        editor_top_bar.addWidget(self.tab2_btn_expand_prop)
+        
+        self.tab2_file_lbl = QLabel("請選擇左側文章以開啟編輯")
+        self.tab2_file_lbl.setFont(QFont("Segoe UI", 11, QFont.Bold))
+        self.tab2_file_lbl.setStyleSheet("color: #f0f0f5;")
+        editor_top_bar.addWidget(self.tab2_file_lbl)
+        
+        editor_top_bar.addStretch()
+        
+        # 字級縮放按鈕組
+        btn_font_minus = QPushButton("A-")
+        btn_font_minus.setFixedSize(28, 26)
+        btn_font_minus.setToolTip("縮小字級")
+        btn_font_minus.clicked.connect(lambda: self.change_tab2_font_size(-1))
+        editor_top_bar.addWidget(btn_font_minus)
+        
+        self.tab2_lbl_font_size = QLabel(f"{self.tab2_current_font_size}px")
+        self.tab2_lbl_font_size.setStyleSheet("color: #a2a2ab; font-size: 11px; margin: 0 4px;")
+        editor_top_bar.addWidget(self.tab2_lbl_font_size)
+        
+        btn_font_plus = QPushButton("A+")
+        btn_font_plus.setFixedSize(28, 26)
+        btn_font_plus.setToolTip("放大字級")
+        btn_font_plus.clicked.connect(lambda: self.change_tab2_font_size(1))
+        editor_top_bar.addWidget(btn_font_plus)
+        
+        btn_font_reset = QPushButton("↺")
+        btn_font_reset.setFixedSize(28, 26)
+        btn_font_reset.setToolTip("重置為預設 15px")
+        btn_font_reset.clicked.connect(self.reset_tab2_font_size)
+        editor_top_bar.addWidget(btn_font_reset)
+        
+        # 儲存狀態指示燈
+        self.tab2_save_status_lbl = QLabel("● 尚未選擇檔案")
+        self.tab2_save_status_lbl.setStyleSheet("color: #6edb8f; font-size: 11px; margin-left: 10px; margin-right: 8px;")
+        editor_top_bar.addWidget(self.tab2_save_status_lbl)
+        
+        # 儲存按鈕
+        self.tab2_save_btn = QPushButton("💾 儲存修訂 (Ctrl+S)")
         self.tab2_save_btn.setObjectName("primaryButton")
-        self.tab2_save_btn.clicked.connect(self.save_tab2_article)
-        form_layout.addWidget(self.tab2_save_btn)
+        self.tab2_save_btn.setFixedHeight(28)
+        self.tab2_save_btn.clicked.connect(lambda: self.save_tab2_article(silent=False))
+        editor_top_bar.addWidget(self.tab2_save_btn)
         
-        tab2_layout.addWidget(form_container)
+        editor_panel_layout.addLayout(editor_top_bar)
+        
+        # 正文編輯框 (文字靠左佔滿右邊區塊)
+        self.tab2_body_edit = EnhancedPlainTextEdit()
+        self.tab2_body_edit.textChanged.connect(self.on_tab2_text_changed)
+        self.tab2_body_edit.cursorPositionChanged.connect(self.update_tab2_cursor_pos)
+        self.apply_tab2_editor_style()
+        editor_panel_layout.addWidget(self.tab2_body_edit, 1)
+        
+        # 編輯器底部微型狀態列
+        tab2_bottom_bar = QHBoxLayout()
+        tab2_bottom_bar.setContentsMargins(4, 2, 4, 2)
+        
+        self.tab2_lbl_char_count = QLabel("字數: 0 字")
+        self.tab2_lbl_char_count.setStyleSheet("color: #8c8c9e; font-size: 11px;")
+        self.tab2_lbl_para_count = QLabel("段落: 0")
+        self.tab2_lbl_para_count.setStyleSheet("color: #8c8c9e; font-size: 11px;")
+        self.tab2_lbl_cursor_pos = QLabel("行 1, 欄 1")
+        self.tab2_lbl_cursor_pos.setStyleSheet("color: #8c8c9e; font-size: 11px;")
+        self.tab2_lbl_autosave_hint = QLabel("⏱️ 停頓 60 秒自動存檔")
+        self.tab2_lbl_autosave_hint.setStyleSheet("color: #6a6a7c; font-size: 11px;")
+        
+        tab2_bottom_bar.addWidget(self.tab2_lbl_char_count)
+        tab2_bottom_bar.addWidget(QLabel("<span style='color:#3a3a48;'> | </span>"))
+        tab2_bottom_bar.addWidget(self.tab2_lbl_para_count)
+        tab2_bottom_bar.addWidget(QLabel("<span style='color:#3a3a48;'> | </span>"))
+        tab2_bottom_bar.addWidget(self.tab2_lbl_cursor_pos)
+        tab2_bottom_bar.addStretch()
+        tab2_bottom_bar.addWidget(self.tab2_lbl_autosave_hint)
+        
+        editor_panel_layout.addLayout(tab2_bottom_bar)
+        
+        self.tab2_editor_panel.setMinimumWidth(380)
+        self.tab2_splitter.addWidget(self.tab2_editor_panel)
+        
+        # 預設三欄分割權重 (200px : 260px : 740px)
+        self.tab2_splitter.setSizes([200, 260, 740])
+        tab2_layout.addWidget(self.tab2_splitter)
         
         # 初始化載入首個分區之檔案清單
         QTimer.singleShot(200, self.refresh_tab2_file_list)
         
         return tab2_panel
+
+    def toggle_tab2_prop_panel(self):
+        if not self.tab2_prop_panel.isHidden():
+            self.tab2_prop_panel.hide()
+            self.tab2_btn_expand_prop.show()
+        else:
+            self.tab2_prop_panel.show()
+            self.tab2_btn_expand_prop.hide()
+
+    def change_tab2_font_size(self, delta):
+        new_size = max(12, min(28, self.tab2_current_font_size + delta))
+        if new_size != self.tab2_current_font_size:
+            self.tab2_current_font_size = new_size
+            self.tab2_lbl_font_size.setText(f"{new_size}px")
+            self.apply_tab2_editor_style()
+
+    def reset_tab2_font_size(self):
+        self.tab2_current_font_size = 15
+        self.tab2_lbl_font_size.setText("15px")
+        self.apply_tab2_editor_style()
+
+    def apply_tab2_editor_style(self):
+        style = f"""
+        QPlainTextEdit {{
+            background-color: #16161e;
+            border: 1px solid #242430;
+            border-radius: 6px;
+            padding: 16px 20px;
+            color: #f0f0f8;
+            font-family: 'Segoe UI', 'Microsoft JhengHei', 'PingFang TC', sans-serif;
+            font-size: {self.tab2_current_font_size}px;
+            line-height: 1.6;
+            selection-background-color: #4a3a20;
+            selection-color: #ffd980;
+        }}
+        QPlainTextEdit:focus {{
+            border: 1px solid #e5a93b;
+            background-color: #181822;
+        }}
+        """
+        self.tab2_body_edit.setStyleSheet(style)
+
+    def filter_tab2_files(self, text):
+        keyword = text.strip().lower()
+        for i in range(self.tab2_file_list_widget.count()):
+            item = self.tab2_file_list_widget.item(i)
+            item.setHidden(keyword not in item.text().lower())
 
     def refresh_tab2_file_list(self):
         self.tab2_file_list_widget.clear()
@@ -1046,29 +1536,51 @@ class MainWindow(QMainWindow):
             item.setToolTip(f"完整路徑: {fpath}")
             self.tab2_file_list_widget.addItem(item)
 
-    def on_tab2_file_selected(self):
+    def on_tab2_file_item_changed(self, current, previous):
+        if previous and self.is_tab2_dirty:
+            # 未存檔防呆攔截
+            ret = QMessageBox.question(
+                self,
+                "未儲存變更確認",
+                "當前文章內容已修改但尚未儲存，是否立即儲存變更？",
+                QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel,
+                QMessageBox.Save
+            )
+            if ret == QMessageBox.Save:
+                self.save_tab2_article(silent=True)
+            elif ret == QMessageBox.Cancel:
+                # 恢復先前的選取
+                self.tab2_file_list_widget.blockSignals(True)
+                self.tab2_file_list_widget.setCurrentItem(previous)
+                self.tab2_file_list_widget.blockSignals(False)
+                return
+        
+        if not current:
+            return
+        
+        filepath = current.data(Qt.UserRole)
+        self.load_tab2_file(filepath)
+
+    def load_tab2_file(self, filepath):
+        if not filepath or not os.path.exists(filepath):
+            return
+        
+        self.is_tab2_loading = True
+        self.tab2_autosave_timer.stop()
+        self.tab2_current_filepath = filepath
+        
+        # 清空中欄屬性
         for i in reversed(range(self.tab2_scroll_layout.count())):
             item = self.tab2_scroll_layout.itemAt(i)
             if item.widget():
                 item.widget().deleteLater()
         
         self.tab2_dynamic_widgets = {}
-        
-        items = self.tab2_file_list_widget.selectedItems()
-        if not items:
-            return
-        
-        filepath = items[0].data(Qt.UserRole)
-        if not filepath or not os.path.exists(filepath):
-            return
-        
         fm, body = self.parse_frontmatter(filepath)
         col_name = self.tab2_col_combo.currentData()
         fields = self.schema.get(col_name, {}).get("fields", {})
         
-        fname_label = QLabel(f"📝 正在編輯文章檔: {os.path.basename(filepath)}")
-        fname_label.setStyleSheet("color: #e5a93b; font-weight: bold; font-size: 13px;")
-        self.tab2_scroll_layout.addWidget(fname_label)
+        self.tab2_file_lbl.setText(f"📄  {os.path.basename(filepath)}")
         
         for field_name, field_info in fields.items():
             field_type = field_info["type"]
@@ -1078,17 +1590,19 @@ class MainWindow(QMainWindow):
             if field_type in ["text", "slug"]:
                 if field_info.get("multiline", False):
                     lbl = QLabel(f"{field_label} ({field_name}):")
-                    lbl.setStyleSheet("color: #a2a2ab; font-weight: bold;")
+                    lbl.setStyleSheet("color: #a2a2ab; font-weight: bold; font-size: 11px;")
                     edit = EnhancedPlainTextEdit()
                     edit.setPlainText(str(val))
-                    edit.setMinimumHeight(70)
+                    edit.setMinimumHeight(60)
+                    edit.textChanged.connect(self.mark_tab2_dirty)
                     self.tab2_scroll_layout.addWidget(lbl)
                     self.tab2_scroll_layout.addWidget(edit)
                     self.tab2_dynamic_widgets[field_name] = ("text_multi", edit)
                 else:
                     lbl = QLabel(f"{field_label} ({field_name}):")
-                    lbl.setStyleSheet("color: #00ff88; font-weight: bold;")
+                    lbl.setStyleSheet("color: #00ff88; font-weight: bold; font-size: 11px;")
                     edit = QLineEdit(str(val))
+                    edit.textChanged.connect(self.mark_tab2_dirty)
                     self.tab2_scroll_layout.addWidget(lbl)
                     self.tab2_scroll_layout.addWidget(edit)
                     self.tab2_dynamic_widgets[field_name] = ("text_single", edit)
@@ -1099,7 +1613,7 @@ class MainWindow(QMainWindow):
                 self.tab2_dynamic_widgets[field_name] = ("array", array_widget)
             elif field_type == "select":
                 lbl = QLabel(f"{field_label} ({field_name}):")
-                lbl.setStyleSheet("color: #a2a2ab; font-weight: bold;")
+                lbl.setStyleSheet("color: #a2a2ab; font-weight: bold; font-size: 11px;")
                 combo = NoScrollComboBox()
                 opts = field_info.get("options", [])
                 for opt in opts:
@@ -1107,45 +1621,73 @@ class MainWindow(QMainWindow):
                 idx = combo.findData(val)
                 if idx >= 0:
                     combo.setCurrentIndex(idx)
+                combo.currentIndexChanged.connect(self.mark_tab2_dirty)
                 self.tab2_scroll_layout.addWidget(lbl)
                 self.tab2_scroll_layout.addWidget(combo)
                 self.tab2_dynamic_widgets[field_name] = ("select", combo)
             else:
                 lbl = QLabel(f"{field_label} ({field_name}):")
-                lbl.setStyleSheet("color: #a2a2ab; font-weight: bold;")
+                lbl.setStyleSheet("color: #a2a2ab; font-weight: bold; font-size: 11px;")
                 edit = QLineEdit(str(val))
+                edit.textChanged.connect(self.mark_tab2_dirty)
                 self.tab2_scroll_layout.addWidget(lbl)
                 self.tab2_scroll_layout.addWidget(edit)
                 self.tab2_dynamic_widgets[field_name] = (field_type, edit)
         
-        body_header_layout = QHBoxLayout()
-        lbl_body = QLabel("⭐ 文章正文內容 (Markdown):")
-        lbl_body.setStyleSheet("color: #00ff88; font-weight: bold; font-size: 13px;")
-        
-        btn_open_win = QPushButton("↗️ 開啟獨立寫作大視窗")
-        btn_open_win.setStyleSheet("background-color: #e5a93b; color: #1a1a20; font-weight: bold; padding: 4px 10px; font-size: 12px;")
-        btn_open_win.clicked.connect(lambda _, fp=filepath: self.open_standalone_editor(tab_num=2, filepath=fp))
-        
-        body_header_layout.addWidget(lbl_body)
-        body_header_layout.addStretch()
-        body_header_layout.addWidget(btn_open_win)
-        
-        self.tab2_body_edit = EnhancedPlainTextEdit()
         self.tab2_body_edit.setPlainText(body)
-        self.tab2_body_edit.setMinimumHeight(220)
-        self.tab2_body_edit.setStyleSheet("background-color: #15151c; font-family: Consolas; font-size: 13px; color: #ffffff;")
-        self.tab2_scroll_layout.addLayout(body_header_layout)
-        self.tab2_scroll_layout.addWidget(self.tab2_body_edit)
-
-    def save_tab2_article(self):
-        items = self.tab2_file_list_widget.selectedItems()
-        if not items:
-            QMessageBox.warning(self, "請選擇文章", "請先從左側列表中選擇欲修訂的文章！")
-            return
+        self.is_tab2_loading = False
+        self.is_tab2_dirty = False
         
-        filepath = items[0].data(Qt.UserRole)
+        self.tab2_save_status_lbl.setText("● 已同步最新內容")
+        self.tab2_save_status_lbl.setStyleSheet("color: #6edb8f; font-size: 11px; margin-left: 10px; margin-right: 8px;")
+        self.update_tab2_statistics()
+
+    def mark_tab2_dirty(self):
+        if self.is_tab2_loading:
+            return
+        self.is_tab2_dirty = True
+        self.tab2_save_status_lbl.setText("● 編輯中 (未儲存)")
+        self.tab2_save_status_lbl.setStyleSheet("color: #e5a93b; font-size: 11px; margin-left: 10px; margin-right: 8px;")
+        self.tab2_autosave_timer.start(60000)
+
+    def on_tab2_text_changed(self):
+        if self.is_tab2_loading:
+            return
+        self.mark_tab2_dirty()
+        self.update_tab2_statistics()
+
+    def update_tab2_statistics(self):
+        text = self.tab2_body_edit.toPlainText()
+        char_count = len(text.replace(" ", "").replace("\n", "").replace("\r", ""))
+        lines = text.splitlines()
+        para_count = len([line for line in lines if line.strip()])
+        
+        self.tab2_lbl_char_count.setText(f"字數: {char_count} 字")
+        self.tab2_lbl_para_count.setText(f"段落: {para_count}")
+
+    def update_tab2_cursor_pos(self):
+        cursor = self.tab2_body_edit.textCursor()
+        line = cursor.blockNumber() + 1
+        col = cursor.columnNumber() + 1
+        self.tab2_lbl_cursor_pos.setText(f"行 {line}, 欄 {col}")
+
+    def auto_save_tab2_article(self):
+        if self.is_tab2_dirty and self.tab2_current_filepath:
+            self.save_tab2_article(silent=True)
+            now_str = datetime.datetime.now().strftime("%H:%M:%S")
+            self.tab2_save_status_lbl.setText(f"✓ 60秒自動存檔 ({now_str})")
+            self.tab2_save_status_lbl.setStyleSheet("color: #6edb8f; font-size: 11px; margin-left: 10px; margin-right: 8px;")
+
+    def save_tab2_article(self, silent=False):
+        filepath = self.tab2_current_filepath
+        if not filepath:
+            items = self.tab2_file_list_widget.selectedItems()
+            if items:
+                filepath = items[0].data(Qt.UserRole)
+        
         if not filepath or not os.path.exists(filepath):
-            QMessageBox.warning(self, "檔案不存在", "找不到目標修訂檔案！")
+            if not silent:
+                QMessageBox.warning(self, "請選擇文章", "請先從左側列表中選擇欲修訂的文章！")
             return
         
         fm_data = {}
@@ -1192,13 +1734,19 @@ class MainWindow(QMainWindow):
             now_time = datetime.datetime.now().strftime("%H:%M:%S")
             self.log(f"✓ [{now_time}] 成功儲存修訂文章至網站: {os.path.basename(filepath)}")
             
-            subprocess.run(["node", "scripts/gui-helper.js", "--extract"], cwd=self.project_dir, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            self.is_tab2_dirty = False
+            self.tab2_autosave_timer.stop()
+            self.tab2_save_status_lbl.setText(f"✓ 已儲存 ({now_time})")
+            self.tab2_save_status_lbl.setStyleSheet("color: #6edb8f; font-size: 11px; margin-left: 10px; margin-right: 8px;")
             
-            QMessageBox.information(self, "儲存成功", f"文章【{os.path.basename(filepath)}】已成功更新！\n系統已完成自動格式維護與同步。")
-            self.refresh_tab2_file_list()
+            if not silent:
+                subprocess.run(["node", "scripts/gui-helper.js", "--extract"], cwd=self.project_dir, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                QMessageBox.information(self, "儲存成功", f"文章【{os.path.basename(filepath)}】已成功更新！\n系統已完成自動格式維護與同步。")
         except Exception as e:
             self.log(f"❌ 儲存修訂文章失敗: {e}")
-            QMessageBox.critical(self, "儲存失敗", f"儲存修訂文章時發生錯誤:\n{e}")
+            if not silent:
+                QMessageBox.critical(self, "儲存失敗", f"儲存修訂文章時發生錯誤:\n{e}")
+
 
     def log(self, text):
         try:
@@ -1770,70 +2318,11 @@ class MainWindow(QMainWindow):
                 self.scroll_layout.addWidget(edit)
                 self.dynamic_widgets[field_name] = (field_type, edit)
 
-        # 專屬：待匯入文字檔正文內容編輯器
-        body_header_layout = QHBoxLayout()
-        lbl_body = QLabel("⭐ 待匯入文字檔正文內容 (直接編輯/修訂):")
-        lbl_body.setStyleSheet("color: #00ff88; font-weight: bold; font-size: 13px;")
-        
-        btn_open_win = QPushButton("↗️ 開啟獨立寫作大視窗")
-        btn_open_win.setStyleSheet("background-color: #e5a93b; color: #1a1a20; font-weight: bold; padding: 4px 10px; font-size: 12px;")
-        btn_open_win.clicked.connect(lambda _, fp=filepath: self.open_standalone_editor(tab_num=1, filepath=fp))
-        
-        body_header_layout.addWidget(lbl_body)
-        body_header_layout.addStretch()
-        body_header_layout.addWidget(btn_open_win)
-        
-        self.tab1_body_edit = EnhancedPlainTextEdit()
-        self.tab1_body_edit.setPlainText(body)
-        self.tab1_body_edit.setMinimumHeight(200)
-        self.tab1_body_edit.setStyleSheet("background-color: #15151c; font-family: Consolas; font-size: 13px; color: #ffffff;")
-        
-        self.scroll_layout.addLayout(body_header_layout)
-        self.scroll_layout.addWidget(self.tab1_body_edit)
-        
-        if filepath:
-            save_file_btn = QPushButton("💾 儲存修改至工作區原始文字檔")
-            save_file_btn.setStyleSheet("background-color: #2d5f5a; color: #ffffff; font-weight: bold; padding: 6px 12px;")
-            save_file_btn.clicked.connect(lambda _, fp=filepath: self.save_pending_file(fp))
-            self.scroll_layout.addWidget(save_file_btn)
-
-    def open_standalone_editor(self, tab_num=1, filepath=""):
-        if hasattr(self, "standalone_window") and self.standalone_window is not None and self.standalone_window.isVisible():
-            self.standalone_window.showNormal()
-            self.standalone_window.activateWindow()
-            return
-
-        initial_text = ""
-        title_info = os.path.basename(filepath) if filepath else "文字檔"
-
-        if tab_num == 1:
-            if hasattr(self, "tab1_body_edit") and self.tab1_body_edit:
-                initial_text = self.tab1_body_edit.toPlainText()
-            def on_save(new_text, save_to_disk=False):
-                if hasattr(self, "tab1_body_edit") and self.tab1_body_edit:
-                    self.tab1_body_edit.setPlainText(new_text)
-                if save_to_disk and filepath:
-                    self.save_pending_file(filepath)
-        else:
-            if hasattr(self, "tab2_body_edit") and self.tab2_body_edit:
-                initial_text = self.tab2_body_edit.toPlainText()
-            def on_save(new_text, save_to_disk=False):
-                if hasattr(self, "tab2_body_edit") and self.tab2_body_edit:
-                    self.tab2_body_edit.setPlainText(new_text)
-                if save_to_disk and filepath:
-                    self.save_tab2_article()
-
-        self.standalone_window = StandaloneTextEditorWindow(
-            title_info=title_info,
-            initial_text=initial_text,
-            on_save_callback=on_save,
-            parent=self
-        )
-        self.standalone_window.show()
-
-    def save_pending_file(self, filepath):
-        if not filepath or not os.path.exists(filepath):
-            QMessageBox.warning(self, "檔案不存在", "無法定位工作區原始文字檔！")
+    def save_pending_file(self, filepath=None, silent=False):
+        target_path = filepath or getattr(self, "tab1_current_filepath", None)
+        if not target_path or not os.path.exists(target_path):
+            if not silent:
+                QMessageBox.warning(self, "檔案不存在", "無法定位工作區原始文字檔！")
             return
             
         body_text = getattr(self, "tab1_body_edit", None)
@@ -1874,14 +2363,21 @@ class MainWindow(QMainWindow):
         
         full_content = "\n".join(lines)
         try:
-            with open(filepath, "w", encoding="utf-8") as f:
+            with open(target_path, "w", encoding="utf-8") as f:
                 f.write(full_content)
-            self.log(f"✓ 成功儲存修改至工作區原始文字檔: {os.path.basename(filepath)}")
-            QMessageBox.information(self, "儲存成功", f"檔案【{os.path.basename(filepath)}】的修改已成功儲存至工作區！")
-            self.refresh_file_list()
+            
+            self.is_tab1_dirty = False
+            now_str = datetime.datetime.now().strftime("%H:%M:%S")
+            self.tab1_save_status_lbl.setText(f"✓ 已存檔 ({now_str})")
+            self.tab1_save_status_lbl.setStyleSheet("color: #6edb8f; font-size: 11px; margin-left: 8px; margin-right: 6px;")
+            self.log(f"✓ 成功儲存修改至工作區原始文字檔: {os.path.basename(target_path)}")
+            
+            if not silent:
+                QMessageBox.information(self, "儲存成功", f"檔案【{os.path.basename(target_path)}】的修改已成功儲存至工作區！")
         except Exception as e:
             self.log(f"❌ 儲存原始文字檔失敗: {e}")
-            QMessageBox.critical(self, "儲存失敗", f"儲存原始文字檔時發生錯誤:\n{e}")
+            if not silent:
+                QMessageBox.critical(self, "儲存失敗", f"儲存原始文字檔時發生錯誤:\n{e}")
 
     def toggle_test_server(self):
         if self.astro_process and self.astro_process.state() == QProcess.Running:

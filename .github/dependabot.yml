@@ -1,0 +1,21 @@
+version: 2
+updates:
+  # 定期掃描 npm 依賴套件安全更新
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "security"
+
+  # 定期掃描 GitHub Actions 工作流程版本
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels:
+      - "actions"
+      - "security"

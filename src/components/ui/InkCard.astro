@@ -1,0 +1,91 @@
+---
+interface Props {
+  class?: string;
+  variant?: 'default' | 'accent' | 'cyan';
+  interactive?: boolean;
+  glow?: boolean;
+}
+
+const {
+  class: className = '',
+  variant = 'default',
+  interactive = true,
+  glow = true,
+  ...rest
+} = Astro.props;
+---
+
+<div
+  class={`ink-card paper-card ink-card-${variant} ${interactive ? 'is-interactive' : ''} ${className}`}
+  {...rest}
+>
+  {glow && <div class="ink-card-glow" aria-hidden="true"></div>}
+  <div class="ink-card-body">
+    <slot />
+  </div>
+</div>
+
+<style>
+  .ink-card {
+    position: relative;
+    padding: 2rem;
+    border-radius: 8px;
+    background: var(--color-paper-light, #fdfcf7);
+    border: 1px solid var(--color-border, #e6dfcc);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+    overflow: hidden;
+    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1),
+                box-shadow 0.3s cubic-bezier(0.25, 0.8, 0.25, 1),
+                border-color 0.3s ease;
+  }
+
+  .ink-card-body {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  /* 懸停邊界流光 (Galaxy 特效的水墨柔化版) */
+  .ink-card-glow {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0;
+    z-index: 1;
+    background: radial-gradient(
+      600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+      rgba(45, 95, 90, 0.06),
+      transparent 40%
+    );
+    transition: opacity 0.4s ease;
+  }
+
+  .ink-card.is-interactive:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+    border-color: rgba(45, 95, 90, 0.3);
+  }
+
+  .ink-card.is-interactive:hover .ink-card-glow {
+    opacity: 1;
+  }
+
+  /* 變體：Cyan 石青微框 */
+  .ink-card-cyan {
+    border-top: 3px solid var(--color-mountain-cyan, #2d5f5a);
+  }
+
+  /* 變體：Accent 赭石微框 */
+  .ink-card-accent {
+    border-top: 3px solid var(--color-mountain-accent, #c48c3b);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ink-card {
+      transition: none !important;
+      transform: none !important;
+    }
+  }
+</style>

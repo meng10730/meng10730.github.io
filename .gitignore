@@ -26,6 +26,7 @@ pnpm-debug.log*
 # local backups & trash
 .backup/
 trash/
+temp-keystatic-api/
 
 # external raw audio resources
 /Audio/
@@ -39,3 +40,9 @@ logs/
 
 # 排除 AI 學習日誌
 .learnings/
+
+# Python cache
+__pycache__/
+*.pyc
+preview_error.log
+

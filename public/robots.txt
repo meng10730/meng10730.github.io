@@ -20,6 +20,9 @@ User-agent: YouBot
 User-agent: FacebookBot
 User-agent: PetalBot
 User-agent: Scrapy
+User-agent: Meta-ExternalAgent
+User-agent: Amazonbot
+User-agent: Timpibot
 Disallow: /
 
 Sitemap: https://meng10730.github.io/sitemap-index.xml

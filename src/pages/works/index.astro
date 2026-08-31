@@ -1,6 +1,10 @@
 ---
 import { getCollection } from "astro:content";
 import Layout from "../../layouts/Layout.astro";
+import InkCard from "../../components/ui/InkCard.astro";
+import PulseBadge from "../../components/ui/PulseBadge.astro";
+import InkButton from "../../components/ui/InkButton.astro";
+import ShimmerBadge from "../../components/ui/ShimmerBadge.astro";
 
 const allWorks = await getCollection("works", (entry) => {
   return !entry.id.startsWith("_");
@@ -42,11 +46,9 @@ const statusMap = {
             ) : (
               <div class="works-grid">
                 {works.map((work) => (
-                  <div class="work-card paper-card">
+                  <InkCard class="work-card">
                     <div class="card-header">
-                      <span class={`status-badge ${work.data.status}`}>
-                        {statusMap[work.data.status] || work.data.status}
-                      </span>
+                      <PulseBadge status={work.data.status} />
                       <span class="pub-date">
                         {new Date(work.data.pubDate).toLocaleDateString(
                           "zh-TW",
@@ -63,34 +65,36 @@ const statusMap = {
                     {work.data.techs && work.data.techs.length > 0 && (
                       <div class="tech-tags">
                         {work.data.techs.map((tech) => (
-                          <span class="tech-tag">{tech}</span>
+                          <ShimmerBadge class="tech-shimmer-tag" interactive={false} variant="default">{tech}</ShimmerBadge>
                         ))}
                       </div>
                     )}
 
                     <div class="card-links">
                       {work.data.github && (
-                        <a
+                        <InkButton
                           href={work.data.github}
                           target="_blank"
                           rel="noopener noreferrer"
-                          class="link-btn github"
+                          variant="secondary"
+                          size="sm"
                         >
                           原始碼
-                        </a>
+                        </InkButton>
                       )}
                       {work.data.demo && (
-                        <a
+                        <InkButton
                           href={work.data.demo}
                           target="_blank"
                           rel="noopener noreferrer"
-                          class="link-btn demo"
+                          variant="primary"
+                          size="sm"
                         >
                           線上預覽
-                        </a>
+                        </InkButton>
                       )}
                     </div>
-                  </div>
+                  </InkCard>
                 ))}
               </div>
             )}
@@ -213,9 +217,14 @@ const statusMap = {
 
   .card-links {
     display: flex;
-    gap: 1rem;
+    gap: 0.8rem;
     border-top: 1px dashed var(--color-border);
     padding-top: 1rem;
+  }
+
+  .card-links :global(.ink-btn) {
+    flex: 1;
+    text-align: center;
   }
 
   .link-btn {

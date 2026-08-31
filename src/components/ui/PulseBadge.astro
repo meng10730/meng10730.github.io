@@ -1,0 +1,123 @@
+---
+interface Props {
+  status?: 'completed' | 'ongoing' | 'archived' | string;
+  label?: string;
+  class?: string;
+}
+
+const {
+  status = 'completed',
+  label,
+  class: className = '',
+  ...rest
+} = Astro.props;
+
+const statusTextMap: Record<string, string> = {
+  completed: '已完成',
+  ongoing: '進行中',
+  archived: '封存中',
+};
+
+const displayLabel = label || statusTextMap[status] || status;
+---
+
+<span class={`pulse-badge status-${status} ${className}`} {...rest}>
+  <span class="pulse-dot" aria-hidden="true">
+    <span class="pulse-ring"></span>
+  </span>
+  <span class="badge-text">{displayLabel}</span>
+</span>
+
+<style>
+  .pulse-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.25rem 0.65rem;
+    font-size: 0.85rem;
+    font-family: var(--font-cursive, serif);
+    border-radius: 9999px;
+    letter-spacing: 0.05em;
+    line-height: 1.2;
+    border: 1px solid var(--color-border, #e6dfcc);
+    background: var(--color-paper-light, #fdfcf7);
+    color: var(--color-ink-text, #2c2c2c);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  }
+
+  .pulse-dot {
+    position: relative;
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+
+  .pulse-ring {
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    opacity: 0.75;
+    animation: pulse-ring-anim 2s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+  }
+
+  /* 進行中：翡翠綠呼吸燈 */
+  .status-ongoing {
+    border-color: rgba(61, 126, 90, 0.35);
+    background: rgba(61, 126, 90, 0.06);
+    color: var(--color-mountain-green, #3d7e5a);
+  }
+  .status-ongoing .pulse-dot {
+    background-color: var(--color-mountain-green, #3d7e5a);
+  }
+  .status-ongoing .pulse-ring {
+    border: 1.5px solid var(--color-mountain-green, #3d7e5a);
+  }
+
+  /* 已完成：水墨石青微光 */
+  .status-completed {
+    border-color: rgba(45, 95, 90, 0.3);
+    background: rgba(45, 95, 90, 0.05);
+    color: var(--color-mountain-cyan, #2d5f5a);
+  }
+  .status-completed .pulse-dot {
+    background-color: var(--color-mountain-cyan, #2d5f5a);
+  }
+  .status-completed .pulse-ring {
+    border: 1.5px solid var(--color-mountain-cyan, #2d5f5a);
+  }
+
+  /* 封存中：淡墨灰微光 */
+  .status-archived {
+    border-color: rgba(140, 140, 140, 0.3);
+    background: rgba(140, 140, 140, 0.06);
+    color: var(--color-ink-grey, #5c5c5c);
+  }
+  .status-archived .pulse-dot {
+    background-color: var(--color-ink-light, #8c8c8c);
+  }
+  .status-archived .pulse-ring {
+    display: none;
+  }
+
+  @keyframes pulse-ring-anim {
+    0% {
+      transform: scale(0.8);
+      opacity: 0.9;
+    }
+    50% {
+      transform: scale(2);
+      opacity: 0;
+    }
+    100% {
+      transform: scale(0.8);
+      opacity: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pulse-ring {
+      animation: none !important;
+    }
+  }
+</style>

@@ -104,6 +104,10 @@ const jsonLd = {
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
 
+    <!-- 基礎安全標籤防護 -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+
     <!-- 基礎 SEO & E-E-A-T 標籤 -->
     <title>{title}</title>
     <meta name="description" content={description} />
@@ -128,7 +132,7 @@ const jsonLd = {
     <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
 
     <!-- 啟用 Astro 的客戶端路由（前身為 ViewTransitions）以達成無縫音樂與動畫 -->
-    <ViewTransitions />
+    <ViewTransitions fallback="swap" />
   </head>
   <body>
     <!-- 寫意水墨 Canvas 背景 -->
@@ -140,38 +144,42 @@ const jsonLd = {
       <header class="site-header ink-fade-in">
         <nav class="nav-container">
           <div class="nav-logo">
-            <a href={import.meta.env.BASE_URL} class="cursive-title ink-logo"
+            <a href={import.meta.env.BASE_URL} class="cursive-title ink-logo" data-astro-prefetch="hover"
               >晚餐後的書桌</a
             >
           </div>
           <ul class="nav-links">
             <li>
-              <a href={import.meta.env.BASE_URL} class="ink-link nav-item"
+              <a href={import.meta.env.BASE_URL} class="ink-link nav-item" data-astro-prefetch="hover"
                 >首頁</a
               >
             </li>
             <li>
               <a
-                href={`${import.meta.env.BASE_URL}blog`}
-                class="ink-link nav-item">文章</a
+                href={`${import.meta.env.BASE_URL}blog/`}
+                class="ink-link nav-item"
+                data-astro-prefetch="hover">文章</a
               >
             </li>
             <li>
               <a
-                href={`${import.meta.env.BASE_URL}works`}
-                class="ink-link nav-item">作品</a
+                href={`${import.meta.env.BASE_URL}works/`}
+                class="ink-link nav-item"
+                data-astro-prefetch="hover">作品</a
               >
             </li>
             <li>
               <a
-                href={`${import.meta.env.BASE_URL}shanzhuang`}
-                class="ink-link nav-item">後山</a
+                href={`${import.meta.env.BASE_URL}shanzhuang/`}
+                class="ink-link nav-item"
+                data-astro-prefetch="hover">後山</a
               >
             </li>
             <li>
               <a
-                href={`${import.meta.env.BASE_URL}about`}
-                class="ink-link nav-item">關於</a
+                href={`${import.meta.env.BASE_URL}about/`}
+                class="ink-link nav-item"
+                data-astro-prefetch="hover">關於</a
               >
             </li>
             <li>
@@ -635,7 +643,7 @@ const jsonLd = {
       </script>
 
       <!-- 主要內容區域 -->
-      <main class="site-main">
+      <main class="site-main" transition:animate="fade">
         <slot />
       </main>
 
