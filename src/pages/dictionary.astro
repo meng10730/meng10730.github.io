@@ -453,26 +453,47 @@
       color: var(--text-main);
     }
 
-    /* Loading Spinner */
+    /* Loading Spinner - 水墨波紋微光動畫 */
     .loader {
       display: none;
       justify-content: center;
       align-items: center;
       padding: 4rem 0;
+      flex-direction: column;
+      gap: 1.2rem;
     }
 
     .spinner {
-      width: 40px;
-      height: 40px;
-      border: 3px solid rgba(255, 255, 255, 0.05);
-      border-top: 3px solid var(--accent-cyan);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
+      position: relative;
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+    .spinner::before {
+      content: '';
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--accent-cyan);
+      box-shadow: 0 0 12px var(--accent-cyan);
+    }
+
+    .spinner::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 2px solid var(--accent-cyan);
+      animation: ink-dict-ripple 1.6s cubic-bezier(0.1, 0.8, 0.3, 1) infinite;
+    }
+
+    @keyframes ink-dict-ripple {
+      0% { transform: scale(0.3); opacity: 1; border-color: var(--accent-cyan); }
+      100% { transform: scale(1.5); opacity: 0; border-color: var(--accent-purple); }
     }
 
     /* Empty state info */

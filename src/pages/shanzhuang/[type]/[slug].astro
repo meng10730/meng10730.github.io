@@ -1,6 +1,8 @@
 ---
 import { getCollection } from 'astro:content';
 import Layout from '../../../layouts/Layout.astro';
+import BookmarkPagination from '../../../components/ui/BookmarkPagination.astro';
+import ScrollAccordion from '../../../components/ui/ScrollAccordion.astro';
 
 export async function getStaticPaths() {
   try {
@@ -68,6 +70,15 @@ const findNovelSlug = (novelTitle: string) => {
   const matched = allNovels.find((n: any) => n.data.title === novelTitle);
   return matched ? matched.slug : null;
 };
+
+let prevNovel: any = null;
+let nextNovel: any = null;
+if (type === 'novels') {
+  const sortedNovels = [...allNovels].sort((a, b) => new Date(a.data.pubDate).valueOf() - new Date(b.data.pubDate).valueOf());
+  const currentIndex = sortedNovels.findIndex(n => n.slug === entry.slug);
+  if (currentIndex > 0) prevNovel = sortedNovels[currentIndex - 1];
+  if (currentIndex >= 0 && currentIndex < sortedNovels.length - 1) nextNovel = sortedNovels[currentIndex + 1];
+}
 
 const RENDER_CONFIG: Record<string, Record<string, string>> = {
   // [ADD_NEW_COLLECTION_RENDER_CONFIG_HERE]
@@ -301,15 +312,24 @@ const breadcrumbs = [
         <Content />
       </div>
 
+      {type === 'novels' && (
+        <BookmarkPagination
+          prevUrl={prevNovel ? `${import.meta.env.BASE_URL}shanzhuang/novels/${prevNovel.slug}/` : undefined}
+          prevTitle={prevNovel ? `上一回：${prevNovel.data.title}` : '首回'}
+          nextUrl={nextNovel ? `${import.meta.env.BASE_URL}shanzhuang/novels/${nextNovel.slug}/` : undefined}
+          nextTitle={nextNovel ? `下一回：${nextNovel.data.title}` : '終回'}
+          catalogUrl={`${import.meta.env.BASE_URL}shanzhuang/novels/`}
+          catalogTitle="回章節目錄"
+        />
+      )}
+
       {(type === 'dictionary' || type === 'guoxue') && (
-        <div class="moe-citation-card paper-card ink-fade-in">
-          <div class="moe-citation-header">
-            <span class="moe-citation-icon">📚</span>
-            <span class="moe-citation-title cursive-title">考據與典籍資料來源出處</span>
-          </div>
-          <p class="moe-citation-text">
-            本條目所記載之審定字音（注音/拼音）、部首筆畫、本義訓詁與古籍引文，依據<strong>中華民國教育部《重編國語辭典修訂本》</strong>（採用創用 CC 姓名標示-禁止改作 3.0 臺灣授權條款，CC BY-ND 3.0 TW）進行整理收錄；相關先秦兩漢經史子集之原典著作權屬公有領域，本站基於文獻所衍生之原創小說設定與創作意境則屬作者所有。
-          </p>
+        <div style="margin-top: 2rem;">
+          <ScrollAccordion title="考據與典籍資料來源出處" icon="📚" badge="教育部重編國語辭典" open={false}>
+            <p class="moe-citation-text" style="margin: 0; font-size: 0.95rem; line-height: 1.8; color: var(--color-ink-grey);">
+              本條目所記載之審定字音（注音/拼音）、部首筆畫、本義訓詁與古籍引文，依據<strong>中華民國教育部《重編國語辭典修訂本》</strong>（採用創用 CC 姓名標示-禁止改作 3.0 臺灣授權條款，CC BY-ND 3.0 TW）進行整理收錄；相關先秦兩漢經史子集之原典著作權屬公有領域，本站基於文獻所衍生之原創小說設定與創作意境則屬作者所有。
+            </p>
+          </ScrollAccordion>
         </div>
       )}
 
