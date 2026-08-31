@@ -1,0 +1,151 @@
+---
+interface Props {
+  prevUrl?: string;
+  prevTitle?: string;
+  nextUrl?: string;
+  nextTitle?: string;
+  catalogUrl?: string;
+  catalogTitle?: string;
+  class?: string;
+}
+
+const {
+  prevUrl,
+  prevTitle = '上一回',
+  nextUrl,
+  nextTitle = '下一回',
+  catalogUrl,
+  catalogTitle = '回目錄',
+  class: className = '',
+} = Astro.props;
+---
+
+<nav class={`bookmark-pagination ${className}`} aria-label="章節導覽">
+  <div class="bookmark-slot bookmark-prev">
+    {prevUrl ? (
+      <a href={prevUrl} class="bookmark-tag" title={prevTitle} data-astro-prefetch="hover">
+        <span class="bookmark-arrow">❮</span>
+        <span class="bookmark-label">{prevTitle}</span>
+      </a>
+    ) : (
+      <span class="bookmark-tag is-disabled">
+        <span class="bookmark-arrow">❮</span>
+        <span class="bookmark-label">首篇</span>
+      </span>
+    )}
+  </div>
+
+  {catalogUrl && (
+    <div class="bookmark-slot bookmark-catalog">
+      <a href={catalogUrl} class="bookmark-tag catalog-tag" title={catalogTitle} data-astro-prefetch="hover">
+        <span class="bookmark-icon">📜</span>
+        <span class="bookmark-label">{catalogTitle}</span>
+      </a>
+    </div>
+  )}
+
+  <div class="bookmark-slot bookmark-next">
+    {nextUrl ? (
+      <a href={nextUrl} class="bookmark-tag" title={nextTitle} data-astro-prefetch="hover">
+        <span class="bookmark-label">{nextTitle}</span>
+        <span class="bookmark-arrow">❯</span>
+      </a>
+    ) : (
+      <span class="bookmark-tag is-disabled">
+        <span class="bookmark-label">終卷</span>
+        <span class="bookmark-arrow">❯</span>
+      </span>
+    )}
+  </div>
+</nav>
+
+<style>
+  .bookmark-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.5rem 0;
+    margin-top: 2.5rem;
+    border-top: 1px dashed var(--color-border, #e6dfcc);
+    font-family: var(--font-cursive, serif);
+  }
+
+  .bookmark-slot {
+    flex: 1;
+    display: flex;
+  }
+  .bookmark-prev {
+    justify-content: flex-start;
+  }
+  .bookmark-catalog {
+    justify-content: center;
+  }
+  .bookmark-next {
+    justify-content: flex-end;
+  }
+
+  /* 書籤標籤樣式 */
+  .bookmark-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1.2rem;
+    background: var(--color-paper-light, #fdfcf7);
+    border: 1px solid var(--color-border, #e6dfcc);
+    border-radius: 6px;
+    color: var(--color-ink-black, #1a1a1a);
+    font-size: 1rem;
+    text-decoration: none;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+    transition: transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1),
+                border-color 0.25s ease,
+                color 0.25s ease,
+                box-shadow 0.25s ease;
+    user-select: none;
+  }
+
+  .bookmark-tag:hover:not(.is-disabled) {
+    transform: translateY(-2px);
+    border-color: var(--color-mountain-cyan, #2d5f5a);
+    color: var(--color-mountain-cyan, #2d5f5a);
+    box-shadow: 0 4px 12px rgba(45, 95, 90, 0.1);
+  }
+
+  .catalog-tag {
+    background: rgba(45, 95, 90, 0.04);
+    border-color: rgba(45, 95, 90, 0.2);
+    color: var(--color-mountain-cyan, #2d5f5a);
+  }
+
+  .bookmark-arrow {
+    font-size: 0.85rem;
+    opacity: 0.7;
+    transition: transform 0.25s ease;
+  }
+
+  .bookmark-prev .bookmark-tag:hover:not(.is-disabled) .bookmark-arrow {
+    transform: translateX(-3px);
+  }
+  .bookmark-next .bookmark-tag:hover:not(.is-disabled) .bookmark-arrow {
+    transform: translateX(3px);
+  }
+
+  .bookmark-tag.is-disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+  }
+
+  @media (max-width: 600px) {
+    .bookmark-pagination {
+      gap: 0.5rem;
+    }
+    .bookmark-tag {
+      padding: 0.4rem 0.8rem;
+      font-size: 0.9rem;
+    }
+  }
+</style>

@@ -1,0 +1,137 @@
+---
+interface Props {
+  size?: 'sm' | 'md' | 'lg';
+  text?: string;
+  class?: string;
+}
+
+const {
+  size = 'md',
+  text,
+  class: className = '',
+  ...rest
+} = Astro.props;
+---
+
+<div class={`ink-loader-container ink-loader-${size} ${className}`} {...rest} aria-live="polite">
+  <div class="ink-loader-visual">
+    <div class="ink-drop"></div>
+    <div class="ink-ripple ripple-1"></div>
+    <div class="ink-ripple ripple-2"></div>
+    <div class="ink-ripple ripple-3"></div>
+  </div>
+  {text && <span class="ink-loader-text">{text}</span>}
+</div>
+
+<style>
+  .ink-loader-container {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.8rem;
+    padding: 1rem;
+    font-family: var(--font-cursive, serif);
+  }
+
+  .ink-loader-visual {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* 墨滴落心 */
+  .ink-drop {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-ink-black, #1a1a1a);
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
+    animation: ink-drop-pulse 2s ease-in-out infinite;
+    z-index: 2;
+  }
+
+  /* 三重水墨波紋擴散 */
+  .ink-ripple {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 1px solid var(--color-mountain-cyan, #2d5f5a);
+    opacity: 0;
+    pointer-events: none;
+    animation: ink-ripple-expand 2s cubic-bezier(0.1, 0.8, 0.3, 1) infinite;
+  }
+
+  .ripple-1 {
+    animation-delay: 0s;
+  }
+  .ripple-2 {
+    animation-delay: 0.6s;
+  }
+  .ripple-3 {
+    animation-delay: 1.2s;
+  }
+
+  .ink-loader-text {
+    font-size: 0.95rem;
+    color: var(--color-ink-grey, #5c5c5c);
+    letter-spacing: 0.08em;
+  }
+
+  /* 尺寸規範 */
+  .ink-loader-sm .ink-loader-visual {
+    width: 36px;
+    height: 36px;
+  }
+  .ink-loader-sm .ink-drop {
+    width: 5px;
+    height: 5px;
+  }
+
+  .ink-loader-lg .ink-loader-visual {
+    width: 90px;
+    height: 90px;
+  }
+  .ink-loader-lg .ink-drop {
+    width: 12px;
+    height: 12px;
+  }
+
+  @keyframes ink-drop-pulse {
+    0%, 100% {
+      transform: scale(0.85);
+      background-color: var(--color-ink-black, #1a1a1a);
+    }
+    50% {
+      transform: scale(1.15);
+      background-color: var(--color-mountain-cyan, #2d5f5a);
+    }
+  }
+
+  @keyframes ink-ripple-expand {
+    0% {
+      transform: scale(0.2);
+      opacity: 0.8;
+      border-color: var(--color-mountain-cyan, #2d5f5a);
+    }
+    60% {
+      border-color: var(--color-mountain-green, #3d7e5a);
+    }
+    100% {
+      transform: scale(1.2);
+      opacity: 0;
+      border-color: transparent;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ink-drop,
+    .ink-ripple {
+      animation: none !important;
+    }
+  }
+</style>

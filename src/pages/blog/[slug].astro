@@ -1,17 +1,24 @@
 ---
 import { getCollection } from 'astro:content';
 import Layout from '../../layouts/Layout.astro';
+import BookmarkPagination from '../../components/ui/BookmarkPagination.astro';
 
 // 定義靜態路由路徑
 export async function getStaticPaths() {
-  const posts = await getCollection('blog');
-  return posts.map((post) => ({
+  const posts = (await getCollection('blog')).sort(
+    (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
+  );
+  return posts.map((post, index) => ({
     params: { slug: post.slug },
-    props: { post },
+    props: {
+      post,
+      prevPost: index < posts.length - 1 ? posts[index + 1] : null,
+      nextPost: index > 0 ? posts[index - 1] : null,
+    },
   }));
 }
 
-const { post } = Astro.props;
+const { post, prevPost, nextPost } = Astro.props;
 const { Content } = await post.render();
 
 // 格式化日期
@@ -75,6 +82,15 @@ const breadcrumbs = [
         <Content />
       </div>
 
+      <!-- 古籍書籤導覽 (上一篇 / 回目錄 / 下一篇) -->
+      <BookmarkPagination
+        prevUrl={prevPost ? `${import.meta.env.BASE_URL}blog/${prevPost.slug}/` : undefined}
+        prevTitle={prevPost ? `前篇：${prevPost.data.title}` : '首篇'}
+        nextUrl={nextPost ? `${import.meta.env.BASE_URL}blog/${nextPost.slug}/` : undefined}
+        nextTitle={nextPost ? `續篇：${nextPost.data.title}` : '終卷'}
+        catalogUrl={`${import.meta.env.BASE_URL}blog/`}
+        catalogTitle="回觀其文"
+      />
     </div>
 
     <!-- Giscus 留言板區域 (宣紙半透明容器) -->

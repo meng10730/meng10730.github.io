@@ -1,0 +1,130 @@
+---
+interface Props {
+  title: string;
+  icon?: string;
+  badge?: string;
+  open?: boolean;
+  class?: string;
+}
+
+const {
+  title,
+  icon = '📜',
+  badge,
+  open = false,
+  class: className = '',
+} = Astro.props;
+---
+
+<details class={`scroll-accordion ${className}`} open={open}>
+  <summary class="accordion-summary">
+    <div class="summary-left">
+      {icon && <span class="summary-icon">{icon}</span>}
+      <span class="summary-title">{title}</span>
+      {badge && <span class="summary-badge">{badge}</span>}
+    </div>
+    <span class="summary-arrow" aria-hidden="true">▾</span>
+  </summary>
+  <div class="accordion-content-wrapper">
+    <div class="accordion-content">
+      <slot />
+    </div>
+  </div>
+</details>
+
+<style>
+  .scroll-accordion {
+    border: 1px solid var(--color-border, #e6dfcc);
+    border-radius: 8px;
+    background: var(--color-paper-light, #fdfcf7);
+    margin-bottom: 1rem;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .scroll-accordion[open] {
+    border-color: rgba(45, 95, 90, 0.4);
+    box-shadow: 0 4px 14px rgba(45, 95, 90, 0.06);
+  }
+
+  .accordion-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.9rem 1.2rem;
+    cursor: pointer;
+    user-select: none;
+    font-family: var(--font-cursive, serif);
+    list-style: none;
+    background: linear-gradient(135deg, var(--color-paper-light, #fdfcf7) 0%, var(--color-paper-bg, #faf7ee) 100%);
+    transition: background-color 0.25s ease;
+  }
+
+  .accordion-summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .accordion-summary:hover {
+    background: rgba(45, 95, 90, 0.05);
+  }
+
+  .summary-left {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .summary-icon {
+    font-size: 1.1rem;
+    line-height: 1;
+  }
+
+  .summary-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-ink-black, #1a1a1a);
+    letter-spacing: 0.05em;
+  }
+
+  .summary-badge {
+    font-size: 0.8rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 9999px;
+    background: rgba(45, 95, 90, 0.1);
+    color: var(--color-mountain-cyan, #2d5f5a);
+    border: 1px solid rgba(45, 95, 90, 0.2);
+  }
+
+  .summary-arrow {
+    font-size: 0.95rem;
+    color: var(--color-ink-grey, #5c5c5c);
+    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  }
+
+  .scroll-accordion[open] .summary-arrow {
+    transform: rotate(180deg);
+    color: var(--color-mountain-cyan, #2d5f5a);
+  }
+
+  /* 內文展開區域 (以竹簡捲軸質感內襯) */
+  .accordion-content-wrapper {
+    display: grid;
+    grid-template-rows: 1fr;
+    border-top: 1px dashed var(--color-border, #e6dfcc);
+    background: var(--color-paper-light, #fdfcf7);
+  }
+
+  .accordion-content {
+    padding: 1.2rem;
+    color: var(--color-ink-text, #2c2c2c);
+    font-size: 1rem;
+    line-height: 1.8;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .summary-arrow {
+      transition: none !important;
+    }
+  }
+</style>

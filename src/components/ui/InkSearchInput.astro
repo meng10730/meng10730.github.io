@@ -1,0 +1,178 @@
+---
+interface Props {
+  id?: string;
+  name?: string;
+  placeholder?: string;
+  value?: string;
+  class?: string;
+  clearable?: boolean;
+  autofocus?: boolean;
+}
+
+const {
+  id = 'ink-search-input',
+  name = 'search',
+  placeholder = '🔍 輸入關鍵字檢索...',
+  value = '',
+  class: className = '',
+  clearable = true,
+  autofocus = false,
+  ...rest
+} = Astro.props;
+---
+
+<div class={`ink-search-wrapper ${className}`}>
+  <span class="ink-search-icon" aria-hidden="true">🖌️</span>
+  <input
+    type="text"
+    id={id}
+    name={name}
+    placeholder={placeholder}
+    value={value}
+    autofocus={autofocus}
+    class="ink-search-field"
+    autocomplete="off"
+    spellcheck="false"
+    {...rest}
+  />
+  {clearable && (
+    <button
+      type="button"
+      class="ink-search-clear-btn"
+      id={`${id}-clear`}
+      aria-label="清空搜尋內容"
+      title="清空"
+    >
+      ✕
+    </button>
+  )}
+  <span class="ink-search-underline" aria-hidden="true"></span>
+</div>
+
+<style>
+  .ink-search-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    background: var(--color-paper-light, #fdfcf7);
+    border: 1px solid var(--color-border, #e6dfcc);
+    border-radius: 8px;
+    padding: 0.4rem 0.8rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .ink-search-icon {
+    font-size: 1.1rem;
+    margin-right: 0.5rem;
+    opacity: 0.75;
+    user-select: none;
+    line-height: 1;
+  }
+
+  .ink-search-field {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-family: var(--font-cursive, serif);
+    font-size: 1.05rem;
+    color: var(--color-ink-black, #1a1a1a);
+    padding: 0.3rem 0;
+  }
+
+  .ink-search-field::placeholder {
+    color: var(--color-ink-light, #8c8c8c);
+    font-family: var(--font-serif, serif);
+    font-size: 0.95rem;
+  }
+
+  /* 右側一鍵清空按鈕 */
+  .ink-search-clear-btn {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--color-ink-light, #8c8c8c);
+    padding: 0.2rem 0.4rem;
+    border-radius: 50%;
+    line-height: 1;
+    display: none;
+    transition: color 0.2s ease, background-color 0.2s ease;
+  }
+
+  .ink-search-clear-btn:hover {
+    color: var(--color-ink-black, #1a1a1a);
+    background: rgba(0, 0, 0, 0.05);
+  }
+
+  .ink-search-clear-btn.is-visible {
+    display: inline-block;
+  }
+
+  /* 底部向兩側平滑展開之水墨底線 */
+  .ink-search-underline {
+    position: absolute;
+    bottom: -1px;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      var(--color-mountain-cyan, #2d5f5a) 20%,
+      var(--color-mountain-green, #3d7e5a) 50%,
+      var(--color-mountain-cyan, #2d5f5a) 80%,
+      transparent
+    );
+    transform: translateX(-50%);
+    transition: width 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
+    pointer-events: none;
+  }
+
+  /* 聚焦狀態 */
+  .ink-search-wrapper:focus-within {
+    border-color: var(--color-mountain-cyan, #2d5f5a);
+    box-shadow: 0 4px 14px rgba(45, 95, 90, 0.08);
+  }
+
+  .ink-search-wrapper:focus-within .ink-search-underline {
+    width: 100%;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ink-search-underline {
+      transition: none !important;
+    }
+  }
+</style>
+
+<script is:inline define:vars={{ inputId: id, hasClear: clearable }}>
+  (() => {
+    const input = document.getElementById(inputId);
+    const clearBtn = document.getElementById(`${inputId}-clear`);
+    if (!input) return;
+
+    const updateClearBtn = () => {
+      if (!clearBtn) return;
+      if (input.value.length > 0) {
+        clearBtn.classList.add('is-visible');
+      } else {
+        clearBtn.classList.remove('is-visible');
+      }
+    };
+
+    input.addEventListener('input', updateClearBtn);
+    updateClearBtn();
+
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        input.value = '';
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.focus();
+        updateClearBtn();
+      });
+    }
+  })();
+</script>
