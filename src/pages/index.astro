@@ -19,7 +19,7 @@ try {
     {
       encoding: "utf8",
       timeout: 5000,
-    }
+    },
   );
 
   commitLogs = rawLog
@@ -38,11 +38,10 @@ try {
 } catch (e) {
   commitLogs = [];
 }
-
 ---
 
 <Layout
-  title="立於岳麓，伏案浸墨 | 晚餐後的書桌"
+  title="晚餐後的書桌 | 立於岳麓，伏案浸墨"
   description="吃墨水的晚餐之個人創作空間「晚餐後的書桌」，收錄東方玄幻小說、修仙世界觀設定集、人物誌與技術隨筆。"
 >
   <div class="home-container">
@@ -57,10 +56,10 @@ try {
       <div class="paper-card profile-card">
         <h2 class="section-title">自序</h2>
         <p class="profile-text">
-          只是個業餘的斜槓遊民，晚餐過後則沉浸在自己的世界裡，尋一筆春秋徜蘊。
+          晚餐只是個業餘的斜槓網路遊民，晚餐過後則沉浸在自己的世界裡，研究一些有的沒的。
         </p>
         <p class="profile-text">
-          此處藏書閣，以 <strong>Astro</strong> 框架所建。用以記錄江湖見聞、技術探索，以及各類心得。
+          晚餐說:這個網站是用 <strong>Astro</strong> 框架所建。用來記錄技術探索，以及各類心得。
         </p>
 
         <div class="skills-showcase">
@@ -132,7 +131,9 @@ try {
           if (cached && cacheTime && Date.now() - Number(cacheTime) < 180000) {
             commits = JSON.parse(cached);
           } else {
-            const res = await fetch("https://api.github.com/repos/meng10730/meng10730.github.io/commits?per_page=5");
+            const res = await fetch(
+              "https://api.github.com/repos/meng10730/meng10730.github.io/commits?per_page=5",
+            );
             if (res.ok) {
               commits = await res.json();
               sessionStorage.setItem(cacheKey, JSON.stringify(commits));
@@ -141,13 +142,14 @@ try {
           }
 
           if (commits && Array.isArray(commits) && commits.length > 0) {
-            listEl.innerHTML = commits.map(item => {
-              const hash = item.sha || "";
-              const shortHash = hash.substring(0, 7);
-              const rawDate = item.commit?.author?.date || "";
-              const date = rawDate ? rawDate.split("T")[0] : "";
-              const rawMsg = (item.commit?.message || "").split("\n")[0];
-              return `
+            listEl.innerHTML = commits
+              .map((item) => {
+                const hash = item.sha || "";
+                const shortHash = hash.substring(0, 7);
+                const rawDate = item.commit?.author?.date || "";
+                const date = rawDate ? rawDate.split("T")[0] : "";
+                const rawMsg = (item.commit?.message || "").split("\n")[0];
+                return `
                 <li class="commit-item">
                   <div class="commit-dot"></div>
                   <div class="commit-content">
@@ -159,7 +161,8 @@ try {
                   </div>
                 </li>
               `;
-            }).join("");
+              })
+              .join("");
           }
         } catch (err) {}
       }
@@ -167,7 +170,6 @@ try {
       document.addEventListener("astro:page-load", syncLiveCommits);
       syncLiveCommits();
     </script>
-
 
     <!-- 快速導覽按鈕區 -->
     <section
