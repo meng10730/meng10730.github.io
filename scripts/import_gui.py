@@ -2868,40 +2868,47 @@ class MainWindow(QMainWindow):
     # 📖 小說極速連載工作台 (Fast Novel Publisher) 專屬邏輯
     # =========================================================================
     def setup_novel_publisher_panel(self):
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setStyleSheet("QScrollArea { border: none; background-color: transparent; }")
+
         panel = QWidget()
+        panel.setStyleSheet("background-color: #1a1a20;")
         layout = QVBoxLayout(panel)
-        layout.setContentsMargins(12, 12, 12, 12)
-        layout.setSpacing(10)
+        layout.setContentsMargins(14, 14, 14, 14)
+        layout.setSpacing(14)
 
         # 頂部說明卡片
         intro_card = QFrame()
         intro_card.setObjectName("cardFrame")
         intro_layout = QVBoxLayout(intro_card)
-        intro_layout.setContentsMargins(12, 10, 12, 10)
+        intro_layout.setContentsMargins(14, 12, 14, 12)
+        intro_layout.setSpacing(4)
         intro_title = QLabel("📖 小說極速連載工作台")
-        intro_title.setStyleSheet("color: #e5a93b; font-size: 15px; font-weight: bold;")
+        intro_title.setStyleSheet("color: #e5a93b; font-size: 16px; font-weight: bold;")
         intro_desc = QLabel("⚡ 專為長篇連載打造：支援直接手動輸入/修改部、卷、章名稱，或從歷史選單快速帶入。拖入 .md 檔案即可自動發布！")
         intro_desc.setStyleSheet("color: #a2a2ab; font-size: 12px;")
         intro_layout.addWidget(intro_title)
         intro_layout.addWidget(intro_desc)
         layout.addWidget(intro_card)
 
-        # 1. 作品與階層設定卡片 (直接提供部、卷、章名稱輸入框)
+        # 1. 作品與階層設定卡片 (網格排版，輸入框設定固定高度防擠壓)
         sel_card = QFrame()
         sel_card.setObjectName("cardFrame")
         sel_layout = QVBoxLayout(sel_card)
-        sel_layout.setContentsMargins(14, 12, 14, 12)
-        sel_layout.setSpacing(10)
+        sel_layout.setContentsMargins(16, 14, 16, 14)
+        sel_layout.setSpacing(12)
 
         # 作品列
         row_book = QHBoxLayout()
         lbl_book = QLabel("1. 所屬作品:")
         lbl_book.setFixedWidth(85)
-        lbl_book.setStyleSheet("color: #e5a93b; font-weight: bold;")
+        lbl_book.setStyleSheet("color: #e5a93b; font-weight: bold; font-size: 13px;")
         self.novel_book_combo = NoScrollComboBox()
+        self.novel_book_combo.setMinimumHeight(34)
         self.novel_book_combo.currentIndexChanged.connect(self.on_novel_publisher_book_changed)
         btn_add_book = QPushButton("➕ 新建作品")
-        btn_add_book.setFixedWidth(95)
+        btn_add_book.setFixedSize(95, 34)
         btn_add_book.clicked.connect(self.add_novel_book_quick_dialog)
         row_book.addWidget(lbl_book)
         row_book.addWidget(self.novel_book_combo, 1)
@@ -2912,77 +2919,95 @@ class MainWindow(QMainWindow):
         row_preset = QHBoxLayout()
         lbl_preset = QLabel("📚 歷史章節:")
         lbl_preset.setFixedWidth(85)
-        lbl_preset.setStyleSheet("color: #a2a2ab; font-weight: bold;")
+        lbl_preset.setStyleSheet("color: #a2a2ab; font-weight: bold; font-size: 13px;")
         self.novel_history_combo = NoScrollComboBox()
+        self.novel_history_combo.setMinimumHeight(34)
         self.novel_history_combo.currentIndexChanged.connect(self.on_novel_history_selected)
         btn_refresh_preset = QPushButton("🔄 重新整理")
-        btn_refresh_preset.setFixedWidth(95)
+        btn_refresh_preset.setFixedSize(95, 34)
         btn_refresh_preset.clicked.connect(self.reload_novel_publisher_data)
         row_preset.addWidget(lbl_preset)
         row_preset.addWidget(self.novel_history_combo, 1)
         row_preset.addWidget(btn_refresh_preset)
         sel_layout.addLayout(row_preset)
 
-        # 階層直接編輯欄位 (部、卷、章 序號與自訂名稱框)
+        # 階層直接編輯欄位 (部、卷、章 序號與自訂名稱框，使用 QFrame 包裹確保高度充裕)
         hier_box = QFrame()
-        hier_box.setStyleSheet("background-color: #1a1a22; border: 1px solid #2e2e3a; border-radius: 6px; padding: 6px;")
+        hier_box.setStyleSheet("background-color: #16161d; border: 1px solid #2e2e3a; border-radius: 8px; padding: 10px;")
         hier_layout = QVBoxLayout(hier_box)
-        hier_layout.setSpacing(8)
+        hier_layout.setSpacing(10)
+
+        input_qss = "background-color: #22222b; border: 1px solid #3e3e4f; border-radius: 5px; padding: 6px 10px; color: #ffffff; font-size: 13px;"
 
         # 部 (Part)
         row_p = QHBoxLayout()
         lbl_p_num = QLabel("❖ 部 (Part):")
-        lbl_p_num.setFixedWidth(90)
-        lbl_p_num.setStyleSheet("color: #e5a93b; font-weight: bold;")
+        lbl_p_num.setFixedWidth(120)
+        lbl_p_num.setStyleSheet("color: #e5a93b; font-weight: bold; font-size: 13px;")
         self.novel_part_num_input = QLineEdit("1")
-        self.novel_part_num_input.setFixedWidth(45)
+        self.novel_part_num_input.setFixedSize(55, 34)
         self.novel_part_num_input.setAlignment(Qt.AlignCenter)
+        self.novel_part_num_input.setStyleSheet(input_qss)
         self.novel_part_num_input.textChanged.connect(self.update_novel_target_preview)
+        
         self.novel_part_title_input = QLineEdit("第一部 天命初顯")
+        self.novel_part_title_input.setMinimumHeight(34)
+        self.novel_part_title_input.setStyleSheet(input_qss)
         self.novel_part_title_input.setPlaceholderText("請輸入部名稱 (如：第一部 天命初顯)")
         self.novel_part_title_input.textChanged.connect(self.update_novel_target_preview)
+        
         row_p.addWidget(lbl_p_num)
         row_p.addWidget(QLabel("第"))
         row_p.addWidget(self.novel_part_num_input)
-        row_p.addWidget(QLabel("部  名稱:"))
+        row_p.addWidget(QLabel("部   名稱:"))
         row_p.addWidget(self.novel_part_title_input, 1)
         hier_layout.addLayout(row_p)
 
         # 卷 (Volume)
         row_v = QHBoxLayout()
         lbl_v_num = QLabel("❖ 卷 (Volume):")
-        lbl_v_num.setFixedWidth(90)
-        lbl_v_num.setStyleSheet("color: #e5a93b; font-weight: bold;")
+        lbl_v_num.setFixedWidth(120)
+        lbl_v_num.setStyleSheet("color: #e5a93b; font-weight: bold; font-size: 13px;")
         self.novel_vol_num_input = QLineEdit("1")
-        self.novel_vol_num_input.setFixedWidth(45)
+        self.novel_vol_num_input.setFixedSize(55, 34)
         self.novel_vol_num_input.setAlignment(Qt.AlignCenter)
+        self.novel_vol_num_input.setStyleSheet(input_qss)
         self.novel_vol_num_input.textChanged.connect(self.update_novel_target_preview)
+        
         self.novel_vol_title_input = QLineEdit("第一卷 風起青萍")
+        self.novel_vol_title_input.setMinimumHeight(34)
+        self.novel_vol_title_input.setStyleSheet(input_qss)
         self.novel_vol_title_input.setPlaceholderText("請輸入卷名稱 (如：第一卷 風起青萍)")
         self.novel_vol_title_input.textChanged.connect(self.update_novel_target_preview)
+        
         row_v.addWidget(lbl_v_num)
         row_v.addWidget(QLabel("第"))
         row_v.addWidget(self.novel_vol_num_input)
-        row_v.addWidget(QLabel("卷  名稱:"))
+        row_v.addWidget(QLabel("卷   名稱:"))
         row_v.addWidget(self.novel_vol_title_input, 1)
         hier_layout.addLayout(row_v)
 
         # 章 (Chapter)
         row_c = QHBoxLayout()
         lbl_c_num = QLabel("❖ 章 (Chapter):")
-        lbl_c_num.setFixedWidth(90)
-        lbl_c_num.setStyleSheet("color: #e5a93b; font-weight: bold;")
+        lbl_c_num.setFixedWidth(120)
+        lbl_c_num.setStyleSheet("color: #e5a93b; font-weight: bold; font-size: 13px;")
         self.novel_chap_num_input = QLineEdit("1")
-        self.novel_chap_num_input.setFixedWidth(45)
+        self.novel_chap_num_input.setFixedSize(55, 34)
         self.novel_chap_num_input.setAlignment(Qt.AlignCenter)
+        self.novel_chap_num_input.setStyleSheet(input_qss)
         self.novel_chap_num_input.textChanged.connect(self.update_novel_target_preview)
+        
         self.novel_chap_title_input = QLineEdit("第一章 孤崖夜雨")
+        self.novel_chap_title_input.setMinimumHeight(34)
+        self.novel_chap_title_input.setStyleSheet(input_qss)
         self.novel_chap_title_input.setPlaceholderText("請輸入章名稱 (如：第一章 孤崖夜雨)")
         self.novel_chap_title_input.textChanged.connect(self.update_novel_target_preview)
+        
         row_c.addWidget(lbl_c_num)
         row_c.addWidget(QLabel("第"))
         row_c.addWidget(self.novel_chap_num_input)
-        row_c.addWidget(QLabel("章  名稱:"))
+        row_c.addWidget(QLabel("章   名稱:"))
         row_c.addWidget(self.novel_chap_title_input, 1)
         hier_layout.addLayout(row_c)
 
@@ -2990,7 +3015,8 @@ class MainWindow(QMainWindow):
 
         # 當前準備發布之小節資訊預覽條
         self.novel_target_sec_info = QLabel("❖ 當前準備發布：正在計算章節位置...")
-        self.novel_target_sec_info.setStyleSheet("color: #4cd964; font-weight: bold; background: #162218; border: 1px solid #234827; border-radius: 4px; padding: 8px 12px; font-size: 13px;")
+        self.novel_target_sec_info.setMinimumHeight(38)
+        self.novel_target_sec_info.setStyleSheet("color: #5af776; font-weight: bold; background: #162419; border: 1px solid #28542e; border-radius: 6px; padding: 8px 12px; font-size: 13px;")
         sel_layout.addWidget(self.novel_target_sec_info)
 
         layout.addWidget(sel_card)
@@ -2999,32 +3025,35 @@ class MainWindow(QMainWindow):
         content_card = QFrame()
         content_card.setObjectName("cardFrame")
         content_layout = QVBoxLayout(content_card)
-        content_layout.setContentsMargins(12, 10, 12, 10)
-        content_layout.setSpacing(8)
+        content_layout.setContentsMargins(16, 14, 16, 14)
+        content_layout.setSpacing(10)
 
         lbl_content_title = QLabel("2. 正文內容 (支援直接將 Markdown 檔案拖曳進編輯框):")
-        lbl_content_title.setStyleSheet("color: #e5a93b; font-weight: bold;")
+        lbl_content_title.setStyleSheet("color: #e5a93b; font-weight: bold; font-size: 13px;")
         content_layout.addWidget(lbl_content_title)
 
         self.novel_content_edit = DropMarkdownEdit(on_text_changed=self.update_novel_publisher_word_count)
-        self.novel_content_edit.setMinimumHeight(220)
+        self.novel_content_edit.setMinimumHeight(240)
+        self.novel_content_edit.setStyleSheet("background-color: #22222b; border: 1px solid #3e3e4f; border-radius: 6px; padding: 10px; font-family: 'LXGW WenKai TC', 'Microsoft JhengHei', sans-serif; font-size: 14px; line-height: 1.6;")
         content_layout.addWidget(self.novel_content_edit)
 
         # 內容輔助工具列
         tools_row = QHBoxLayout()
         btn_paste = QPushButton("📋 貼上剪貼簿內容")
-        btn_paste.setStyleSheet("background-color: #2e3440; color: #88c0d0; font-weight: bold;")
+        btn_paste.setMinimumHeight(32)
+        btn_paste.setStyleSheet("background-color: #2e3440; color: #88c0d0; font-weight: bold; padding: 4px 12px;")
         btn_paste.clicked.connect(self.paste_novel_clipboard_content)
 
         btn_browse_md = QPushButton("📂 選擇本機 Markdown 檔案")
+        btn_browse_md.setMinimumHeight(32)
         btn_browse_md.clicked.connect(self.browse_novel_md_file)
 
         btn_clear = QPushButton("🧹 清空")
-        btn_clear.setFixedWidth(65)
+        btn_clear.setFixedSize(65, 32)
         btn_clear.clicked.connect(lambda: self.novel_content_edit.clear())
 
         self.lbl_novel_word_count = QLabel("📝 本節字數：0 字")
-        self.lbl_novel_word_count.setStyleSheet("color: #a2a2ab; font-size: 12px;")
+        self.lbl_novel_word_count.setStyleSheet("color: #a2a2ab; font-size: 12px; font-weight: bold;")
 
         tools_row.addWidget(btn_paste)
         tools_row.addWidget(btn_browse_md)
@@ -3038,6 +3067,7 @@ class MainWindow(QMainWindow):
         # 3. 儲存與推送按鈕列
         action_layout = QHBoxLayout()
         self.btn_save_novel_section = QPushButton("💾 儲存此節並準備下一節 (Ctrl+Enter)")
+        self.btn_save_novel_section.setMinimumHeight(44)
         self.btn_save_novel_section.setStyleSheet("""
             QPushButton {
                 background-color: #e5a93b;
@@ -3057,6 +3087,7 @@ class MainWindow(QMainWindow):
         self.btn_save_novel_section.clicked.connect(self.save_current_novel_section)
 
         self.btn_git_push_novels = QPushButton("🚀 一併推送到網站 (Git Push)")
+        self.btn_git_push_novels.setMinimumHeight(44)
         self.btn_git_push_novels.setStyleSheet("""
             QPushButton {
                 background-color: #2d7d46;
@@ -3083,15 +3114,15 @@ class MainWindow(QMainWindow):
         staging_card = QFrame()
         staging_card.setObjectName("cardFrame")
         staging_layout = QVBoxLayout(staging_card)
-        staging_layout.setContentsMargins(12, 8, 12, 8)
+        staging_layout.setContentsMargins(14, 10, 14, 10)
         staging_layout.setSpacing(6)
 
         staging_head = QHBoxLayout()
         lbl_staging = QLabel("📋 本次工作階段已建立小節:")
         lbl_staging.setStyleSheet("color: #a2a2ab; font-size: 12px; font-weight: bold;")
         btn_refresh_novel_tree = QPushButton("🔄 重新整理")
-        btn_refresh_novel_tree.setFixedWidth(100)
-        btn_refresh_novel_tree.setStyleSheet("font-size: 11px; padding: 3px;")
+        btn_refresh_novel_tree.setFixedSize(90, 28)
+        btn_refresh_novel_tree.setStyleSheet("font-size: 11px; padding: 2px;")
         btn_refresh_novel_tree.clicked.connect(self.reload_novel_publisher_data)
         staging_head.addWidget(lbl_staging)
         staging_head.addStretch()
@@ -3099,7 +3130,8 @@ class MainWindow(QMainWindow):
         staging_layout.addLayout(staging_head)
 
         self.novel_staging_list = QListWidget()
-        self.novel_staging_list.setMaximumHeight(100)
+        self.novel_staging_list.setMinimumHeight(80)
+        self.novel_staging_list.setMaximumHeight(120)
         staging_layout.addWidget(self.novel_staging_list)
 
         layout.addWidget(staging_card)
@@ -3107,7 +3139,8 @@ class MainWindow(QMainWindow):
         # 初次載入小說資料庫
         self.reload_novel_publisher_data()
 
-        return panel
+        scroll_area.setWidget(panel)
+        return scroll_area
 
     def reload_novel_publisher_data(self):
         """掃描小說作品與章節資料庫，建構階層快取樹"""
