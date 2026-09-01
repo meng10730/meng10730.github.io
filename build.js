@@ -85,7 +85,22 @@ async function sanitizeEmptySlugs() {
         const fmMatch = raw.match(/^---([\s\S]*?)---/);
         if (fmMatch) {
           const originalFm = fmMatch[1];
-          const sanitizedFm = originalFm.replace(/^[a-zA-Z0-9_-]+:\s*["']?\s*$\r?\n/gm, '');
+          const lines = originalFm.split(/\r?\n/);
+          const newLines = [];
+          for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            const nextLine = lines[i + 1] || '';
+            const match = line.match(/^([a-zA-Z0-9_-]+):\s*(["']?\s*["']?)\s*$/);
+            if (match) {
+              const val = match[2].trim();
+              const isParentObj = nextLine.startsWith('  ');
+              if ((val === '""' || val === "''" || val === '') && !isParentObj) {
+                continue;
+              }
+            }
+            newLines.push(line);
+          }
+          const sanitizedFm = newLines.join('\n');
           if (originalFm !== sanitizedFm) {
             raw = raw.replace(originalFm, sanitizedFm);
             await fs.writeFile(fullPath, raw, 'utf8');

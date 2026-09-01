@@ -169,12 +169,48 @@ const dictionary = defineCollection({
   }),
 });
 
+// 山莊 → 小說連載小節
+const novel_chapters = defineCollection({
+  type: "content",
+  schema: z.object({
+    title: z.string(), // 小節標題（如：破廟殘燈）
+    book: z.string().default("tianxia"), // 所屬小說作品 slug
+    part: z
+      .object({
+        number: z.number().default(1), // 第幾部
+        title: z.string().default("第一部"), // 部名稱
+      })
+      .default({ number: 1, title: "第一部" }),
+    volume: z
+      .object({
+        number: z.number().default(1), // 第幾卷
+        title: z.string().default("第一卷"), // 卷名稱
+      })
+      .default({ number: 1, title: "第一卷" }),
+    chapter: z
+      .object({
+        number: z.number().default(1), // 第幾章
+        title: z.string().default("第一章"), // 章名稱
+      })
+      .default({ number: 1, title: "第一章" }),
+    section: z
+      .object({
+        number: z.number().default(1), // 第幾節
+        title: z.string().default("第一節"), // 節名稱
+      })
+      .default({ number: 1, title: "第一節" }),
+    order: z.number().default(1010101), // 全域精準排序代碼
+    pubDate: z.coerce.date().default(() => new Date()), // 發布日期
+  }),
+});
+
 // [ADD_NEW_COLLECTION_DEFINITION_HERE]
 
 export const collections = {
   blog,
   works,
   novels,
+  novel_chapters,
   characters,
   worldview,
   factions,
@@ -186,3 +222,4 @@ export const collections = {
 
   // [ADD_NEW_COLLECTION_EXPORT_HERE]
 };
+

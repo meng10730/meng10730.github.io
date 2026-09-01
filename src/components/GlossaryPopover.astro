@@ -237,8 +237,10 @@ const baseUrl = import.meta.env.BASE_URL;
   }
 
   // 執行全站網狀詞條 DOM 替換
-  function runGlossaryReplacement(glossaryList) {
-    const containers = document.querySelectorAll('.markdown-body, .novel-body, .chapter-content, .prose, .shanzhuang-content');
+  function runGlossaryReplacement(glossaryList, customContainers = null) {
+    const containers = customContainers 
+      ? (Array.isArray(customContainers) ? customContainers : [customContainers])
+      : document.querySelectorAll('.markdown-body, .novel-body, .chapter-content, .prose, .shanzhuang-content');
     if (!containers || containers.length === 0) return;
 
     const pathParts = window.location.pathname.split('/');
@@ -554,6 +556,23 @@ const baseUrl = import.meta.env.BASE_URL;
       }
     });
   }
+
+  // 暴露全域函式供無縫滾動加載新章節時動態掃描
+  window.refreshGlossaryTerms = async function(targetContainer) {
+    if (!window.glossaryDataCache) {
+      try {
+        const jsonUrl = `${baseUrl}shanzhuang/glossary.json`.replace(/\/+/g, '/');
+        const res = await fetch(jsonUrl);
+        window.glossaryDataCache = await res.json();
+      } catch (e) {
+        console.error('Failed to fetch glossary data:', e);
+        return;
+      }
+    }
+    if (window.glossaryDataCache && targetContainer) {
+      runGlossaryReplacement(window.glossaryDataCache, targetContainer);
+    }
+  };
 
   // 配合 Astro ViewTransitions，在每次頁面加載後初始化
   document.addEventListener('astro:page-load', initGlossaryPopover);

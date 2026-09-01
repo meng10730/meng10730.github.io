@@ -1,0 +1,373 @@
+---
+import { getCollection } from 'astro:content';
+import Layout from '../../../../layouts/Layout.astro';
+import NovelReaderTOC from '../../../../components/NovelReaderTOC.astro';
+import InkButton from '../../../../components/ui/InkButton.astro';
+
+export async function getStaticPaths() {
+  const allBooks = await getCollection('novels', (entry: any) => !entry.id.startsWith('_'));
+  const allChapters = await getCollection('novel_chapters', (entry: any) => !entry.id.startsWith('_'));
+
+  return allBooks.map((book) => {
+    const bookChapters = allChapters.filter((c) => c.data.book === book.slug);
+    return {
+      params: { book: book.slug },
+      props: { book, chapters: bookChapters },
+    };
+  });
+}
+
+const { book, chapters = [] } = Astro.props;
+const baseUrl = import.meta.env.BASE_URL;
+
+const sortedChapters = [...chapters].sort((a: any, b: any) => (a.data.order || 0) - (b.data.order || 0));
+const firstChapter = sortedChapters[0];
+
+const statusMap: Record<string, { text: string; class: string }> = {
+  ongoing: { text: '連載中', class: 'status-ongoing' },
+  completed: { text: '已完結', class: 'status-completed' },
+  hiatus: { text: '暫停更', class: 'status-hiatus' },
+};
+
+const statusInfo = statusMap[book.data.status || 'ongoing'] || { text: '連載中', class: 'status-ongoing' };
+---
+
+<Layout
+  title={`${book.data.title} · 小說目錄 | 晚餐後的書桌`}
+  description={book.data.description || `${book.data.title} 小說連載`}
+  image={book.data.cover}
+  breadcrumbs={[
+    { name: "首頁", url: `${baseUrl}` },
+    { name: "山莊藏書閣", url: `${baseUrl}shanzhuang/` },
+    { name: "小說總覽", url: `${baseUrl}shanzhuang/novels/` },
+    { name: book.data.title, url: `${baseUrl}shanzhuang/novels/${book.slug}/` }
+  ]}
+>
+  <main class="novel-book-page container mx-auto px-4 py-8 max-w-5xl">
+    <!-- 頂部作品展示卡 -->
+    <div class="novel-hero-card">
+      <div class="novel-hero-cover">
+        {book.data.cover ? (
+          <img src={book.data.cover.startsWith('http') ? book.data.cover : `${baseUrl}${book.data.cover.replace(/^\//, '')}`} alt={book.data.title} class="book-cover-img" />
+        ) : (
+          <div class="book-cover-placeholder">
+            <span class="placeholder-icon">📖</span>
+            <span class="placeholder-title">{book.data.title}</span>
+          </div>
+        )}
+      </div>
+
+      <div class="novel-hero-info">
+        <div class="novel-hero-header">
+          <h1 class="novel-title">{book.data.title}</h1>
+          <span class={`status-badge ${statusInfo.class}`}>{statusInfo.text}</span>
+        </div>
+
+        {book.data.genre && book.data.genre.length > 0 && (
+          <div class="novel-genre-tags">
+            {book.data.genre.map((g: string) => (
+              <span class="genre-tag">🏷️ {g}</span>
+            ))}
+          </div>
+        )}
+
+        <p class="novel-desc">{book.data.description || "暫無故事簡介。"}</p>
+
+        <div class="novel-stats">
+          <span class="stat-item">📑 共收錄 <strong>{sortedChapters.length}</strong> 節</span>
+          {sortedChapters.length > 0 && (
+            <span class="stat-item">🕒 最新：<strong>{sortedChapters[sortedChapters.length - 1].data.title}</strong></span>
+          )}
+        </div>
+
+        <div class="novel-actions">
+          {firstChapter ? (
+            <>
+              <a href={`${baseUrl}shanzhuang/novels/${book.slug}/${firstChapter.slug}/`} class="read-btn primary-btn">
+                <span>📖 從頭開始閱讀</span>
+              </a>
+              <button type="button" class="read-btn secondary-btn" id="resume-reading-btn" data-book={book.slug} data-first-slug={firstChapter.slug}>
+                <span>🔖 繼續閱讀上次進度</span>
+              </button>
+            </>
+          ) : (
+            <div class="empty-hint">❖ 作者正在閉關著書，連載即將開啟，敬請期待 ❖</div>
+          )}
+        </div>
+      </div>
+    </div>
+
+    <!-- 五層折疊目錄樹區塊 -->
+    <section class="novel-toc-section mt-10">
+      <div class="section-heading">
+        <h2 class="section-title">❖ 全書卷軸章節目錄 ❖</h2>
+        <span class="section-subtitle">點擊各部、卷以展開或收合章節</span>
+      </div>
+
+      {sortedChapters.length > 0 ? (
+        <NovelReaderTOC bookSlug={book.slug} chapters={sortedChapters} />
+      ) : (
+        <div class="empty-toc-card">
+          <span class="empty-icon">📭</span>
+          <p class="empty-text">尚無章節發布。您可使用「開啟控制台.bat」快速上傳第一章節！</p>
+        </div>
+      )}
+    </section>
+  </main>
+</Layout>
+
+<style>
+  .novel-book-page {
+    font-family: 'LXGW WenKai TC', 'Noto Serif TC', serif;
+    color: #ded6cd;
+  }
+
+  .novel-hero-card {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    gap: 32px;
+    background: rgba(26, 26, 32, 0.95);
+    border: 1px solid #383129;
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(10px);
+  }
+
+  @media (max-width: 768px) {
+    .novel-hero-card {
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+  }
+
+  .novel-hero-cover {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+  }
+
+  .book-cover-img {
+    width: 100%;
+    max-width: 220px;
+    aspect-ratio: 2/3;
+    object-fit: cover;
+    border-radius: 8px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+    border: 1px solid #4a3e33;
+  }
+
+  .book-cover-placeholder {
+    width: 100%;
+    max-width: 220px;
+    aspect-ratio: 2/3;
+    background: linear-gradient(135deg, #24201c, #161311);
+    border: 2px dashed #4e4235;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    text-align: center;
+  }
+
+  .placeholder-icon {
+    font-size: 2.5rem;
+  }
+
+  .placeholder-title {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #e5a93b;
+  }
+
+  .novel-hero-info {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .novel-hero-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  .novel-title {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #f7ede1;
+    letter-spacing: 1px;
+    margin: 0;
+  }
+
+  .status-badge {
+    font-size: 0.8rem;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-weight: bold;
+  }
+  .status-ongoing {
+    background: rgba(229, 169, 59, 0.2);
+    color: #e5a93b;
+    border: 1px solid #e5a93b;
+  }
+  .status-completed {
+    background: rgba(72, 187, 120, 0.2);
+    color: #48bb78;
+    border: 1px solid #48bb78;
+  }
+  .status-hiatus {
+    background: rgba(160, 174, 192, 0.2);
+    color: #a0aec0;
+    border: 1px solid #a0aec0;
+  }
+
+  .novel-genre-tags {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .genre-tag {
+    font-size: 0.8rem;
+    background: #25221d;
+    border: 1px solid #3d352b;
+    color: #c4b8a7;
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+
+  .novel-desc {
+    font-size: 0.95rem;
+    line-height: 1.8;
+    color: #b8ac9c;
+    background: rgba(18, 16, 14, 0.5);
+    padding: 14px;
+    border-radius: 6px;
+    border-left: 3px solid #e5a93b;
+  }
+
+  .novel-stats {
+    display: flex;
+    gap: 20px;
+    font-size: 0.85rem;
+    color: #8c8071;
+  }
+
+  .novel-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+
+  .read-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 22px;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-weight: bold;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .primary-btn {
+    background: #e5a93b;
+    color: #1a1612;
+    border: 1px solid #e5a93b;
+    box-shadow: 0 4px 12px rgba(229, 169, 59, 0.3);
+  }
+  .primary-btn:hover {
+    background: #f0b952;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(229, 169, 59, 0.4);
+  }
+
+  .secondary-btn {
+    background: #282420;
+    color: #e5a93b;
+    border: 1px solid #4a3e33;
+  }
+  .secondary-btn:hover {
+    background: #332d27;
+    border-color: #e5a93b;
+    transform: translateY(-2px);
+  }
+
+  .empty-hint {
+    color: #8c8071;
+    font-size: 0.9rem;
+    font-style: italic;
+    padding: 10px;
+  }
+
+  .section-heading {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  .section-title {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: #e5a93b;
+    margin-bottom: 4px;
+    letter-spacing: 2px;
+  }
+
+  .section-subtitle {
+    font-size: 0.85rem;
+    color: #85796a;
+  }
+
+  .empty-toc-card {
+    text-align: center;
+    padding: 40px 20px;
+    background: rgba(26, 26, 32, 0.6);
+    border: 1px dashed #3e362d;
+    border-radius: 8px;
+    color: #8c8071;
+  }
+
+  .empty-icon {
+    font-size: 2.5rem;
+    display: block;
+    margin-bottom: 10px;
+  }
+</style>
+
+<script>
+  function setupResumeReading() {
+    const resumeBtn = document.getElementById('resume-reading-btn');
+    if (!resumeBtn) return;
+
+    const bookSlug = resumeBtn.getAttribute('data-book');
+    const firstSlug = resumeBtn.getAttribute('data-first-slug');
+    const baseUrl = document.querySelector('meta[name="base-url"]')?.getAttribute('content') || '/';
+
+    const savedProgress = localStorage.getItem(`novel_progress_${bookSlug}`);
+    let targetUrl = `${baseUrl}shanzhuang/novels/${bookSlug}/${firstSlug}/`;
+
+    if (savedProgress) {
+      try {
+        const data = JSON.parse(savedProgress);
+        if (data.slug) {
+          targetUrl = `${baseUrl}shanzhuang/novels/${bookSlug}/${data.slug}/`;
+          resumeBtn.innerHTML = `<span>🔖 繼續閱讀：${data.title || '上次進度'}</span>`;
+        }
+      } catch (e) {}
+    }
+
+    resumeBtn.addEventListener('click', () => {
+      window.location.href = targetUrl;
+    });
+  }
+
+  document.addEventListener('astro:page-load', setupResumeReading);
+</script>

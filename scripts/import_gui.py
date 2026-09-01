@@ -2165,8 +2165,8 @@ class MainWindow(QMainWindow):
             # 使用選中檔案已存在的 frontmatter 值，否則為空
             val = defaults.get(field_name, "")
             
-            # 專屬邏輯：小說名稱欄位 (novel) 升級為動態資料庫下拉選單 + ➕ 新增按鈕
-            if field_name == "novel":
+            # 專屬邏輯：小說名稱欄位 (novel / book) 升級為動態資料庫下拉選單 + ➕ 新增按鈕
+            if field_name in ("novel", "book"):
                 lbl = QLabel(f"{field_label} ({field_name}):")
                 lbl.setStyleSheet("color: #a2a2ab; font-weight: bold;")
                 

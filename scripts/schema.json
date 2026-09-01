@@ -25,7 +25,7 @@
     }
   },
   "novels": {
-    "label": "小說連載 (novels，例如：小說正文)",
+    "label": "小說作品總覽 (novels，例如：封面、簡介、作品總檔)",
     "fields": {
       "title": {
         "type": "slug",
@@ -69,6 +69,71 @@
       "cover": {
         "type": "image",
         "label": "封面圖",
+        "multiline": false
+      }
+    }
+  },
+  "novel_chapters": {
+    "label": "小說章節連載 (novel_chapters，例如：五層部/卷/章/節正文)",
+    "fields": {
+      "title": {
+        "type": "slug",
+        "label": "小節標題 (如：破廟殘燈)",
+        "multiline": false
+      },
+      "book": {
+        "type": "text",
+        "label": "所屬小說 Slug (如：tianxia)",
+        "multiline": false
+      },
+      "partNumber": {
+        "type": "integer",
+        "label": "部序號 (數字，如 1 代表第一部)",
+        "multiline": false
+      },
+      "partTitle": {
+        "type": "text",
+        "label": "部名稱 (如：第一部 天命初顯)",
+        "multiline": false
+      },
+      "volumeNumber": {
+        "type": "integer",
+        "label": "卷序號 (數字，如 1 代表第一卷)",
+        "multiline": false
+      },
+      "volumeTitle": {
+        "type": "text",
+        "label": "卷名稱 (如：第一卷 風起青萍)",
+        "multiline": false
+      },
+      "chapterNumber": {
+        "type": "integer",
+        "label": "章序號 (數字，如 1 代表第一章)",
+        "multiline": false
+      },
+      "chapterTitle": {
+        "type": "text",
+        "label": "章名稱 (如：第一章 孤崖夜雨)",
+        "multiline": false
+      },
+      "sectionNumber": {
+        "type": "integer",
+        "label": "節序號 (數字，如 1 代表第一節)",
+        "multiline": false
+      },
+      "sectionTitle": {
+        "type": "text",
+        "label": "節名稱 (如：第一節 破廟殘燈)",
+        "multiline": false
+      },
+      "order": {
+        "type": "integer",
+        "label": "全域排序代碼 (如 1010101)",
+        "multiline": false
+      },
+      "pubDate": {
+        "type": "date",
+        "label": "發布日期",
         "multiline": false
       }
     }

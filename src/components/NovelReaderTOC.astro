@@ -1,0 +1,477 @@
+---
+// NovelReaderTOC.astro - 小說五層階層折疊目錄樹
+interface ChapterItem {
+  slug: string;
+  data: {
+    title: string;
+    book: string;
+    part: { number: number; title: string };
+    volume: { number: number; title: string };
+    chapter: { number: number; title: string };
+    section: { number: number; title: string };
+    order: number;
+    pubDate?: Date;
+  };
+}
+
+interface Props {
+  bookSlug: string;
+  currentSlug?: string;
+  chapters: ChapterItem[];
+  compact?: boolean;
+}
+
+const { bookSlug, currentSlug = "", chapters = [], compact = false } = Astro.props;
+const baseUrl = import.meta.env.BASE_URL;
+
+// 依 order 由小到大排序
+const sortedChapters = [...chapters].sort((a, b) => (a.data.order || 0) - (b.data.order || 0));
+
+// 建構五層樹狀資料結構
+interface SectionNode {
+  slug: string;
+  title: string;
+  order: number;
+  sectionNumber: number;
+  sectionTitle: string;
+  isCurrent: boolean;
+}
+
+interface ChapterNode {
+  number: number;
+  title: string;
+  sections: SectionNode[];
+  hasCurrent: boolean;
+}
+
+interface VolumeNode {
+  number: number;
+  title: string;
+  chapters: ChapterNode[];
+  hasCurrent: boolean;
+}
+
+interface PartNode {
+  number: number;
+  title: string;
+  volumes: VolumeNode[];
+  hasCurrent: boolean;
+}
+
+const tree: PartNode[] = [];
+
+sortedChapters.forEach((ch) => {
+  const pNum = ch.data.part?.number || 1;
+  const pTitle = ch.data.part?.title || `第${pNum}部`;
+
+  const vNum = ch.data.volume?.number || 1;
+  const vTitle = ch.data.volume?.title || `第${vNum}卷`;
+
+  const cNum = ch.data.chapter?.number || 1;
+  const cTitle = ch.data.chapter?.title || `第${cNum}章`;
+
+  const sNum = ch.data.section?.number || 1;
+  const sTitle = ch.data.section?.title || ch.data.title;
+  const isCur = ch.slug === currentSlug;
+
+  // 1. Part
+  let partNode = tree.find((p) => p.number === pNum && p.title === pTitle);
+  if (!partNode) {
+    partNode = { number: pNum, title: pTitle, volumes: [], hasCurrent: false };
+    tree.push(partNode);
+  }
+  if (isCur) partNode.hasCurrent = true;
+
+  // 2. Volume
+  let volNode = partNode.volumes.find((v) => v.number === vNum && v.title === vTitle);
+  if (!volNode) {
+    volNode = { number: vNum, title: vTitle, chapters: [], hasCurrent: false };
+    partNode.volumes.push(volNode);
+  }
+  if (isCur) volNode.hasCurrent = true;
+
+  // 3. Chapter
+  let chapNode = volNode.chapters.find((c) => c.number === cNum && c.title === cTitle);
+  if (!chapNode) {
+    chapNode = { number: cNum, title: cTitle, sections: [], hasCurrent: false };
+    volNode.chapters.push(chapNode);
+  }
+  if (isCur) chapNode.hasCurrent = true;
+
+  // 4. Section
+  chapNode.sections.push({
+    slug: ch.slug,
+    title: ch.data.title,
+    order: ch.data.order,
+    sectionNumber: sNum,
+    sectionTitle: sTitle,
+    isCurrent: isCur,
+  });
+});
+---
+
+<div class={`novel-toc-container ${compact ? "compact" : ""}`} id="novel-toc-tree">
+  <div class="toc-toolbar">
+    <span class="toc-title">❖ 卷軸全目 ({chapters.length} 節)</span>
+    <div class="toc-actions">
+      <button type="button" class="toc-tool-btn" id="toc-expand-all">展開</button>
+      <button type="button" class="toc-tool-btn" id="toc-collapse-all">收合</button>
+    </div>
+  </div>
+
+  <div class="toc-tree-root">
+    {
+      tree.map((part) => (
+        <details class="toc-part" open={part.hasCurrent}>
+          <summary class="toc-part-summary">
+            <span class="toc-icon">📜</span>
+            <span class="toc-part-title">{part.title}</span>
+            <span class="toc-badge">{part.volumes.reduce((acc, v) => acc + v.chapters.reduce((cAcc, c) => cAcc + c.sections.length, 0), 0)} 節</span>
+          </summary>
+
+          <div class="toc-part-content">
+            {part.volumes.map((vol) => (
+              <details class="toc-vol" open={vol.hasCurrent}>
+                <summary class="toc-vol-summary">
+                  <span class="toc-arrow">▸</span>
+                  <span class="toc-vol-title">{vol.title}</span>
+                  <span class="toc-sub-badge">{vol.chapters.reduce((acc, c) => acc + c.sections.length, 0)} 節</span>
+                </summary>
+
+                <div class="toc-vol-content">
+                  {vol.chapters.map((chap) => (
+                    <details class="toc-chap" open={chap.hasCurrent}>
+                      <summary class="toc-chap-summary">
+                        <span class="toc-arrow">▸</span>
+                        <span class="toc-chap-title">{chap.title}</span>
+                      </summary>
+
+                      <ul class="toc-section-list">
+                        {chap.sections.map((sec) => (
+                          <li class="toc-section-item">
+                            <a
+                              href={`${baseUrl}shanzhuang/novels/${bookSlug}/${sec.slug}/`}
+                              class={`toc-section-link ${sec.isCurrent ? "active" : ""}`}
+                              data-slug={sec.slug}
+                              data-order={sec.order}
+                            >
+                              <span class="sec-dot" />
+                              <span class="sec-text">{sec.sectionTitle}</span>
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
+                  ))}
+                </div>
+              </details>
+            ))}
+          </div>
+        </details>
+      ))
+    }
+  </div>
+</div>
+
+<style>
+  .novel-toc-container {
+    font-family: "LXGW WenKai TC", "Noto Serif TC", serif;
+    background: rgba(26, 26, 32, 0.95);
+    border: 1px solid #332d27;
+    border-radius: 8px;
+    padding: 16px;
+    color: #ded6cd;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(10px);
+  }
+
+  .toc-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #3e362e;
+    padding-bottom: 10px;
+    margin-bottom: 14px;
+  }
+
+  .toc-title {
+    font-size: 1rem;
+    font-weight: bold;
+    color: #e5a93b;
+    letter-spacing: 1px;
+  }
+
+  .toc-actions {
+    display: flex;
+    gap: 6px;
+  }
+
+  .toc-tool-btn {
+    background: #252220;
+    border: 1px solid #443c33;
+    color: #a89f91;
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .toc-tool-btn:hover {
+    background: #383129;
+    color: #e5a93b;
+    border-color: #e5a93b;
+  }
+
+  .toc-tree-root {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 70vh;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+
+  /* 自訂滾動條 */
+  .toc-tree-root::-webkit-scrollbar {
+    width: 5px;
+  }
+  .toc-tree-root::-webkit-scrollbar-thumb {
+    background: #443c33;
+    border-radius: 3px;
+  }
+
+  /* Part 部 */
+  .toc-part {
+    border: 1px solid #2e2822;
+    border-radius: 6px;
+    background: rgba(36, 32, 28, 0.6);
+    overflow: hidden;
+  }
+
+  .toc-part-summary {
+    padding: 10px 12px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 0.95rem;
+    color: #f0e6da;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    user-select: none;
+    background: #26211c;
+    transition: background 0.2s ease;
+  }
+  .toc-part-summary:hover {
+    background: #332b24;
+    color: #e5a93b;
+  }
+
+  .toc-badge {
+    margin-left: auto;
+    font-size: 0.75rem;
+    color: #8c8173;
+    background: #1b1714;
+    padding: 2px 6px;
+    border-radius: 10px;
+  }
+
+  .toc-part-content {
+    padding: 8px 10px 10px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* Volume 卷 */
+  .toc-vol {
+    border-left: 2px solid #5a4a38;
+    padding-left: 8px;
+  }
+
+  .toc-vol-summary {
+    padding: 6px 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #d1c5b4;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    user-select: none;
+    transition: color 0.2s ease;
+  }
+  .toc-vol-summary:hover {
+    color: #e5a93b;
+  }
+
+  .toc-sub-badge {
+    margin-left: auto;
+    font-size: 0.7rem;
+    color: #7a7063;
+  }
+
+  .toc-vol-content {
+    padding-left: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  /* Chapter 章 */
+  .toc-chap {
+    border-left: 1px dashed #443c33;
+    padding-left: 8px;
+  }
+
+  .toc-chap-summary {
+    padding: 4px 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: #b5a999;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    user-select: none;
+    transition: color 0.2s ease;
+  }
+  .toc-chap-summary:hover {
+    color: #e5a93b;
+  }
+
+  .toc-arrow {
+    font-size: 0.75rem;
+    color: #8c8173;
+    transition: transform 0.2s ease;
+  }
+  details[open] > summary > .toc-arrow {
+    transform: rotate(90deg);
+    color: #e5a93b;
+  }
+
+  /* Section 節 */
+  .toc-section-list {
+    list-style: none;
+    padding-left: 16px;
+    margin: 4px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .toc-section-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 8px;
+    font-size: 0.82rem;
+    color: #9e9383;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+  }
+
+  .sec-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #554a3e;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+  }
+
+  .toc-section-link:hover {
+    background: rgba(229, 169, 59, 0.12);
+    color: #f5eedb;
+  }
+  .toc-section-link:hover .sec-dot {
+    background: #e5a93b;
+  }
+
+  /* 當前正在閱讀之小節高亮 */
+  .toc-section-link.active {
+    background: rgba(229, 169, 59, 0.22);
+    color: #ffda73;
+    font-weight: bold;
+    border-left: 2px solid #e5a93b;
+  }
+  .toc-section-link.active .sec-dot {
+    background: #ffda73;
+    box-shadow: 0 0 8px #ffda73;
+  }
+
+  /* 宣紙/明亮主題相容 */
+  :global(body.theme-rice-paper) .novel-toc-container {
+    background: rgba(247, 243, 235, 0.98);
+    border-color: #d6ccbe;
+    color: #3b322a;
+    box-shadow: 0 8px 24px rgba(44, 37, 32, 0.12);
+  }
+  :global(body.theme-rice-paper) .toc-toolbar {
+    border-bottom-color: #dfd5c7;
+  }
+  :global(body.theme-rice-paper) .toc-title {
+    color: #8c2d19;
+  }
+  :global(body.theme-rice-paper) .toc-tool-btn {
+    background: #ebe4d8;
+    border-color: #cfc4b4;
+    color: #5c4e42;
+  }
+  :global(body.theme-rice-paper) .toc-part {
+    background: #faf7f2;
+    border-color: #e3dacf;
+  }
+  :global(body.theme-rice-paper) .toc-part-summary {
+    background: #eee7db;
+    color: #2b231d;
+  }
+  :global(body.theme-rice-paper) .toc-vol-summary {
+    color: #4a3e34;
+  }
+  :global(body.theme-rice-paper) .toc-chap-summary {
+    color: #635548;
+  }
+  :global(body.theme-rice-paper) .toc-section-link {
+    color: #6b5c4f;
+  }
+  :global(body.theme-rice-paper) .toc-section-link.active {
+    background: rgba(140, 45, 25, 0.12);
+    color: #8c2d19;
+    border-left-color: #8c2d19;
+  }
+  :global(body.theme-rice-paper) .toc-section-link.active .sec-dot {
+    background: #8c2d19;
+    box-shadow: 0 0 6px #8c2d19;
+  }
+</style>
+
+<script>
+  function setupTOCTree() {
+    const container = document.getElementById("novel-toc-tree");
+    if (!container) return;
+
+    const expandBtn = document.getElementById("toc-expand-all");
+    const collapseBtn = document.getElementById("toc-collapse-all");
+
+    if (expandBtn) {
+      expandBtn.addEventListener("click", () => {
+        container.querySelectorAll("details").forEach((d) => (d.open = true));
+      });
+    }
+
+    if (collapseBtn) {
+      collapseBtn.addEventListener("click", () => {
+        container.querySelectorAll("details").forEach((d) => (d.open = false));
+      });
+    }
+
+    // 自動將 active 小節滾動到可視區
+    const activeLink = container.querySelector(".toc-section-link.active");
+    if (activeLink) {
+      activeLink.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }
+
+  document.addEventListener("astro:page-load", setupTOCTree);
+</script>

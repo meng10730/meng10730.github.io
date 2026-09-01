@@ -63,6 +63,7 @@ function buildTitleMap() {
   const titleMap = new Map();
   const collections = [
     "novels",
+    "novel_chapters",
     "characters",
     "worldview",
     "factions",
@@ -189,7 +190,8 @@ function extractSchema() {
   // 美化後的中文對照標籤
   const customLabels = {
     blog: "部落格文章 (blog，例如：閱讀心得、隨筆、日常)",
-    novels: "小說連載 (novels，例如：小說正文)",
+    novels: "小說作品總覽 (novels，例如：封面、簡介、作品總檔)",
+    novel_chapters: "小說章節連載 (novel_chapters，例如：五層部/卷/章/節正文)",
     characters: "人物設定 (characters，例如：人物誌)",
     worldview: "世界觀設定 (worldview，例如：小說設定、機制地理)",
     factions: "勢力組織 (factions)",

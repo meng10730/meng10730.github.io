@@ -1,0 +1,761 @@
+---
+import { getCollection } from 'astro:content';
+import Layout from '../../../../layouts/Layout.astro';
+import NovelReaderTOC from '../../../../components/NovelReaderTOC.astro';
+
+export async function getStaticPaths() {
+  const allChapters = await getCollection('novel_chapters', (entry: any) => !entry.id.startsWith('_'));
+  const allBooks = await getCollection('novels', (entry: any) => !entry.id.startsWith('_'));
+
+  const bookMap = new Map();
+  allBooks.forEach(b => bookMap.set(b.slug, b));
+
+  return allChapters.map((chapter) => {
+    const bookSlug = chapter.data.book || 'tianxia';
+    const book = bookMap.get(bookSlug) || { data: { title: '小說連載' }, slug: bookSlug };
+    const siblingChapters = allChapters.filter(c => (c.data.book || 'tianxia') === bookSlug);
+
+    return {
+      params: { book: bookSlug, slug: chapter.slug },
+      props: { chapter, book, allChapters: siblingChapters },
+    };
+  });
+}
+
+const { chapter, book, allChapters = [] } = Astro.props;
+const baseUrl = import.meta.env.BASE_URL;
+
+const { Content } = await chapter.render();
+
+// 依 order 排序章節清單
+const sortedChapters = [...allChapters].sort((a: any, b: any) => (a.data.order || 0) - (b.data.order || 0));
+const currentIndex = sortedChapters.findIndex(c => c.slug === chapter.slug);
+const prevChapter = currentIndex > 0 ? sortedChapters[currentIndex - 1] : null;
+const nextChapter = currentIndex < sortedChapters.length - 1 ? sortedChapters[currentIndex + 1] : null;
+
+const partTitle = chapter.data.part?.title || `第${chapter.data.part?.number || 1}部`;
+const volTitle = chapter.data.volume?.title || `第${chapter.data.volume?.number || 1}卷`;
+const chapTitle = chapter.data.chapter?.title || `第${chapter.data.chapter?.number || 1}章`;
+const secTitle = chapter.data.section?.title || chapter.data.title;
+---
+
+<Layout
+  title={`${chapter.data.title} · ${book.data.title} | 晚餐後的書桌`}
+  description={`${book.data.title} - ${partTitle} ${volTitle} ${chapTitle} ${secTitle}`}
+  type="article"
+  breadcrumbs={[
+    { name: "首頁", url: `${baseUrl}` },
+    { name: "山莊藏書閣", url: `${baseUrl}shanzhuang/` },
+    { name: book.data.title, url: `${baseUrl}shanzhuang/novels/${book.slug}/` },
+    { name: chapter.data.title, url: `${baseUrl}shanzhuang/novels/${book.slug}/${chapter.slug}/` }
+  ]}
+>
+  <div class="novel-reader-wrapper" id="reader-wrapper" data-book={book.slug} data-current-slug={chapter.slug}>
+    <!-- 頂部浮動控制工具列 -->
+    <header class="reader-header">
+      <div class="header-left">
+        <button type="button" class="tool-btn toggle-toc-btn" id="toggle-toc-drawer" aria-label="切換目錄">
+          <span class="btn-icon">📜</span>
+          <span class="btn-label">目錄</span>
+        </button>
+
+        <nav class="reader-breadcrumb">
+          <a href={`${baseUrl}shanzhuang/novels/${book.slug}/`} class="crumb-book">{book.data.title}</a>
+          <span class="crumb-sep">/</span>
+          <span class="crumb-part">{partTitle}</span>
+          <span class="crumb-sep">/</span>
+          <span class="crumb-vol">{volTitle}</span>
+          <span class="crumb-sep">/</span>
+          <span class="crumb-chap">{chapTitle}</span>
+        </nav>
+      </div>
+
+      <div class="header-right">
+        <!-- 主題切換按鈕 -->
+        <div class="theme-switch-group">
+          <button type="button" class="theme-btn active" data-theme="dark" title="深邃夜讀 (預設)">夜讀</button>
+          <button type="button" class="theme-btn" data-theme="rice-paper" title="仿古宣紙">宣紙</button>
+          <button type="button" class="theme-btn" data-theme="eyecare" title="溫潤護眼">護眼</button>
+          <button type="button" class="theme-btn" data-theme="light" title="素雅純白">明亮</button>
+        </div>
+
+        <!-- 字級縮放 -->
+        <div class="font-size-group">
+          <button type="button" class="tool-btn font-btn" id="font-decrease" title="縮小字體">A-</button>
+          <button type="button" class="tool-btn font-btn" id="font-increase" title="放大字體">A+</button>
+        </div>
+
+        <a href={`${baseUrl}shanzhuang/novels/${book.slug}/`} class="tool-btn exit-btn" title="返回作品總覽">
+          <span>✕</span>
+        </a>
+      </div>
+    </header>
+
+    <!-- 頂部閱讀進度指示條 -->
+    <div class="reading-progress-bar-container">
+      <div class="reading-progress-bar" id="reading-progress-bar"></div>
+    </div>
+
+    <!-- 主體內容區塊：左側折疊抽屜 + 中央閱讀本文 -->
+    <div class="reader-body-layout">
+      <!-- 左側五層折疊目錄抽屜（預設收起） -->
+      <aside class="toc-drawer hidden" id="toc-drawer">
+        <div class="drawer-header">
+          <span class="drawer-title">❖ {book.data.title} 目錄 ❖</span>
+          <button type="button" class="drawer-close-btn" id="toc-drawer-close">✕</button>
+        </div>
+        <div class="drawer-scroll-body">
+          <NovelReaderTOC bookSlug={book.slug} currentSlug={chapter.slug} chapters={sortedChapters} compact={true} />
+        </div>
+      </aside>
+      <div class="drawer-overlay hidden" id="toc-drawer-overlay"></div>
+
+      <!-- 中央正文閱讀串流容器 (支援向下連續滾動加載) -->
+      <main class="reader-main-content">
+        <div id="chapters-stream-container" class="chapters-stream">
+          <!-- 初始第一小節 (SSR 渲染) -->
+          <article class="chapter-article current-section" id={`chapter-${chapter.slug}`} data-slug={chapter.slug} data-title={chapter.data.title} data-order={chapter.data.order}>
+            <header class="section-header">
+              <div class="section-hierarchy-badge">
+                <span>{partTitle}</span> · <span>{volTitle}</span> · <span>{chapTitle}</span>
+              </div>
+              <h1 class="section-main-title">{chapter.data.title}</h1>
+              <div class="section-meta-info">
+                <span>字數約 {chapter.body ? chapter.body.length : 0} 字</span>
+                {chapter.data.pubDate && (
+                  <span>發布於 {new Date(chapter.data.pubDate).toLocaleDateString('zh-TW')}</span>
+                )}
+              </div>
+            </header>
+
+            <div class="novel-body markdown-body prose prose-invert">
+              <Content />
+            </div>
+          </article>
+        </div>
+
+        <!-- 連續滾動加載哨兵與狀態提示 -->
+        <div id="infinite-scroll-sentinel" class="scroll-sentinel">
+          <div class="sentinel-loader hidden" id="sentinel-loader">
+            <span class="ink-spinner"></span>
+            <span class="loader-text">墨痕流轉，正在加載下一小節……</span>
+          </div>
+          <div class="sentinel-end hidden" id="sentinel-end">
+            <span>❖ 本卷暫已讀畢 · 靜候作者續筆 ❖</span>
+          </div>
+        </div>
+
+        <!-- 傳統翻頁備援導航 (無 JS 降級) -->
+        <nav class="fallback-chapter-nav">
+          {prevChapter ? (
+            <a href={`${baseUrl}shanzhuang/novels/${book.slug}/${prevChapter.slug}/`} class="nav-btn prev-btn">
+              ← 上一節：{prevChapter.data.title}
+            </a>
+          ) : <span />}
+
+          <a href={`${baseUrl}shanzhuang/novels/${book.slug}/`} class="nav-btn catalog-btn">
+            返回目錄
+          </a>
+
+          {nextChapter ? (
+            <a href={`${baseUrl}shanzhuang/novels/${book.slug}/${nextChapter.slug}/`} class="nav-btn next-btn" id="fallback-next-link">
+              下一節：{nextChapter.data.title} →
+            </a>
+          ) : <span />}
+        </nav>
+      </main>
+    </div>
+  </div>
+</Layout>
+
+<style>
+  /* 全域閱讀器樣式 */
+  .novel-reader-wrapper {
+    font-family: 'LXGW WenKai TC', 'Noto Serif TC', serif;
+    min-height: 100vh;
+    background-color: #16151a;
+    color: #dfd8cf;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  /* 主題樣式定製 */
+  :global(body.theme-dark) .novel-reader-wrapper {
+    background-color: #16151a;
+    color: #dfd8cf;
+  }
+
+  :global(body.theme-rice-paper) .novel-reader-wrapper {
+    background-color: #f7f3eb !important;
+    color: #2b241d !important;
+  }
+  :global(body.theme-rice-paper) .reader-header {
+    background: rgba(247, 243, 235, 0.96) !important;
+    border-bottom-color: #dfd5c7 !important;
+  }
+  :global(body.theme-rice-paper) .novel-body {
+    color: #2e261f !important;
+  }
+  :global(body.theme-rice-paper) .section-main-title {
+    color: #8c2d19 !important;
+  }
+  :global(body.theme-rice-paper) .section-divider {
+    color: #8c2d19 !important;
+    border-color: #dfd5c7 !important;
+  }
+
+  :global(body.theme-eyecare) .novel-reader-wrapper {
+    background-color: #e8f0e6 !important;
+    color: #1e2d1c !important;
+  }
+  :global(body.theme-eyecare) .reader-header {
+    background: rgba(232, 240, 230, 0.96) !important;
+    border-bottom-color: #c8d8c4 !important;
+  }
+
+  :global(body.theme-light) .novel-reader-wrapper {
+    background-color: #ffffff !important;
+    color: #222222 !important;
+  }
+  :global(body.theme-light) .reader-header {
+    background: rgba(255, 255, 255, 0.96) !important;
+    border-bottom-color: #e2e2e2 !important;
+  }
+
+  /* 頂部固定控制列 */
+  .reader-header {
+    position: sticky;
+    top: 0;
+    z-index: 90;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 24px;
+    background: rgba(22, 21, 26, 0.95);
+    border-bottom: 1px solid #2e2822;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  }
+
+  .header-left, .header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .reader-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    color: #8f8272;
+  }
+  .crumb-book {
+    color: #e5a93b;
+    font-weight: bold;
+    text-decoration: none;
+  }
+  .crumb-book:hover {
+    text-decoration: underline;
+  }
+  .crumb-sep {
+    color: #55493d;
+  }
+
+  /* 工具按鈕 */
+  .tool-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #25221d;
+    border: 1px solid #42382e;
+    color: #d1c5b4;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+  .tool-btn:hover {
+    background: #362e26;
+    color: #e5a93b;
+    border-color: #e5a93b;
+  }
+
+  /* 主題群組 */
+  .theme-switch-group {
+    display: flex;
+    background: #1f1c18;
+    border: 1px solid #3d342a;
+    border-radius: 6px;
+    padding: 2px;
+    gap: 2px;
+  }
+  .theme-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    padding: 3px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.78rem;
+    font-family: 'LXGW WenKai TC', 'Noto Serif TC', serif;
+    color: #9c8e7e;
+    transition: all 0.2s ease;
+  }
+  .theme-btn:hover {
+    color: #e5a93b;
+    background: rgba(229, 169, 59, 0.1);
+  }
+  .theme-btn.active {
+    background: rgba(229, 169, 59, 0.2);
+    color: #e5a93b;
+    border-color: rgba(229, 169, 59, 0.4);
+    font-weight: bold;
+  }
+
+  /* 進度指示條 */
+  .reading-progress-bar-container {
+    position: sticky;
+    top: 49px;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: transparent;
+    z-index: 91;
+  }
+  .reading-progress-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #e5a93b, #f3c775);
+    transition: width 0.1s linear;
+  }
+
+  /* 版面配置 */
+  .reader-body-layout {
+    position: relative;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 40px 20px 80px;
+  }
+
+  /* 左側五層目錄抽屜 (Drawer) */
+  .toc-drawer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 360px;
+    height: 100vh;
+    background: #1c1916;
+    border-right: 1px solid #3d3328;
+    z-index: 1000;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.7);
+    display: flex;
+    flex-direction: column;
+    transform: translateX(0);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .toc-drawer.hidden {
+    transform: translateX(-100%);
+  }
+
+  .drawer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #362e24;
+    background: #24201b;
+  }
+  .drawer-title {
+    font-size: 1rem;
+    font-weight: bold;
+    color: #e5a93b;
+  }
+  .drawer-close-btn {
+    background: transparent;
+    border: none;
+    color: #a39583;
+    font-size: 1.2rem;
+    cursor: pointer;
+  }
+  .drawer-close-btn:hover {
+    color: #e5a93b;
+  }
+
+  .drawer-scroll-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+  }
+
+  .drawer-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 999;
+    backdrop-filter: blur(4px);
+    transition: opacity 0.3s ease;
+  }
+  .drawer-overlay.hidden {
+    display: none;
+  }
+
+  /* 正文文章排版 */
+  .chapter-article {
+    margin-bottom: 40px;
+  }
+
+  .section-header {
+    text-align: center;
+    margin-bottom: 36px;
+    padding-bottom: 24px;
+    border-bottom: 1px dashed #3a3229;
+  }
+
+  .section-hierarchy-badge {
+    font-size: 0.85rem;
+    color: #9c8e7c;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+
+  .section-main-title {
+    font-size: 2.2rem;
+    font-weight: bold;
+    color: #f7ede1;
+    letter-spacing: 2px;
+    margin: 8px 0;
+  }
+
+  .section-meta-info {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    font-size: 0.8rem;
+    color: #7a6e60;
+  }
+
+  .novel-body {
+    font-size: 1.15rem;
+    line-height: 2.1;
+    letter-spacing: 0.5px;
+  }
+
+  :global(.novel-body p) {
+    margin-bottom: 1.6em;
+    text-indent: 2em; /* 標準中文縮排 */
+  }
+
+  /* 小節交界古風分隔線 */
+  :global(.section-divider) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin: 60px 0 40px;
+    padding: 20px 0;
+    border-top: 1px solid #383027;
+    border-bottom: 1px solid #383027;
+    color: #e5a93b;
+    font-size: 1rem;
+    font-weight: bold;
+    letter-spacing: 2px;
+  }
+
+  /* 哨兵與加載器 */
+  .scroll-sentinel {
+    text-align: center;
+    padding: 30px 0;
+  }
+  .sentinel-loader {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: #e5a93b;
+    font-size: 0.95rem;
+  }
+  .sentinel-end {
+    color: #736758;
+    font-size: 0.9rem;
+    letter-spacing: 2px;
+  }
+
+  .ink-spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(229, 169, 59, 0.2);
+    border-top-color: #e5a93b;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* 翻頁備援按鈕 */
+  .fallback-chapter-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid #332b23;
+  }
+  .nav-btn {
+    font-size: 0.9rem;
+    color: #b5a897;
+    text-decoration: none;
+    padding: 8px 16px;
+    background: #24201b;
+    border: 1px solid #3d3429;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+  }
+  .nav-btn:hover {
+    background: #332b23;
+    color: #e5a93b;
+    border-color: #e5a93b;
+  }
+</style>
+
+<script>
+  function initNovelReader() {
+    const wrapper = document.getElementById('reader-wrapper');
+    if (!wrapper) return;
+
+    const bookSlug = wrapper.getAttribute('data-book');
+    const initialSlug = wrapper.getAttribute('data-current-slug');
+    const baseUrl = document.querySelector('meta[name="base-url"]')?.getAttribute('content') || '/';
+
+    // 1. 抽屜式目錄開關
+    const tocDrawer = document.getElementById('toc-drawer');
+    const tocOverlay = document.getElementById('toc-drawer-overlay');
+    const toggleTocBtn = document.getElementById('toggle-toc-btn') || document.getElementById('toggle-toc-drawer');
+    const closeTocBtn = document.getElementById('toc-drawer-close');
+
+    function openDrawer() {
+      if (tocDrawer) tocDrawer.classList.remove('hidden');
+      if (tocOverlay) tocOverlay.classList.remove('hidden');
+    }
+    function closeDrawer() {
+      if (tocDrawer) tocDrawer.classList.add('hidden');
+      if (tocOverlay) tocOverlay.classList.add('hidden');
+    }
+
+    if (toggleTocBtn) toggleTocBtn.addEventListener('click', openDrawer);
+    if (closeTocBtn) closeTocBtn.addEventListener('click', closeDrawer);
+    if (tocOverlay) tocOverlay.addEventListener('click', closeDrawer);
+
+    // 2. 主題切換持久化
+    const themeButtons = document.querySelectorAll('.theme-btn');
+    const savedTheme = localStorage.getItem('novel_reader_theme') || 'dark';
+    applyTheme(savedTheme);
+
+    themeButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const theme = btn.getAttribute('data-theme');
+        if (theme) {
+          applyTheme(theme);
+          localStorage.setItem('novel_reader_theme', theme);
+        }
+      });
+    });
+
+    function applyTheme(theme) {
+      document.body.classList.remove('theme-dark', 'theme-rice-paper', 'theme-eyecare', 'theme-light');
+      document.body.classList.add(`theme-${theme}`);
+      themeButtons.forEach(b => {
+        b.classList.toggle('active', b.getAttribute('data-theme') === theme);
+      });
+    }
+
+    // 3. 字體縮放持久化
+    const fontDecrease = document.getElementById('font-decrease');
+    const fontIncrease = document.getElementById('font-increase');
+    let currentFontSize = parseFloat(localStorage.getItem('novel_reader_fontsize') || '1.15');
+
+    function applyFontSize(size) {
+      const bodies = document.querySelectorAll('.novel-body');
+      bodies.forEach(b => b.style.fontSize = `${size}rem`);
+      localStorage.setItem('novel_reader_fontsize', size.toString());
+    }
+    applyFontSize(currentFontSize);
+
+    if (fontDecrease) {
+      fontDecrease.addEventListener('click', () => {
+        if (currentFontSize > 0.9) {
+          currentFontSize -= 0.1;
+          applyFontSize(currentFontSize);
+        }
+      });
+    }
+    if (fontIncrease) {
+      fontIncrease.addEventListener('click', () => {
+        if (currentFontSize < 1.6) {
+          currentFontSize += 0.1;
+          applyFontSize(currentFontSize);
+        }
+      });
+    }
+
+    // 4. 滾動進度條與歷史段落記憶
+    const progressBar = document.getElementById('reading-progress-bar');
+    window.addEventListener('scroll', () => {
+      const winScroll = document.documentElement.scrollTop || document.body.scrollTop;
+      const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      if (height > 0 && progressBar) {
+        const scrolled = (winScroll / height) * 100;
+        progressBar.style.width = `${scrolled}%`;
+      }
+    });
+
+    // 5. 無縫滾動加載 (Continuous Infinite Scroll)
+    let allChaptersData = null;
+    let loadedSlugs = new Set([initialSlug]);
+    let isLoadingNext = false;
+    let isAllLoaded = false;
+
+    const streamContainer = document.getElementById('chapters-stream-container');
+    const sentinel = document.getElementById('infinite-scroll-sentinel');
+    const sentinelLoader = document.getElementById('sentinel-loader');
+    const sentinelEnd = document.getElementById('sentinel-end');
+
+    // 預載全書章節清單
+    async function loadBookData() {
+      try {
+        const res = await fetch(`${baseUrl}shanzhuang/novels/${bookSlug}/chapters.json`.replace(/\/+/g, '/'));
+        if (res.ok) {
+          const json = await res.json();
+          allChaptersData = json.chapters || [];
+        }
+      } catch (e) {
+        console.error('Failed to preload chapters:', e);
+      }
+    }
+    loadBookData();
+
+    async function loadNextChapter() {
+      if (isLoadingNext || isAllLoaded || !allChaptersData) return;
+      
+      const lastSlug = Array.from(loadedSlugs)[loadedSlugs.size - 1];
+      const lastIndex = allChaptersData.findIndex(c => c.slug === lastSlug);
+      
+      if (lastIndex === -1 || lastIndex >= allChaptersData.length - 1) {
+        isAllLoaded = true;
+        if (sentinelEnd) sentinelEnd.classList.remove('hidden');
+        if (sentinelLoader) sentinelLoader.classList.add('hidden');
+        return;
+      }
+
+      const nextData = allChaptersData[lastIndex + 1];
+      if (loadedSlugs.has(nextData.slug)) return;
+
+      isLoadingNext = true;
+      if (sentinelLoader) sentinelLoader.classList.remove('hidden');
+
+      try {
+        // 構建新小節 DOM
+        const article = document.createElement('article');
+        article.className = 'chapter-article';
+        article.id = `chapter-${nextData.slug}`;
+        article.setAttribute('data-slug', nextData.slug);
+        article.setAttribute('data-title', nextData.title);
+        article.setAttribute('data-order', nextData.order);
+
+        const vTitle = nextData.volume?.title || `第${nextData.volume?.number || 1}卷`;
+        const cTitle = nextData.chapter?.title || `第${nextData.chapter?.number || 1}章`;
+        const sTitle = nextData.section?.title || nextData.title;
+
+        // 分隔線與標題
+        article.innerHTML = `
+          <div class="section-divider">
+            <span>❖ ${vTitle} · ${cTitle} · ${sTitle} ❖</span>
+          </div>
+          <header class="section-header">
+            <h2 class="section-main-title">${nextData.title}</h2>
+          </header>
+          <div class="novel-body markdown-body prose prose-invert">
+            ${nextData.body.split('\n\n').filter(p => p.trim()).map(p => `<p>${p.trim()}</p>`).join('')}
+          </div>
+        `;
+
+        if (streamContainer) {
+          streamContainer.appendChild(article);
+          loadedSlugs.add(nextData.slug);
+
+          // 套用當前字體大小
+          const newBody = article.querySelector('.novel-body');
+          if (newBody) newBody.style.fontSize = `${currentFontSize}rem`;
+
+          // 增量觸發專有名詞識別
+          if (window.refreshGlossaryTerms) {
+            window.refreshGlossaryTerms(article);
+          }
+
+          // 監聽新章節的可視性
+          observeChapter(article);
+        }
+      } catch (err) {
+        console.error('Error loading next chapter:', err);
+      } finally {
+        isLoadingNext = false;
+        if (sentinelLoader) sentinelLoader.classList.add('hidden');
+      }
+    }
+
+    // 哨兵 IntersectionObserver (觸發加載下一節)
+    const sentinelObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          loadNextChapter();
+        }
+      });
+    }, { rootMargin: '400px' });
+
+    if (sentinel) sentinelObserver.observe(sentinel);
+
+    // 章節可視性監聽器 (自動更新網址列與側邊目錄高亮)
+    const chapterObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const targetSlug = entry.target.getAttribute('data-slug');
+          const targetTitle = entry.target.getAttribute('data-title');
+          if (targetSlug) {
+            // 動態替換網址列 (不污染歷史堆疊)
+            const newUrl = `${baseUrl}shanzhuang/novels/${bookSlug}/${targetSlug}/`.replace(/\/+/g, '/');
+            window.history.replaceState({ slug: targetSlug }, '', newUrl);
+            document.title = `${targetTitle} · ${bookSlug} | 晚餐後的書桌`;
+
+            // 更新側邊目錄 Active 狀態
+            document.querySelectorAll('.toc-section-link').forEach(link => {
+              const isActive = link.getAttribute('data-slug') === targetSlug;
+              link.classList.toggle('active', isActive);
+              if (isActive) {
+                const detailsParent = link.closest('details');
+                if (detailsParent) detailsParent.open = true;
+              }
+            });
+
+            // 儲存至 LocalStorage 進度
+            localStorage.setItem(`novel_progress_${bookSlug}`, JSON.stringify({
+              slug: targetSlug,
+              title: targetTitle,
+              timestamp: Date.now()
+            }));
+          }
+        }
+      });
+    }, { threshold: 0.2 });
+
+    function observeChapter(el) {
+      chapterObserver.observe(el);
+    }
+
+    document.querySelectorAll('.chapter-article').forEach(observeChapter);
+  }
+
+  document.addEventListener('astro:page-load', initNovelReader);
+</script>
