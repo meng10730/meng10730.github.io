@@ -19,6 +19,7 @@ interface Props {
   type?: 'website' | 'article';
   breadcrumbs?: BreadcrumbItem[];
   hideHeader?: boolean;
+  hoverHeader?: boolean;
 }
 
 const {
@@ -30,6 +31,7 @@ const {
   type = "website",
   breadcrumbs = [],
   hideHeader = false,
+  hoverHeader = false,
 } = Astro.props;
 
 const siteUrl = "https://meng10730.github.io";
@@ -144,7 +146,7 @@ const jsonLd = {
     <div class="site-wrapper">
       <!-- 新中式導航列 -->
       {!hideHeader && (
-        <header class="site-header ink-fade-in">
+        <header class={`site-header ink-fade-in ${hoverHeader ? "hover-header" : ""}`} id="site-header">
           <nav class="nav-container">
             <div class="nav-logo">
               <a href={import.meta.env.BASE_URL} class="cursive-title ink-logo" data-astro-prefetch="hover"
@@ -764,6 +766,29 @@ const jsonLd = {
     position: sticky;
     top: 0;
     z-index: 100;
+  }
+
+  /* 智慧懸浮模式（小說閱讀器專用） */
+  .site-header.hover-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 992;
+    background: rgba(253, 252, 247, 0.98);
+    border-bottom: 1px solid var(--color-border, #e6dfcc);
+    box-shadow: 0 4px 20px rgba(44, 37, 32, 0.08);
+    transform: translateY(-100%);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+  }
+
+  .site-header.hover-header.visible,
+  .site-header.hover-header:hover {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
   }
 
   .nav-container {

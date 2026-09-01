@@ -43,7 +43,7 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
   title={`${chapter.data.title} · ${book.data.title} | 晚餐後的書桌`}
   description={`${book.data.title} - ${partTitle} ${volTitle} ${chapTitle} ${secTitle}`}
   type="article"
-  hideHeader={true}
+  hoverHeader={true}
   breadcrumbs={[
     { name: "首頁", url: `${baseUrl}` },
     { name: "山莊藏書閣", url: `${baseUrl}shanzhuang/` },
@@ -195,30 +195,28 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     pointer-events: auto;
   }
 
-  /* 頂部智慧懸浮控制列（預設隱藏，滑鼠懸浮或向上滾動時顯示） */
+  /* 頂部智慧懸浮控制列（位於全站導航列下方，滑鼠懸浮或向上滾動時同步滑出） */
   .reader-header {
     position: fixed;
-    top: 0;
+    top: 60px;
     left: 0;
     width: 100%;
-    z-index: 990;
+    z-index: 991;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 24px;
+    padding: 8px 24px;
     background: rgba(253, 252, 247, 0.98);
     border-bottom: 1px solid var(--color-border, #e6dfcc);
     backdrop-filter: blur(12px);
     box-shadow: 0 4px 16px rgba(44, 37, 32, 0.08);
-    transform: translateY(-100%);
+    transform: translateY(-200%);
     opacity: 0;
     pointer-events: none;
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
   }
 
-  .reader-header.visible,
-  .reader-header:hover,
-  .header-hover-trigger:hover + .reader-header {
+  .reader-header.visible {
     transform: translateY(0);
     opacity: 1;
     pointer-events: auto;
@@ -707,7 +705,8 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     const initialSlug = wrapper.getAttribute('data-current-slug');
     const baseUrl = document.querySelector('meta[name="base-url"]')?.getAttribute('content') || '/';
 
-    // 1. 頂部智慧懸浮控制列 (滑鼠移至上方或向上滾動時顯示)
+    // 1. 頂部智慧懸浮控制列 (全站導航列 + 閱讀器工具列同步滑出)
+    const siteHeader = document.getElementById('site-header');
     const readerHeader = document.getElementById('reader-header');
     const hoverTrigger = document.getElementById('header-hover-trigger');
     let hideHeaderTimer = null;
@@ -716,6 +715,7 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
 
     function showHeader() {
       if (hideHeaderTimer) clearTimeout(hideHeaderTimer);
+      if (siteHeader) siteHeader.classList.add('visible');
       if (readerHeader) readerHeader.classList.add('visible');
     }
 
@@ -723,24 +723,34 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
       if (isDrawerOpen) return;
       if (hideHeaderTimer) clearTimeout(hideHeaderTimer);
       hideHeaderTimer = setTimeout(() => {
-        if (!isDrawerOpen && readerHeader && !readerHeader.matches(':hover')) {
-          readerHeader.classList.remove('visible');
+        if (!isDrawerOpen) {
+          const isHoveringSite = siteHeader?.matches(':hover');
+          const isHoveringReader = readerHeader?.matches(':hover');
+          if (!isHoveringSite && !isHoveringReader) {
+            if (siteHeader) siteHeader.classList.remove('visible');
+            if (readerHeader) readerHeader.classList.remove('visible');
+          }
         }
       }, delay);
     }
 
-    // 初始先短暫顯示 2 秒讓讀者知道有工具列，隨後自動收起
+    // 初始短暫展示 2 秒後自動收起
     showHeader();
     scheduleHideHeader(2000);
 
-    // 滑鼠移到螢幕頂部 50px 範圍內喚醒
+    // 滑鼠移至頂部 55px 範圍內喚醒全站導航與閱讀工具列
     window.addEventListener('mousemove', (e) => {
       if (e.clientY <= 55) {
         showHeader();
-      } else if (e.clientY > 90) {
+      } else if (e.clientY > 110) {
         scheduleHideHeader(2000);
       }
     });
+
+    if (siteHeader) {
+      siteHeader.addEventListener('mouseenter', showHeader);
+      siteHeader.addEventListener('mouseleave', () => scheduleHideHeader(1500));
+    }
 
     if (readerHeader) {
       readerHeader.addEventListener('mouseenter', showHeader);
@@ -839,7 +849,8 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
         showHeader();
         scheduleHideHeader(3000);
       } else if (scrollDiff > 15 && currentScrollY > 100) {
-        if (!readerHeader?.matches(':hover') && !isDrawerOpen) {
+        if (!siteHeader?.matches(':hover') && !readerHeader?.matches(':hover') && !isDrawerOpen) {
+          siteHeader?.classList.remove('visible');
           readerHeader?.classList.remove('visible');
         }
       }
