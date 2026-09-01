@@ -170,58 +170,16 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
 
 <style>
   /* 全域閱讀器樣式 */
+  /* 全域閱讀器樣式（預設為宣紙水墨主題） */
   .novel-reader-wrapper {
-    font-family: 'LXGW WenKai TC', 'Noto Serif TC', serif;
+    font-family: var(--font-serif, 'LXGW WenKai TC', 'Noto Serif TC', serif);
     min-height: 100vh;
-    background-color: #16151a;
-    color: #dfd8cf;
+    background-color: var(--color-paper-bg, #faf7ee);
+    color: var(--color-ink-text, #2c2c2c);
     transition: background-color 0.3s ease, color 0.3s ease;
   }
 
-  /* 主題樣式定製 */
-  :global(body.theme-dark) .novel-reader-wrapper {
-    background-color: #16151a;
-    color: #dfd8cf;
-  }
-
-  :global(body.theme-rice-paper) .novel-reader-wrapper {
-    background-color: #f7f3eb !important;
-    color: #2b241d !important;
-  }
-  :global(body.theme-rice-paper) .reader-header {
-    background: rgba(247, 243, 235, 0.96) !important;
-    border-bottom-color: #dfd5c7 !important;
-  }
-  :global(body.theme-rice-paper) .novel-body {
-    color: #2e261f !important;
-  }
-  :global(body.theme-rice-paper) .section-main-title {
-    color: #8c2d19 !important;
-  }
-  :global(body.theme-rice-paper) .section-divider {
-    color: #8c2d19 !important;
-    border-color: #dfd5c7 !important;
-  }
-
-  :global(body.theme-eyecare) .novel-reader-wrapper {
-    background-color: #e8f0e6 !important;
-    color: #1e2d1c !important;
-  }
-  :global(body.theme-eyecare) .reader-header {
-    background: rgba(232, 240, 230, 0.96) !important;
-    border-bottom-color: #c8d8c4 !important;
-  }
-
-  :global(body.theme-light) .novel-reader-wrapper {
-    background-color: #ffffff !important;
-    color: #222222 !important;
-  }
-  :global(body.theme-light) .reader-header {
-    background: rgba(255, 255, 255, 0.96) !important;
-    border-bottom-color: #e2e2e2 !important;
-  }
-
-  /* 頂部固定控制列 */
+  /* 頂部固定控制列（預設宣紙水墨） */
   .reader-header {
     position: sticky;
     top: 0;
@@ -230,10 +188,10 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     justify-content: space-between;
     align-items: center;
     padding: 10px 24px;
-    background: rgba(22, 21, 26, 0.95);
-    border-bottom: 1px solid #2e2822;
+    background: rgba(253, 252, 247, 0.96);
+    border-bottom: 1px solid var(--color-border, #e6dfcc);
     backdrop-filter: blur(12px);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 2px 12px rgba(44, 37, 32, 0.05);
   }
 
   .header-left, .header-right {
@@ -247,10 +205,14 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     align-items: center;
     gap: 6px;
     font-size: 0.85rem;
-    color: #8f8272;
+    color: var(--color-ink-grey, #5c5c5c);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 48vw;
   }
   .crumb-book {
-    color: #e5a93b;
+    color: var(--color-mountain-accent, #c48c3b);
     font-weight: bold;
     text-decoration: none;
   }
@@ -258,17 +220,17 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     text-decoration: underline;
   }
   .crumb-sep {
-    color: #55493d;
+    color: var(--color-border, #e6dfcc);
   }
 
-  /* 工具按鈕 */
+  /* 工具按鈕（預設宣紙水墨） */
   .tool-btn {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    background: #25221d;
-    border: 1px solid #42382e;
-    color: #d1c5b4;
+    background: var(--color-paper-bg, #faf7ee);
+    border: 1px solid var(--color-border, #e6dfcc);
+    color: var(--color-ink-text, #2c2c2c);
     padding: 6px 12px;
     border-radius: 6px;
     font-size: 0.85rem;
@@ -277,16 +239,16 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     transition: all 0.2s ease;
   }
   .tool-btn:hover {
-    background: #362e26;
-    color: #e5a93b;
-    border-color: #e5a93b;
+    background: var(--color-paper-dark, #f3edd8);
+    color: var(--color-mountain-accent, #c48c3b);
+    border-color: var(--color-mountain-accent, #c48c3b);
   }
 
-  /* 主題群組 */
+  /* 主題切換群組（預設宣紙水墨） */
   .theme-switch-group {
     display: flex;
-    background: #1f1c18;
-    border: 1px solid #3d342a;
+    background: var(--color-paper-bg, #faf7ee);
+    border: 1px solid var(--color-border, #e6dfcc);
     border-radius: 6px;
     padding: 2px;
     gap: 2px;
@@ -298,18 +260,29 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     border-radius: 4px;
     cursor: pointer;
     font-size: 0.78rem;
-    font-family: 'LXGW WenKai TC', 'Noto Serif TC', serif;
-    color: #9c8e7e;
+    font-family: var(--font-serif, 'LXGW WenKai TC', serif);
+    color: var(--color-ink-grey, #5c5c5c);
     transition: all 0.2s ease;
   }
   .theme-btn:hover {
-    color: #e5a93b;
-    background: rgba(229, 169, 59, 0.1);
+    color: var(--color-mountain-accent, #c48c3b);
+    background: rgba(196, 140, 59, 0.08);
   }
   .theme-btn.active {
-    background: rgba(229, 169, 59, 0.2);
-    color: #e5a93b;
-    border-color: rgba(229, 169, 59, 0.4);
+    background: rgba(196, 140, 59, 0.15);
+    color: var(--color-mountain-accent, #c48c3b);
+    border-color: rgba(196, 140, 59, 0.35);
+    font-weight: bold;
+  }
+
+  /* 字體縮放按鈕 */
+  .font-size-group {
+    display: flex;
+    gap: 4px;
+  }
+  .font-btn {
+    padding: 6px 10px;
+    font-size: 0.8rem;
     font-weight: bold;
   }
 
@@ -326,7 +299,7 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
   .reading-progress-bar {
     height: 100%;
     width: 0%;
-    background: linear-gradient(90deg, #e5a93b, #f3c775);
+    background: linear-gradient(90deg, var(--color-mountain-accent, #c48c3b), #e8ba6b);
     transition: width 0.1s linear;
   }
 
@@ -345,10 +318,10 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     left: 0;
     width: 360px;
     height: 100vh;
-    background: #1c1916;
-    border-right: 1px solid #3d3328;
+    background: var(--color-paper-light, #fdfcf7);
+    border-right: 1px solid var(--color-border, #e6dfcc);
     z-index: 1000;
-    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.7);
+    box-shadow: 4px 0 24px rgba(44, 37, 32, 0.12);
     display: flex;
     flex-direction: column;
     transform: translateX(0);
@@ -363,23 +336,24 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     justify-content: space-between;
     align-items: center;
     padding: 16px 20px;
-    border-bottom: 1px solid #362e24;
-    background: #24201b;
+    border-bottom: 1px solid var(--color-border, #e6dfcc);
+    background: var(--color-paper-dark, #f3edd8);
   }
   .drawer-title {
     font-size: 1rem;
-    font-weight: bold;
-    color: #e5a93b;
+    font-weight: 900;
+    color: var(--color-ink-black, #1a1a1a);
+    font-family: var(--font-cursive, 'LXGW WenKai TC', serif);
   }
   .drawer-close-btn {
     background: transparent;
     border: none;
-    color: #a39583;
+    color: var(--color-ink-grey, #5c5c5c);
     font-size: 1.2rem;
     cursor: pointer;
   }
   .drawer-close-btn:hover {
-    color: #e5a93b;
+    color: var(--color-mountain-accent, #c48c3b);
   }
 
   .drawer-scroll-body {
@@ -394,7 +368,7 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(44, 37, 32, 0.4);
     z-index: 999;
     backdrop-filter: blur(4px);
     transition: opacity 0.3s ease;
@@ -412,20 +386,21 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     text-align: center;
     margin-bottom: 36px;
     padding-bottom: 24px;
-    border-bottom: 1px dashed #3a3229;
+    border-bottom: 1px dashed var(--color-border, #e6dfcc);
   }
 
   .section-hierarchy-badge {
     font-size: 0.85rem;
-    color: #9c8e7c;
+    color: var(--color-ink-grey, #5c5c5c);
     letter-spacing: 1px;
     margin-bottom: 8px;
   }
 
   .section-main-title {
     font-size: 2.2rem;
-    font-weight: bold;
-    color: #f7ede1;
+    font-weight: 900;
+    color: #8c2d19;
+    font-family: var(--font-cursive, 'LXGW WenKai TC', serif);
     letter-spacing: 2px;
     margin: 8px 0;
   }
@@ -435,7 +410,198 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     justify-content: center;
     gap: 16px;
     font-size: 0.8rem;
-    color: #7a6e60;
+    color: var(--color-ink-light, #8c8c8c);
+  }
+
+  /* 主題模式切換覆寫樣式 */
+
+  /* 1. 深色夜讀模式 */
+  :global(body.theme-dark) .novel-reader-wrapper {
+    background-color: #16151a !important;
+    color: #dfd8cf !important;
+  }
+  :global(body.theme-dark) .reader-header {
+    background: rgba(22, 21, 26, 0.96) !important;
+    border-bottom-color: #2e2822 !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+  }
+  :global(body.theme-dark) .tool-btn {
+    background: #25221d !important;
+    border-color: #42382e !important;
+    color: #d1c5b4 !important;
+  }
+  :global(body.theme-dark) .tool-btn:hover {
+    background: #362e26 !important;
+    color: #e5a93b !important;
+    border-color: #e5a93b !important;
+  }
+  :global(body.theme-dark) .theme-switch-group {
+    background: #1f1c18 !important;
+    border-color: #3d342a !important;
+  }
+  :global(body.theme-dark) .theme-btn {
+    color: #9c8e7e !important;
+  }
+  :global(body.theme-dark) .theme-btn.active {
+    background: rgba(229, 169, 59, 0.25) !important;
+    color: #e5a93b !important;
+    border-color: rgba(229, 169, 59, 0.4) !important;
+  }
+  :global(body.theme-dark) .reader-breadcrumb {
+    color: #8f8272 !important;
+  }
+  :global(body.theme-dark) .crumb-sep {
+    color: #55493d !important;
+  }
+  :global(body.theme-dark) .toc-drawer {
+    background: #1c1916 !important;
+    border-right-color: #3d3328 !important;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.7) !important;
+  }
+  :global(body.theme-dark) .drawer-header {
+    background: #24201b !important;
+    border-bottom-color: #362e24 !important;
+  }
+  :global(body.theme-dark) .drawer-title {
+    color: #e5a93b !important;
+  }
+  :global(body.theme-dark) .drawer-close-btn {
+    color: #a39583 !important;
+  }
+  :global(body.theme-dark) .section-main-title {
+    color: #f7ede1 !important;
+  }
+  :global(body.theme-dark) .section-divider {
+    color: #e5a93b !important;
+    border-color: #3d342a !important;
+  }
+  :global(body.theme-dark) .novel-body {
+    color: #dfd8cf !important;
+  }
+
+  /* 2. 仿古宣紙模式 (與全站一致) */
+  :global(body.theme-rice-paper) .novel-reader-wrapper {
+    background-color: #faf7ee !important;
+    color: #2c2c2c !important;
+  }
+  :global(body.theme-rice-paper) .reader-header {
+    background: rgba(253, 252, 247, 0.96) !important;
+    border-bottom-color: #e6dfcc !important;
+  }
+  :global(body.theme-rice-paper) .tool-btn {
+    background: #faf7ee !important;
+    border-color: #e6dfcc !important;
+    color: #2c2c2c !important;
+  }
+  :global(body.theme-rice-paper) .theme-switch-group {
+    background: #faf7ee !important;
+    border-color: #e6dfcc !important;
+  }
+  :global(body.theme-rice-paper) .novel-body {
+    color: #2c2c2c !important;
+  }
+  :global(body.theme-rice-paper) .section-main-title {
+    color: #8c2d19 !important;
+  }
+  :global(body.theme-rice-paper) .section-divider {
+    color: #8c2d19 !important;
+    border-color: #e6dfcc !important;
+  }
+
+  /* 3. 溫潤護眼模式 */
+  :global(body.theme-eyecare) .novel-reader-wrapper {
+    background-color: #e8f0e6 !important;
+    color: #1e2d1c !important;
+  }
+  :global(body.theme-eyecare) .reader-header {
+    background: rgba(232, 240, 230, 0.96) !important;
+    border-bottom-color: #c8d8c4 !important;
+  }
+  :global(body.theme-eyecare) .tool-btn {
+    background: #dde8db !important;
+    border-color: #b8ccb3 !important;
+    color: #1e2d1c !important;
+  }
+  :global(body.theme-eyecare) .theme-switch-group {
+    background: #dde8db !important;
+    border-color: #b8ccb3 !important;
+  }
+  :global(body.theme-eyecare) .theme-btn {
+    color: #3d5939 !important;
+  }
+  :global(body.theme-eyecare) .theme-btn.active {
+    background: rgba(45, 95, 90, 0.2) !important;
+    color: #1e4d3a !important;
+    border-color: rgba(45, 95, 90, 0.4) !important;
+  }
+  :global(body.theme-eyecare) .toc-drawer {
+    background: #e8f0e6 !important;
+    border-right-color: #c8d8c4 !important;
+  }
+  :global(body.theme-eyecare) .drawer-header {
+    background: #d8e5d5 !important;
+    border-bottom-color: #c8d8c4 !important;
+  }
+  :global(body.theme-eyecare) .drawer-title {
+    color: #1e4d3a !important;
+  }
+  :global(body.theme-eyecare) .section-main-title {
+    color: #2d5f5a !important;
+  }
+  :global(body.theme-eyecare) .section-divider {
+    color: #2d5f5a !important;
+    border-color: #c8d8c4 !important;
+  }
+  :global(body.theme-eyecare) .novel-body {
+    color: #1e2d1c !important;
+  }
+
+  /* 4. 素雅純白模式 */
+  :global(body.theme-light) .novel-reader-wrapper {
+    background-color: #ffffff !important;
+    color: #222222 !important;
+  }
+  :global(body.theme-light) .reader-header {
+    background: rgba(255, 255, 255, 0.96) !important;
+    border-bottom-color: #e2e2e2 !important;
+  }
+  :global(body.theme-light) .tool-btn {
+    background: #f4f4f4 !important;
+    border-color: #dddddd !important;
+    color: #333333 !important;
+  }
+  :global(body.theme-light) .theme-switch-group {
+    background: #f4f4f4 !important;
+    border-color: #dddddd !important;
+  }
+  :global(body.theme-light) .theme-btn {
+    color: #666666 !important;
+  }
+  :global(body.theme-light) .theme-btn.active {
+    background: #e0e0e0 !important;
+    color: #111111 !important;
+    border-color: #cccccc !important;
+  }
+  :global(body.theme-light) .toc-drawer {
+    background: #ffffff !important;
+    border-right-color: #e2e2e2 !important;
+  }
+  :global(body.theme-light) .drawer-header {
+    background: #f8f8f8 !important;
+    border-bottom-color: #e2e2e2 !important;
+  }
+  :global(body.theme-light) .drawer-title {
+    color: #111111 !important;
+  }
+  :global(body.theme-light) .section-main-title {
+    color: #111111 !important;
+  }
+  :global(body.theme-light) .section-divider {
+    color: #666666 !important;
+    border-color: #e2e2e2 !important;
+  }
+  :global(body.theme-light) .novel-body {
+    color: #222222 !important;
   }
 
   .novel-body {
