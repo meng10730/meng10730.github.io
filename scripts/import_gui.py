@@ -149,6 +149,70 @@ QFrame#cardFrame {
 }
 """
 
+def to_chinese_num(n: int) -> str:
+    """整數轉中文數字 (支援 1 ~ 99)"""
+    digits = ["零", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十"]
+    if n <= 10:
+        return digits[n]
+    elif n < 20:
+        return "十" + digits[n % 10]
+    elif n < 100:
+        ten = n // 10
+        unit = n % 10
+        return digits[ten] + "十" + (digits[unit] if unit > 0 else "")
+    return str(n)
+
+
+class DropMarkdownEdit(QPlainTextEdit):
+    """專用小說 Markdown 拖曳文字編輯器，支援直接拖入 .md / .txt 檔案並自動剝離 YAML Frontmatter"""
+    def __init__(self, parent=None, on_text_changed=None):
+        super().__init__(parent)
+        self.setAcceptDrops(True)
+        self.setPlaceholderText("💡 可直接將寫好的 .md 或 .txt 檔案拖曳至此處，或在下方點擊「📋 貼上剪貼簿內容」...\n\n（系統會自動幫您去除開頭的 YAML 標籤，保留純故事正文）")
+        if on_text_changed:
+            self.textChanged.connect(on_text_changed)
+
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasUrls() or event.mimeData().hasText():
+            event.acceptProposedAction()
+        else:
+            super().dragEnterEvent(event)
+
+    def dragMoveEvent(self, event):
+        if event.mimeData().hasUrls() or event.mimeData().hasText():
+            event.acceptProposedAction()
+        else:
+            super().dragMoveEvent(event)
+
+    def dropEvent(self, event):
+        if event.mimeData().hasUrls():
+            urls = event.mimeData().urls()
+            if urls:
+                file_path = urls[0].toLocalFile()
+                if file_path and os.path.exists(file_path):
+                    try:
+                        with open(file_path, "r", encoding="utf-8") as f:
+                            content = f.read()
+                        clean_content = self.strip_frontmatter(content)
+                        self.setPlainText(clean_content)
+                        event.acceptProposedAction()
+                        return
+                    except Exception as e:
+                        print(f"讀取拖曳檔案失敗: {e}")
+        elif event.mimeData().hasText():
+            text = event.mimeData().text()
+            clean_content = self.strip_frontmatter(text)
+            self.setPlainText(clean_content)
+            event.acceptProposedAction()
+            return
+        super().dropEvent(event)
+
+    def strip_frontmatter(self, text: str) -> str:
+        import re
+        pattern = r"^---\s*\n[\s\S]*?\n---\s*\n"
+        return re.sub(pattern, "", text.strip())
+
+
 class ArrayFieldWidget(QWidget):
     """用於 Array 欄位的動態增加/刪除項目介面"""
     def __init__(self, label, parent=None):
@@ -827,7 +891,7 @@ class MainWindow(QMainWindow):
         orientation = Qt.Horizontal if getattr(self, "layout_orientation", "horizontal") == "horizontal" else Qt.Vertical
         self.right_splitter = QSplitter(orientation)
         
-        # 建立雙欄頁籤分頁
+        # 建立多功能頁籤分頁
         self.main_tab_widget = QTabWidget()
         
         tab1_panel = self.setup_tab1_panel()
@@ -835,6 +899,9 @@ class MainWindow(QMainWindow):
         
         tab2_panel = self.setup_tab2_panel()
         self.main_tab_widget.addTab(tab2_panel, "📚 網站既有文章管理")
+        
+        tab3_panel = self.setup_novel_publisher_panel()
+        self.main_tab_widget.addTab(tab3_panel, "📖 小說極速連載工作台")
         
         self.right_splitter.addWidget(self.main_tab_widget)
         
@@ -2796,6 +2863,598 @@ class MainWindow(QMainWindow):
         
         self.log(f"⌛ 正在匯入 \"{filename}\" 至分區 \"{col_name}\"...")
         import_proc.start("node", args)
+
+    # =========================================================================
+    # 📖 小說極速連載工作台 (Fast Novel Publisher) 專屬邏輯
+    # =========================================================================
+    def setup_novel_publisher_panel(self):
+        panel = QWidget()
+        layout = QVBoxLayout(panel)
+        layout.setContentsMargins(12, 12, 12, 12)
+        layout.setSpacing(10)
+
+        # 頂部說明卡片
+        intro_card = QFrame()
+        intro_card.setObjectName("cardFrame")
+        intro_layout = QVBoxLayout(intro_card)
+        intro_layout.setContentsMargins(12, 10, 12, 10)
+        intro_title = QLabel("📖 小說極速連載工作台")
+        intro_title.setStyleSheet("color: #e5a93b; font-size: 15px; font-weight: bold;")
+        intro_desc = QLabel("⚡ 專為長篇連載打造：選擇章節 ➔ 拖入 .md 檔案 ➔ 點擊儲存即可自動遞增小節並寫入，最後一鍵推送發布！")
+        intro_desc.setStyleSheet("color: #a2a2ab; font-size: 12px;")
+        intro_layout.addWidget(intro_title)
+        intro_layout.addWidget(intro_desc)
+        layout.addWidget(intro_card)
+
+        # 1. 作品與階層連鎖選擇卡片
+        sel_card = QFrame()
+        sel_card.setObjectName("cardFrame")
+        sel_layout = QVBoxLayout(sel_card)
+        sel_layout.setContentsMargins(12, 10, 12, 10)
+        sel_layout.setSpacing(8)
+
+        # 作品列
+        row_book = QHBoxLayout()
+        lbl_book = QLabel("1. 所屬作品:")
+        lbl_book.setFixedWidth(85)
+        lbl_book.setStyleSheet("color: #e5a93b; font-weight: bold;")
+        self.novel_book_combo = NoScrollComboBox()
+        self.novel_book_combo.currentIndexChanged.connect(self.on_novel_publisher_book_changed)
+        btn_add_book = QPushButton("➕ 新建作品")
+        btn_add_book.setFixedWidth(90)
+        btn_add_book.clicked.connect(self.add_novel_book_quick_dialog)
+        row_book.addWidget(lbl_book)
+        row_book.addWidget(self.novel_book_combo)
+        row_book.addWidget(btn_add_book)
+        sel_layout.addLayout(row_book)
+
+        # 部、卷、章連鎖選擇列
+        row_hier = QHBoxLayout()
+        
+        # 部 (Part)
+        lbl_part = QLabel("部:")
+        lbl_part.setStyleSheet("color: #a2a2ab; font-weight: bold;")
+        self.novel_part_combo = NoScrollComboBox()
+        self.novel_part_combo.currentIndexChanged.connect(self.on_novel_publisher_part_changed)
+        btn_add_part = QPushButton("➕")
+        btn_add_part.setFixedWidth(32)
+        btn_add_part.setToolTip("新增部 (如：第二部 天命再臨)")
+        btn_add_part.clicked.connect(self.add_novel_part_quick_dialog)
+
+        # 卷 (Volume)
+        lbl_vol = QLabel("卷:")
+        lbl_vol.setStyleSheet("color: #a2a2ab; font-weight: bold;")
+        self.novel_vol_combo = NoScrollComboBox()
+        self.novel_vol_combo.currentIndexChanged.connect(self.on_novel_publisher_vol_changed)
+        btn_add_vol = QPushButton("➕")
+        btn_add_vol.setFixedWidth(32)
+        btn_add_vol.setToolTip("新增卷 (如：第二卷 刀鳴幽谷)")
+        btn_add_vol.clicked.connect(self.add_novel_vol_quick_dialog)
+
+        # 章 (Chapter)
+        lbl_chap = QLabel("章:")
+        lbl_chap.setStyleSheet("color: #a2a2ab; font-weight: bold;")
+        self.novel_chap_combo = NoScrollComboBox()
+        self.novel_chap_combo.currentIndexChanged.connect(self.on_novel_publisher_chap_changed)
+        btn_add_chap = QPushButton("➕")
+        btn_add_chap.setFixedWidth(32)
+        btn_add_chap.setToolTip("新增章 (如：第二章 夜半刀鳴)")
+        btn_add_chap.clicked.connect(self.add_novel_chap_quick_dialog)
+
+        row_hier.addWidget(lbl_part)
+        row_hier.addWidget(self.novel_part_combo, 2)
+        row_hier.addWidget(btn_add_part)
+        row_hier.addWidget(lbl_vol)
+        row_hier.addWidget(self.novel_vol_combo, 2)
+        row_hier.addWidget(btn_add_vol)
+        row_hier.addWidget(lbl_chap)
+        row_hier.addWidget(self.novel_chap_combo, 3)
+        row_hier.addWidget(btn_add_chap)
+        sel_layout.addLayout(row_hier)
+
+        # 當前準備發布之小節資訊預覽條
+        self.novel_target_sec_info = QLabel("❖ 當前準備發布：正在計算章節位置...")
+        self.novel_target_sec_info.setStyleSheet("color: #4cd964; font-weight: bold; background: #162218; border: 1px solid #234827; border-radius: 4px; padding: 6px 10px;")
+        sel_layout.addWidget(self.novel_target_sec_info)
+
+        layout.addWidget(sel_card)
+
+        # 2. 正文輸入與檔案拖曳區
+        content_card = QFrame()
+        content_card.setObjectName("cardFrame")
+        content_layout = QVBoxLayout(content_card)
+        content_layout.setContentsMargins(12, 10, 12, 10)
+        content_layout.setSpacing(8)
+
+        lbl_content_title = QLabel("2. 正文內容 (支援直接將 Markdown 檔案拖曳進編輯框):")
+        lbl_content_title.setStyleSheet("color: #e5a93b; font-weight: bold;")
+        content_layout.addWidget(lbl_content_title)
+
+        self.novel_content_edit = DropMarkdownEdit(on_text_changed=self.update_novel_publisher_word_count)
+        self.novel_content_edit.setMinimumHeight(220)
+        content_layout.addWidget(self.novel_content_edit)
+
+        # 內容輔助工具列
+        tools_row = QHBoxLayout()
+        btn_paste = QPushButton("📋 貼上剪貼簿內容")
+        btn_paste.setStyleSheet("background-color: #2e3440; color: #88c0d0; font-weight: bold;")
+        btn_paste.clicked.connect(self.paste_novel_clipboard_content)
+
+        btn_browse_md = QPushButton("📂 選擇本機 Markdown 檔案")
+        btn_browse_md.clicked.connect(self.browse_novel_md_file)
+
+        btn_clear = QPushButton("🧹 清空")
+        btn_clear.setFixedWidth(65)
+        btn_clear.clicked.connect(lambda: self.novel_content_edit.clear())
+
+        self.lbl_novel_word_count = QLabel("📝 本節字數：0 字")
+        self.lbl_novel_word_count.setStyleSheet("color: #a2a2ab; font-size: 12px;")
+
+        tools_row.addWidget(btn_paste)
+        tools_row.addWidget(btn_browse_md)
+        tools_row.addWidget(btn_clear)
+        tools_row.addStretch()
+        tools_row.addWidget(self.lbl_novel_word_count)
+        content_layout.addLayout(tools_row)
+
+        layout.addWidget(content_card)
+
+        # 3. 儲存與推送按鈕列
+        action_layout = QHBoxLayout()
+        self.btn_save_novel_section = QPushButton("💾 儲存此節並準備下一節 (Ctrl+Enter)")
+        self.btn_save_novel_section.setStyleSheet("""
+            QPushButton {
+                background-color: #e5a93b;
+                color: #1a1a20;
+                font-weight: bold;
+                font-size: 14px;
+                padding: 10px 18px;
+                border-radius: 6px;
+            }
+            QPushButton:hover {
+                background-color: #f0bc5e;
+            }
+            QPushButton:pressed {
+                background-color: #c98e28;
+            }
+        """)
+        self.btn_save_novel_section.clicked.connect(self.save_current_novel_section)
+
+        self.btn_git_push_novels = QPushButton("🚀 一併推送到網站 (Git Push)")
+        self.btn_git_push_novels.setStyleSheet("""
+            QPushButton {
+                background-color: #2d7d46;
+                color: #ffffff;
+                font-weight: bold;
+                font-size: 13px;
+                padding: 10px 16px;
+                border-radius: 6px;
+            }
+            QPushButton:hover {
+                background-color: #389e58;
+            }
+            QPushButton:pressed {
+                background-color: #236337;
+            }
+        """)
+        self.btn_git_push_novels.clicked.connect(self.push_novel_chapters_to_git)
+
+        action_layout.addWidget(self.btn_save_novel_section, 3)
+        action_layout.addWidget(self.btn_git_push_novels, 2)
+        layout.addLayout(action_layout)
+
+        # 4. 本次連載儲存記錄 (Staging List)
+        staging_card = QFrame()
+        staging_card.setObjectName("cardFrame")
+        staging_layout = QVBoxLayout(staging_card)
+        staging_layout.setContentsMargins(12, 8, 12, 8)
+        staging_layout.setSpacing(6)
+
+        staging_head = QHBoxLayout()
+        lbl_staging = QLabel("📋 本次工作階段已建立小節:")
+        lbl_staging.setStyleSheet("color: #a2a2ab; font-size: 12px; font-weight: bold;")
+        btn_refresh_novel_tree = QPushButton("🔄 重新整理章節樹")
+        btn_refresh_novel_tree.setFixedWidth(130)
+        btn_refresh_novel_tree.setStyleSheet("font-size: 11px; padding: 3px;")
+        btn_refresh_novel_tree.clicked.connect(self.reload_novel_publisher_data)
+        staging_head.addWidget(lbl_staging)
+        staging_head.addStretch()
+        staging_head.addWidget(btn_refresh_novel_tree)
+        staging_layout.addLayout(staging_head)
+
+        self.novel_staging_list = QListWidget()
+        self.novel_staging_list.setMaximumHeight(100)
+        staging_layout.addWidget(self.novel_staging_list)
+
+        layout.addWidget(staging_card)
+
+        # 初次載入小說資料庫
+        self.reload_novel_publisher_data()
+
+        return panel
+
+    def reload_novel_publisher_data(self):
+        """掃描小說作品與章節資料庫，建構階層快取樹"""
+        self.novel_hierarchy = {}
+        
+        # 1. 讀取作品列表
+        novels_dir = os.path.join(self.project_dir, "src", "content", "novels")
+        if os.path.exists(novels_dir):
+            for fname in os.listdir(novels_dir):
+                if fname.endswith((".md", ".yaml", ".json")) and not fname.startswith("_"):
+                    book_slug = os.path.splitext(fname)[0]
+                    fpath = os.path.join(novels_dir, fname)
+                    book_title = book_slug
+                    try:
+                        with open(fpath, "r", encoding="utf-8") as f:
+                            content = f.read()
+                            for line in content.split("\n"):
+                                if line.startswith("title:"):
+                                    book_title = line.replace("title:", "").strip().strip("\"'")
+                                    break
+                    except Exception:
+                        pass
+                    self.novel_hierarchy[book_slug] = {
+                        "title": book_title,
+                        "parts": {}
+                    }
+        
+        if not self.novel_hierarchy:
+            self.novel_hierarchy["tianxia"] = { "title": "天下", "parts": {} }
+
+        # 2. 讀取所有現有章節
+        chapters_dir = os.path.join(self.project_dir, "src", "content", "novel_chapters")
+        if os.path.exists(chapters_dir):
+            for fname in os.listdir(chapters_dir):
+                if fname.endswith(".md") and not fname.startswith("_"):
+                    fpath = os.path.join(chapters_dir, fname)
+                    try:
+                        with open(fpath, "r", encoding="utf-8") as f:
+                            text = f.read()
+                        
+                        import re
+                        m = re.search(r"^---\s*\n([\s\S]*?)\n---", text)
+                        if m:
+                            fm_str = m.group(1)
+                            b_slug = "tianxia"
+                            p_num, p_title = 1, "第一部"
+                            v_num, v_title = 1, "第一卷"
+                            c_num, c_title = 1, "第一章"
+                            s_num = 1
+                            
+                            mb = re.search(r"book:\s*[\"']?([^\"'\n]+)", fm_str)
+                            if mb: b_slug = mb.group(1).strip()
+                            
+                            mp_num = re.search(r"part:[\s\S]*?number:\s*(\d+)", fm_str)
+                            if mp_num: p_num = int(mp_num.group(1))
+                            mp_title = re.search(r"part:[\s\S]*?title:\s*[\"']?([^\"'\n]+)", fm_str)
+                            if mp_title: p_title = mp_title.group(1).strip()
+
+                            mv_num = re.search(r"volume:[\s\S]*?number:\s*(\d+)", fm_str)
+                            if mv_num: v_num = int(mv_num.group(1))
+                            mv_title = re.search(r"volume:[\s\S]*?title:\s*[\"']?([^\"'\n]+)", fm_str)
+                            if mv_title: v_title = mv_title.group(1).strip()
+
+                            mc_num = re.search(r"chapter:[\s\S]*?number:\s*(\d+)", fm_str)
+                            if mc_num: c_num = int(mc_num.group(1))
+                            mc_title = re.search(r"chapter:[\s\S]*?title:\s*[\"']?([^\"'\n]+)", fm_str)
+                            if mc_title: c_title = mc_title.group(1).strip()
+
+                            ms_num = re.search(r"section:[\s\S]*?number:\s*(\d+)", fm_str)
+                            if ms_num: s_num = int(ms_num.group(1))
+
+                            if b_slug not in self.novel_hierarchy:
+                                self.novel_hierarchy[b_slug] = { "title": b_slug, "parts": {} }
+                            
+                            parts = self.novel_hierarchy[b_slug]["parts"]
+                            if p_num not in parts:
+                                parts[p_num] = { "title": p_title, "volumes": {} }
+                            
+                            vols = parts[p_num]["volumes"]
+                            if v_num not in vols:
+                                vols[v_num] = { "title": v_title, "chapters": {} }
+                            
+                            chaps = vols[v_num]["chapters"]
+                            if c_num not in chaps:
+                                chaps[c_num] = { "title": c_title, "sections": [] }
+                            
+                            if s_num not in chaps[c_num]["sections"]:
+                                chaps[c_num]["sections"].append(s_num)
+                    except Exception:
+                        pass
+
+        # 3. 刷新作品下拉選單
+        self.novel_book_combo.blockSignals(True)
+        self.novel_book_combo.clear()
+        for b_slug, b_info in self.novel_hierarchy.items():
+            self.novel_book_combo.addItem(f"{b_info['title']} ({b_slug})", b_slug)
+        self.novel_book_combo.blockSignals(False)
+
+        # 觸發連鎖更新
+        self.on_novel_publisher_book_changed()
+
+    def on_novel_publisher_book_changed(self):
+        b_slug = self.novel_book_combo.currentData() or "tianxia"
+        b_info = self.novel_hierarchy.get(b_slug, {"parts": {}})
+        parts = b_info.get("parts", {})
+
+        self.novel_part_combo.blockSignals(True)
+        self.novel_part_combo.clear()
+
+        if parts:
+            for p_num in sorted(parts.keys()):
+                p_title = parts[p_num]["title"]
+                self.novel_part_combo.addItem(p_title, p_num)
+        else:
+            self.novel_part_combo.addItem("第一部", 1)
+
+        self.novel_part_combo.blockSignals(False)
+        self.on_novel_publisher_part_changed()
+
+    def on_novel_publisher_part_changed(self):
+        b_slug = self.novel_book_combo.currentData() or "tianxia"
+        p_num = self.novel_part_combo.currentData() or 1
+        b_info = self.novel_hierarchy.get(b_slug, {"parts": {}})
+        part_info = b_info.get("parts", {}).get(p_num, {"volumes": {}})
+        vols = part_info.get("volumes", {})
+
+        self.novel_vol_combo.blockSignals(True)
+        self.novel_vol_combo.clear()
+
+        if vols:
+            for v_num in sorted(vols.keys()):
+                v_title = vols[v_num]["title"]
+                self.novel_vol_combo.addItem(v_title, v_num)
+        else:
+            self.novel_vol_combo.addItem("第一卷", 1)
+
+        self.novel_vol_combo.blockSignals(False)
+        self.on_novel_publisher_vol_changed()
+
+    def on_novel_publisher_vol_changed(self):
+        b_slug = self.novel_book_combo.currentData() or "tianxia"
+        p_num = self.novel_part_combo.currentData() or 1
+        v_num = self.novel_vol_combo.currentData() or 1
+        b_info = self.novel_hierarchy.get(b_slug, {"parts": {}})
+        vols = b_info.get("parts", {}).get(p_num, {"volumes": {}})
+        vol_info = vols.get(v_num, {"chapters": {}})
+        chaps = vol_info.get("chapters", {})
+
+        self.novel_chap_combo.blockSignals(True)
+        self.novel_chap_combo.clear()
+
+        if chaps:
+            for c_num in sorted(chaps.keys()):
+                c_title = chaps[c_num]["title"]
+                self.novel_chap_combo.addItem(c_title, c_num)
+        else:
+            self.novel_chap_combo.addItem("第一章", 1)
+
+        self.novel_chap_combo.blockSignals(False)
+        self.on_novel_publisher_chap_changed()
+
+    def on_novel_publisher_chap_changed(self):
+        b_slug = self.novel_book_combo.currentData() or "tianxia"
+        p_num = self.novel_part_combo.currentData() or 1
+        v_num = self.novel_vol_combo.currentData() or 1
+        c_num = self.novel_chap_combo.currentData() or 1
+        
+        b_info = self.novel_hierarchy.get(b_slug, {"parts": {}})
+        chaps = b_info.get("parts", {}).get(p_num, {}).get("volumes", {}).get(v_num, {}).get("chapters", {}).get(c_num, {})
+        sections = chaps.get("sections", []) if isinstance(chaps, dict) else []
+
+        # 自動推算下一個小節序號
+        next_sec_num = max(sections) + 1 if sections else 1
+        sec_title = f"第{to_chinese_num(next_sec_num)}節"
+        
+        target_filename = f"{b_slug}-vol{v_num:02d}-c{c_num:02d}-s{next_sec_num:02d}.md"
+        p_title = self.novel_part_combo.currentText()
+        v_title = self.novel_vol_combo.currentText()
+        c_title = self.novel_chap_combo.currentText()
+
+        self.current_novel_next_sec_num = next_sec_num
+        self.current_novel_target_filename = target_filename
+
+        self.novel_target_sec_info.setText(
+            f"❖ 當前準備發布：{p_title} · {v_title} · {c_title} ➔ 【{sec_title}】 (預計檔名: {target_filename})"
+        )
+
+    def add_novel_book_quick_dialog(self):
+        title, ok = QInputDialog.getText(self, "➕ 新建小說作品", "請輸入小說書名 (如：天命長歌):")
+        if ok and title.strip():
+            slug, ok2 = QInputDialog.getText(self, "網址別名", f"請輸入作品代號 slug (如：tianming):", text=title.strip().lower())
+            if ok2 and slug.strip():
+                clean_slug = slug.strip().lower()
+                clean_title = title.strip()
+                if clean_slug not in self.novel_hierarchy:
+                    self.novel_hierarchy[clean_slug] = { "title": clean_title, "parts": {} }
+                    self.novel_book_combo.addItem(f"{clean_title} ({clean_slug})", clean_slug)
+                    self.novel_book_combo.setCurrentIndex(self.novel_book_combo.count() - 1)
+                    
+                    novels_dir = os.path.join(self.project_dir, "src", "content", "novels")
+                    os.makedirs(novels_dir, exist_ok=True)
+                    target_file = os.path.join(novels_dir, f"{clean_slug}.md")
+                    if not os.path.exists(target_file):
+                        with open(target_file, "w", encoding="utf-8") as f:
+                            f.write(f"---\ntitle: \"{clean_title}\"\ndescription: \"原創小說 {clean_title}\"\ngenre: [\"仙俠\", \"武俠\"]\nstatus: \"ongoing\"\npubDate: {datetime.date.today().isoformat()}\n---\n\n暫無簡介。\n")
+                    self.log(f"✓ 已建立新小說作品檔: {clean_slug}.md")
+
+    def add_novel_part_quick_dialog(self):
+        b_slug = self.novel_book_combo.currentData() or "tianxia"
+        parts = self.novel_hierarchy.setdefault(b_slug, {}).setdefault("parts", {})
+        next_p_num = max(parts.keys()) + 1 if parts else 1
+        default_name = f"第{to_chinese_num(next_p_num)}部"
+        
+        name, ok = QInputDialog.getText(self, "➕ 新增部", f"請輸入部名稱 (部編號: {next_p_num}):", text=f"{default_name} ")
+        if ok and name.strip():
+            clean_name = name.strip()
+            parts[next_p_num] = { "title": clean_name, "volumes": {} }
+            self.novel_part_combo.addItem(clean_name, next_p_num)
+            self.novel_part_combo.setCurrentIndex(self.novel_part_combo.count() - 1)
+
+    def add_novel_vol_quick_dialog(self):
+        b_slug = self.novel_book_combo.currentData() or "tianxia"
+        p_num = self.novel_part_combo.currentData() or 1
+        b_info = self.novel_hierarchy.setdefault(b_slug, {}).setdefault("parts", {})
+        vols = b_info.setdefault(p_num, {"title": f"第{to_chinese_num(p_num)}部", "volumes": {}}).setdefault("volumes", {})
+        next_v_num = max(vols.keys()) + 1 if vols else 1
+        default_name = f"第{to_chinese_num(next_v_num)}卷"
+
+        name, ok = QInputDialog.getText(self, "➕ 新增卷", f"請輸入卷名稱 (卷編號: {next_v_num}):", text=f"{default_name} ")
+        if ok and name.strip():
+            clean_name = name.strip()
+            vols[next_v_num] = { "title": clean_name, "chapters": {} }
+            self.novel_vol_combo.addItem(clean_name, next_v_num)
+            self.novel_vol_combo.setCurrentIndex(self.novel_vol_combo.count() - 1)
+
+    def add_novel_chap_quick_dialog(self):
+        b_slug = self.novel_book_combo.currentData() or "tianxia"
+        p_num = self.novel_part_combo.currentData() or 1
+        v_num = self.novel_vol_combo.currentData() or 1
+        b_info = self.novel_hierarchy.setdefault(b_slug, {}).setdefault("parts", {})
+        vols = b_info.setdefault(p_num, {"title": f"第{to_chinese_num(p_num)}部", "volumes": {}}).setdefault("volumes", {})
+        chaps = vols.setdefault(v_num, {"title": f"第{to_chinese_num(v_num)}卷", "chapters": {}}).setdefault("chapters", {})
+        next_c_num = max(chaps.keys()) + 1 if chaps else 1
+        default_name = f"第{to_chinese_num(next_c_num)}章"
+
+        name, ok = QInputDialog.getText(self, "➕ 新增章", f"請輸入章名稱 (章編號: {next_c_num}):", text=f"{default_name} ")
+        if ok and name.strip():
+            clean_name = name.strip()
+            chaps[next_c_num] = { "title": clean_name, "sections": [] }
+            self.novel_chap_combo.addItem(clean_name, next_c_num)
+            self.novel_chap_combo.setCurrentIndex(self.novel_chap_combo.count() - 1)
+
+    def paste_novel_clipboard_content(self):
+        clipboard = QApplication.clipboard()
+        text = clipboard.text()
+        if text:
+            import re
+            clean_text = re.sub(r"^---\s*\n[\s\S]*?\n---\s*\n", "", text.strip())
+            self.novel_content_edit.setPlainText(clean_text)
+            self.log(f"📋 已成功從剪貼簿貼入正文 ({len(clean_text)} 字元)")
+        else:
+            QMessageBox.information(self, "提示", "剪貼簿目前沒有文字內容。")
+
+    def browse_novel_md_file(self):
+        file_path, _ = QFileDialog.getOpenFileName(self, "選擇小說 Markdown 檔案", self.project_dir, "Markdown Files (*.md *.txt);;All Files (*.*)")
+        if file_path and os.path.exists(file_path):
+            try:
+                with open(file_path, "r", encoding="utf-8") as f:
+                    content = f.read()
+                import re
+                clean_content = re.sub(r"^---\s*\n[\s\S]*?\n---\s*\n", "", content.strip())
+                self.novel_content_edit.setPlainText(clean_content)
+                self.log(f"📂 已成功載入本機檔案: {os.path.basename(file_path)}")
+            except Exception as e:
+                QMessageBox.critical(self, "讀取失敗", f"無法讀取該檔案: {e}")
+
+    def update_novel_publisher_word_count(self):
+        text = self.novel_content_edit.toPlainText().strip()
+        char_count = len(text)
+        chinese_chars = len([c for c in text if not c.isspace()])
+        self.lbl_novel_word_count.setText(f"📝 本節字數：約 {chinese_chars} 字 (含標點 {char_count} 字元)")
+
+    def save_current_novel_section(self):
+        body = self.novel_content_edit.toPlainText().strip()
+        if not body:
+            QMessageBox.warning(self, "請填寫正文", "請先拖入 Markdown 檔案或貼上故事正文後再進行儲存！")
+            return
+
+        b_slug = self.novel_book_combo.currentData() or "tianxia"
+        p_num = self.novel_part_combo.currentData() or 1
+        p_title = self.novel_part_combo.currentText()
+        v_num = self.novel_vol_combo.currentData() or 1
+        v_title = self.novel_vol_combo.currentText()
+        c_num = self.novel_chap_combo.currentData() or 1
+        c_title = self.novel_chap_combo.currentText()
+        s_num = getattr(self, "current_novel_next_sec_num", 1)
+        s_title = f"第{to_chinese_num(s_num)}節"
+
+        order_val = p_num * 1000000 + v_num * 10000 + c_num * 100 + s_num
+        target_filename = f"{b_slug}-vol{v_num:02d}-c{c_num:02d}-s{s_num:02d}.md"
+
+        chapters_dir = os.path.join(self.project_dir, "src", "content", "novel_chapters")
+        os.makedirs(chapters_dir, exist_ok=True)
+        target_filepath = os.path.join(chapters_dir, target_filename)
+
+        frontmatter_str = f"""---
+title: "{s_title}"
+book: "{b_slug}"
+part:
+  number: {p_num}
+  title: "{p_title}"
+volume:
+  number: {v_num}
+  title: "{v_title}"
+chapter:
+  number: {c_num}
+  title: "{c_title}"
+section:
+  number: {s_num}
+  title: "{s_title}"
+order: {order_val}
+pubDate: {datetime.date.today().isoformat()}
+---
+
+{body}
+"""
+        try:
+            with open(target_filepath, "w", encoding="utf-8") as f:
+                f.write(frontmatter_str)
+
+            word_count = len([c for c in body if not c.isspace()])
+            item_text = f"✓ [已儲存] {v_title} · {c_title} · {s_title} ({word_count} 字) ➔ {target_filename}"
+            self.novel_staging_list.addItem(item_text)
+            self.log(f"🎉 成功儲存小節: {target_filename} (字數: {word_count})")
+
+            # 更新本機記憶體 hierarchy
+            b_info = self.novel_hierarchy.setdefault(b_slug, {}).setdefault("parts", {})
+            vols = b_info.setdefault(p_num, {"title": p_title, "volumes": {}}).setdefault("volumes", {})
+            chaps = vols.setdefault(v_num, {"title": v_title, "chapters": {}}).setdefault("chapters", {})
+            sec_list = chaps.setdefault(c_num, {"title": c_title, "sections": []}).setdefault("sections", [])
+            if s_num not in sec_list:
+                sec_list.append(s_num)
+
+            # 清空正文輸入框，自動切換至下一節！
+            self.novel_content_edit.clear()
+            self.on_novel_publisher_chap_changed()
+            self.novel_content_edit.setFocus()
+
+        except Exception as e:
+            QMessageBox.critical(self, "儲存失敗", f"無法寫入章節檔案: {e}")
+            self.log(f"❌ 寫入失敗: {e}")
+
+    def push_novel_chapters_to_git(self):
+        if self.novel_staging_list.count() == 0:
+            reply = QMessageBox.question(self, "確認推送", "目前本次工作階段尚未新增小節。是否仍要同步並推送到 GitHub？", QMessageBox.Yes | QMessageBox.No)
+            if reply != QMessageBox.Yes:
+                return
+
+        self.log("🚀 正在將小說章節檔案加入 Git 並推送到 GitHub...")
+        proc = QProcess(self)
+        self.active_processes.append(proc)
+
+        def on_git_output():
+            out = proc.readAllStandardOutput().data().decode("utf-8", errors="ignore")
+            err = proc.readAllStandardError().data().decode("utf-8", errors="ignore")
+            if out: self.log(out.strip())
+            if err: self.log(err.strip())
+
+        def on_git_finish(code, status):
+            if proc in self.active_processes:
+                self.active_processes.remove(proc)
+            if code == 0:
+                self.log("🎉 小說章節已成功推送到 GitHub！GitHub Actions 正在為您自動發布上線！")
+                QMessageBox.information(self, "發布成功", "🎉 小說章節已成功推送到 GitHub！\n\nGitHub Actions 正在自動為您建置與部署，稍候片刻即可在網站上閱讀！")
+            else:
+                self.log("❌ Git 推送過程中出現錯誤，請檢視上方日誌。")
+
+        proc.readyReadStandardOutput.connect(on_git_output)
+        proc.readyReadStandardError.connect(on_git_output)
+        proc.finished.connect(on_git_finish)
+
+        cmd = 'git add src/content/ && git commit -m "feat(novel): publish new chapters" && git push'
+        proc.start("powershell", ["-Command", cmd])
 
     def create_desktop_shortcut(self):
         desktop = os.path.expanduser("~/Desktop")
