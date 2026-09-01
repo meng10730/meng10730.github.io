@@ -124,7 +124,7 @@ sortedChapters.forEach((ch) => {
       tree.map((part) => (
         <details class="toc-part" open={part.hasCurrent}>
           <summary class="toc-part-summary">
-            <span class="toc-icon">📜</span>
+            <span class="toc-icon">❖</span>
             <span class="toc-part-title">{part.title}</span>
             <span class="toc-badge">{part.volumes.reduce((acc, v) => acc + v.chapters.reduce((cAcc, c) => cAcc + c.sections.length, 0), 0)} 節</span>
           </summary>
@@ -175,29 +175,28 @@ sortedChapters.forEach((ch) => {
 
 <style>
   .novel-toc-container {
-    font-family: "LXGW WenKai TC", "Noto Serif TC", serif;
-    background: rgba(26, 26, 32, 0.95);
-    border: 1px solid #332d27;
+    font-family: var(--font-serif, 'LXGW WenKai TC', 'Noto Serif TC', serif);
+    background: var(--color-paper-light, #fdfcf7);
+    border: 1px solid var(--color-border, #e6dfcc);
     border-radius: 8px;
     padding: 16px;
-    color: #ded6cd;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(10px);
+    color: var(--color-ink-text, #2c2c2c);
+    box-shadow: 0 4px 16px rgba(44, 37, 32, 0.06);
   }
 
   .toc-toolbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid #3e362e;
+    border-bottom: 1px solid var(--color-border, #e6dfcc);
     padding-bottom: 10px;
     margin-bottom: 14px;
   }
 
   .toc-title {
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: bold;
-    color: #e5a93b;
+    color: var(--color-mountain-accent, #c48c3b);
     letter-spacing: 1px;
   }
 
@@ -207,9 +206,9 @@ sortedChapters.forEach((ch) => {
   }
 
   .toc-tool-btn {
-    background: #252220;
-    border: 1px solid #443c33;
-    color: #a89f91;
+    background: var(--color-paper-bg, #faf7ee);
+    border: 1px solid var(--color-border, #e6dfcc);
+    color: var(--color-ink-grey, #5c5c5c);
     font-size: 0.75rem;
     padding: 2px 8px;
     border-radius: 4px;
@@ -218,9 +217,9 @@ sortedChapters.forEach((ch) => {
   }
 
   .toc-tool-btn:hover {
-    background: #383129;
-    color: #e5a93b;
-    border-color: #e5a93b;
+    background: var(--color-paper-dark, #f3edd8);
+    color: var(--color-mountain-accent, #c48c3b);
+    border-color: var(--color-mountain-accent, #c48c3b);
   }
 
   .toc-tree-root {
@@ -237,15 +236,15 @@ sortedChapters.forEach((ch) => {
     width: 5px;
   }
   .toc-tree-root::-webkit-scrollbar-thumb {
-    background: #443c33;
+    background: var(--color-border, #e6dfcc);
     border-radius: 3px;
   }
 
   /* Part 部 */
   .toc-part {
-    border: 1px solid #2e2822;
+    border: 1px solid var(--color-border, #e6dfcc);
     border-radius: 6px;
-    background: rgba(36, 32, 28, 0.6);
+    background: var(--color-paper-bg, #faf7ee);
     overflow: hidden;
   }
 
@@ -254,26 +253,32 @@ sortedChapters.forEach((ch) => {
     cursor: pointer;
     font-weight: bold;
     font-size: 0.95rem;
-    color: #f0e6da;
+    color: var(--color-ink-black, #1a1a1a);
     display: flex;
     align-items: center;
     gap: 8px;
     user-select: none;
-    background: #26211c;
+    background: var(--color-paper-dark, #f3edd8);
     transition: background 0.2s ease;
   }
   .toc-part-summary:hover {
-    background: #332b24;
-    color: #e5a93b;
+    background: #eae2ca;
+    color: var(--color-mountain-accent, #c48c3b);
+  }
+
+  .toc-icon {
+    color: var(--color-mountain-accent, #c48c3b);
+    font-size: 0.8rem;
   }
 
   .toc-badge {
     margin-left: auto;
     font-size: 0.75rem;
-    color: #8c8173;
-    background: #1b1714;
+    color: var(--color-ink-grey, #5c5c5c);
+    background: var(--color-paper-light, #fdfcf7);
     padding: 2px 6px;
     border-radius: 10px;
+    border: 1px solid var(--color-border, #e6dfcc);
   }
 
   .toc-part-content {
@@ -285,7 +290,7 @@ sortedChapters.forEach((ch) => {
 
   /* Volume 卷 */
   .toc-vol {
-    border-left: 2px solid #5a4a38;
+    border-left: 2px solid var(--color-mountain-accent, #c48c3b);
     padding-left: 8px;
   }
 
@@ -294,7 +299,7 @@ sortedChapters.forEach((ch) => {
     cursor: pointer;
     font-weight: 600;
     font-size: 0.9rem;
-    color: #d1c5b4;
+    color: var(--color-ink-text, #2c2c2c);
     display: flex;
     align-items: center;
     gap: 6px;
@@ -302,13 +307,13 @@ sortedChapters.forEach((ch) => {
     transition: color 0.2s ease;
   }
   .toc-vol-summary:hover {
-    color: #e5a93b;
+    color: var(--color-mountain-accent, #c48c3b);
   }
 
   .toc-sub-badge {
     margin-left: auto;
     font-size: 0.7rem;
-    color: #7a7063;
+    color: var(--color-ink-grey, #5c5c5c);
   }
 
   .toc-vol-content {
@@ -320,7 +325,7 @@ sortedChapters.forEach((ch) => {
 
   /* Chapter 章 */
   .toc-chap {
-    border-left: 1px dashed #443c33;
+    border-left: 1px dashed var(--color-border, #e6dfcc);
     padding-left: 8px;
   }
 
@@ -328,7 +333,7 @@ sortedChapters.forEach((ch) => {
     padding: 4px 6px;
     cursor: pointer;
     font-size: 0.85rem;
-    color: #b5a999;
+    color: var(--color-ink-text, #2c2c2c);
     display: flex;
     align-items: center;
     gap: 6px;
@@ -336,17 +341,17 @@ sortedChapters.forEach((ch) => {
     transition: color 0.2s ease;
   }
   .toc-chap-summary:hover {
-    color: #e5a93b;
+    color: var(--color-mountain-accent, #c48c3b);
   }
 
   .toc-arrow {
     font-size: 0.75rem;
-    color: #8c8173;
+    color: var(--color-ink-grey, #5c5c5c);
     transition: transform 0.2s ease;
   }
   details[open] > summary > .toc-arrow {
     transform: rotate(90deg);
-    color: #e5a93b;
+    color: var(--color-mountain-accent, #c48c3b);
   }
 
   /* Section 節 */
@@ -365,7 +370,7 @@ sortedChapters.forEach((ch) => {
     gap: 8px;
     padding: 5px 8px;
     font-size: 0.82rem;
-    color: #9e9383;
+    color: var(--color-ink-grey, #5c5c5c);
     text-decoration: none;
     border-radius: 4px;
     transition: all 0.2s ease;
@@ -375,74 +380,74 @@ sortedChapters.forEach((ch) => {
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: #554a3e;
+    background: var(--color-border, #e6dfcc);
     flex-shrink: 0;
     transition: all 0.2s ease;
   }
 
   .toc-section-link:hover {
-    background: rgba(229, 169, 59, 0.12);
-    color: #f5eedb;
+    background: rgba(196, 140, 59, 0.08);
+    color: var(--color-ink-black, #1a1a1a);
   }
   .toc-section-link:hover .sec-dot {
-    background: #e5a93b;
+    background: var(--color-mountain-accent, #c48c3b);
   }
 
   /* 當前正在閱讀之小節高亮 */
   .toc-section-link.active {
-    background: rgba(229, 169, 59, 0.22);
-    color: #ffda73;
+    background: rgba(196, 140, 59, 0.12);
+    color: var(--color-mountain-accent, #c48c3b);
     font-weight: bold;
-    border-left: 2px solid #e5a93b;
+    border-left: 3px solid var(--color-mountain-accent, #c48c3b);
   }
   .toc-section-link.active .sec-dot {
-    background: #ffda73;
-    box-shadow: 0 0 8px #ffda73;
+    background: var(--color-mountain-accent, #c48c3b);
+    box-shadow: 0 0 6px rgba(196, 140, 59, 0.6);
   }
 
-  /* 宣紙/明亮主題相容 */
-  :global(body.theme-rice-paper) .novel-toc-container {
-    background: rgba(247, 243, 235, 0.98);
-    border-color: #d6ccbe;
-    color: #3b322a;
-    box-shadow: 0 8px 24px rgba(44, 37, 32, 0.12);
+  /* 深色閱讀器主題下的適配 */
+  :global(body.theme-dark) .novel-toc-container {
+    background: rgba(26, 26, 32, 0.95);
+    border-color: #332d27;
+    color: #ded6cd;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
   }
-  :global(body.theme-rice-paper) .toc-toolbar {
-    border-bottom-color: #dfd5c7;
+  :global(body.theme-dark) .toc-toolbar {
+    border-bottom-color: #3e362e;
   }
-  :global(body.theme-rice-paper) .toc-title {
-    color: #8c2d19;
+  :global(body.theme-dark) .toc-title {
+    color: #e5a93b;
   }
-  :global(body.theme-rice-paper) .toc-tool-btn {
-    background: #ebe4d8;
-    border-color: #cfc4b4;
-    color: #5c4e42;
+  :global(body.theme-dark) .toc-tool-btn {
+    background: #252220;
+    border-color: #443c33;
+    color: #a89f91;
   }
-  :global(body.theme-rice-paper) .toc-part {
-    background: #faf7f2;
-    border-color: #e3dacf;
+  :global(body.theme-dark) .toc-part {
+    background: rgba(36, 32, 28, 0.6);
+    border-color: #2e2822;
   }
-  :global(body.theme-rice-paper) .toc-part-summary {
-    background: #eee7db;
-    color: #2b231d;
+  :global(body.theme-dark) .toc-part-summary {
+    background: #26211c;
+    color: #f0e6da;
   }
-  :global(body.theme-rice-paper) .toc-vol-summary {
-    color: #4a3e34;
+  :global(body.theme-dark) .toc-vol-summary {
+    color: #d1c5b4;
   }
-  :global(body.theme-rice-paper) .toc-chap-summary {
-    color: #635548;
+  :global(body.theme-dark) .toc-chap-summary {
+    color: #b5a999;
   }
-  :global(body.theme-rice-paper) .toc-section-link {
-    color: #6b5c4f;
+  :global(body.theme-dark) .toc-section-link {
+    color: #9e9383;
   }
-  :global(body.theme-rice-paper) .toc-section-link.active {
-    background: rgba(140, 45, 25, 0.12);
-    color: #8c2d19;
-    border-left-color: #8c2d19;
+  :global(body.theme-dark) .toc-section-link.active {
+    background: rgba(229, 169, 59, 0.22);
+    color: #ffda73;
+    border-left-color: #e5a93b;
   }
-  :global(body.theme-rice-paper) .toc-section-link.active .sec-dot {
-    background: #8c2d19;
-    box-shadow: 0 0 6px #8c2d19;
+  :global(body.theme-dark) .toc-section-link.active .sec-dot {
+    background: #ffda73;
+    box-shadow: 0 0 8px #ffda73;
   }
 </style>
 

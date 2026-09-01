@@ -55,7 +55,7 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     <header class="reader-header">
       <div class="header-left">
         <button type="button" class="tool-btn toggle-toc-btn" id="toggle-toc-drawer" aria-label="切換目錄">
-          <span class="btn-icon">📜</span>
+          <span class="btn-icon">❖</span>
           <span class="btn-label">目錄</span>
         </button>
 
@@ -73,8 +73,8 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
       <div class="header-right">
         <!-- 主題切換按鈕 -->
         <div class="theme-switch-group">
-          <button type="button" class="theme-btn active" data-theme="dark" title="深邃夜讀 (預設)">夜讀</button>
-          <button type="button" class="theme-btn" data-theme="rice-paper" title="仿古宣紙">宣紙</button>
+          <button type="button" class="theme-btn active" data-theme="rice-paper" title="仿古宣紙 (預設)">宣紙</button>
+          <button type="button" class="theme-btn" data-theme="dark" title="深邃夜讀">夜讀</button>
           <button type="button" class="theme-btn" data-theme="eyecare" title="溫潤護眼">護眼</button>
           <button type="button" class="theme-btn" data-theme="light" title="素雅純白">明亮</button>
         </div>
@@ -551,7 +551,7 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
 
     // 2. 主題切換持久化
     const themeButtons = document.querySelectorAll('.theme-btn');
-    const savedTheme = localStorage.getItem('novel_reader_theme') || 'dark';
+    const savedTheme = localStorage.getItem('novel_reader_theme') || 'rice-paper';
     applyTheme(savedTheme);
 
     themeButtons.forEach(btn => {
