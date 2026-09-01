@@ -683,10 +683,17 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     color: #e5a93b;
     font-size: 0.95rem;
   }
+  .sentinel-loader.hidden {
+    display: none !important;
+  }
   .sentinel-end {
+    display: block;
     color: #736758;
     font-size: 0.9rem;
     letter-spacing: 2px;
+  }
+  .sentinel-end.hidden {
+    display: none !important;
   }
 
   .ink-spinner {
@@ -925,6 +932,8 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
           if (lastIndex + 1 >= data.length - 1) {
             isAllLoaded = true;
             if (sentinelEnd) sentinelEnd.classList.remove('hidden');
+            if (sentinelLoader) sentinelLoader.classList.add('hidden');
+            if (sentinel && sentinelObserver) sentinelObserver.unobserve(sentinel);
           }
         }
       } catch (err) {
