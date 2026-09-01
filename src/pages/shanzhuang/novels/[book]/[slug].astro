@@ -53,8 +53,11 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
   ]}
 >
   <div class="novel-reader-wrapper" id="reader-wrapper" data-book={book.slug} data-current-slug={chapter.slug}>
-    <!-- 頂部浮動控制工具列 -->
-    <header class="reader-header">
+    <!-- 頂部滑鼠感應觸發區 -->
+    <div class="header-hover-trigger" id="header-hover-trigger"></div>
+
+    <!-- 頂部智慧懸浮控制工具列 (預設隱藏，滑鼠靠近或向上滾動時顯示) -->
+    <header class="reader-header" id="reader-header">
       <div class="header-left">
         <button type="button" class="tool-btn toggle-toc-btn" id="toggle-toc-drawer" aria-label="切換目錄">
           <span class="btn-icon">❖</span>
@@ -181,19 +184,44 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     transition: background-color 0.3s ease, color 0.3s ease;
   }
 
-  /* 頂部固定控制列（預設宣紙水墨） */
-  .reader-header {
-    position: sticky;
+  /* 頂部滑鼠感應觸發區 (靠近螢幕頂端 50px 自動滑出工具列) */
+  .header-hover-trigger {
+    position: fixed;
     top: 0;
-    z-index: 90;
+    left: 0;
+    width: 100%;
+    height: 50px;
+    z-index: 989;
+    pointer-events: auto;
+  }
+
+  /* 頂部智慧懸浮控制列（預設隱藏，滑鼠懸浮或向上滾動時顯示） */
+  .reader-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 990;
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 10px 24px;
-    background: rgba(253, 252, 247, 0.96);
+    background: rgba(253, 252, 247, 0.98);
     border-bottom: 1px solid var(--color-border, #e6dfcc);
     backdrop-filter: blur(12px);
-    box-shadow: 0 2px 12px rgba(44, 37, 32, 0.05);
+    box-shadow: 0 4px 16px rgba(44, 37, 32, 0.08);
+    transform: translateY(-100%);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+  }
+
+  .reader-header.visible,
+  .reader-header:hover,
+  .header-hover-trigger:hover + .reader-header {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
   }
 
   .header-left, .header-right {
@@ -288,15 +316,16 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     font-weight: bold;
   }
 
-  /* 進度指示條 */
+  /* 進度指示條 (釘在螢幕最頂端 3px，永不遮擋) */
   .reading-progress-bar-container {
-    position: sticky;
-    top: 49px;
+    position: fixed;
+    top: 0;
     left: 0;
     width: 100%;
     height: 3px;
     background: transparent;
-    z-index: 91;
+    z-index: 995;
+    pointer-events: none;
   }
   .reading-progress-bar {
     height: 100%;
@@ -663,29 +692,9 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     to { transform: rotate(360deg); }
   }
 
-  /* 翻頁備援按鈕 */
+  /* 翻頁備援按鈕 (無縫滾動啟用時隱藏) */
   .fallback-chapter-nav {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 40px;
-    padding-top: 20px;
-    border-top: 1px solid #332b23;
-  }
-  .nav-btn {
-    font-size: 0.9rem;
-    color: #b5a897;
-    text-decoration: none;
-    padding: 8px 16px;
-    background: #24201b;
-    border: 1px solid #3d3429;
-    border-radius: 6px;
-    transition: all 0.2s ease;
-  }
-  .nav-btn:hover {
-    background: #332b23;
-    color: #e5a93b;
-    border-color: #e5a93b;
+    display: none !important;
   }
 </style>
 
@@ -698,26 +707,76 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     const initialSlug = wrapper.getAttribute('data-current-slug');
     const baseUrl = document.querySelector('meta[name="base-url"]')?.getAttribute('content') || '/';
 
-    // 1. 抽屜式目錄開關
+    // 1. 頂部智慧懸浮控制列 (滑鼠移至上方或向上滾動時顯示)
+    const readerHeader = document.getElementById('reader-header');
+    const hoverTrigger = document.getElementById('header-hover-trigger');
+    let hideHeaderTimer = null;
+    let lastScrollY = window.scrollY;
+    let isDrawerOpen = false;
+
+    function showHeader() {
+      if (hideHeaderTimer) clearTimeout(hideHeaderTimer);
+      if (readerHeader) readerHeader.classList.add('visible');
+    }
+
+    function scheduleHideHeader(delay = 2500) {
+      if (isDrawerOpen) return;
+      if (hideHeaderTimer) clearTimeout(hideHeaderTimer);
+      hideHeaderTimer = setTimeout(() => {
+        if (!isDrawerOpen && readerHeader && !readerHeader.matches(':hover')) {
+          readerHeader.classList.remove('visible');
+        }
+      }, delay);
+    }
+
+    // 初始先短暫顯示 2 秒讓讀者知道有工具列，隨後自動收起
+    showHeader();
+    scheduleHideHeader(2000);
+
+    // 滑鼠移到螢幕頂部 50px 範圍內喚醒
+    window.addEventListener('mousemove', (e) => {
+      if (e.clientY <= 55) {
+        showHeader();
+      } else if (e.clientY > 90) {
+        scheduleHideHeader(2000);
+      }
+    });
+
+    if (readerHeader) {
+      readerHeader.addEventListener('mouseenter', showHeader);
+      readerHeader.addEventListener('mouseleave', () => scheduleHideHeader(1500));
+    }
+
+    if (hoverTrigger) {
+      hoverTrigger.addEventListener('mouseenter', showHeader);
+    }
+
+    // 2. 抽屜式目錄開關
     const tocDrawer = document.getElementById('toc-drawer');
     const tocOverlay = document.getElementById('toc-drawer-overlay');
     const toggleTocBtn = document.getElementById('toggle-toc-btn') || document.getElementById('toggle-toc-drawer');
     const closeTocBtn = document.getElementById('toc-drawer-close');
 
     function openDrawer() {
+      isDrawerOpen = true;
+      showHeader();
       if (tocDrawer) tocDrawer.classList.remove('hidden');
       if (tocOverlay) tocOverlay.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
     }
     function closeDrawer() {
+      isDrawerOpen = false;
       if (tocDrawer) tocDrawer.classList.add('hidden');
       if (tocOverlay) tocOverlay.classList.add('hidden');
+      document.body.style.overflow = '';
+      scheduleHideHeader(1500);
     }
 
     if (toggleTocBtn) toggleTocBtn.addEventListener('click', openDrawer);
     if (closeTocBtn) closeTocBtn.addEventListener('click', closeDrawer);
     if (tocOverlay) tocOverlay.addEventListener('click', closeDrawer);
 
-    // 2. 主題切換持久化
+    // 3. 主題切換持久化
     const themeButtons = document.querySelectorAll('.theme-btn');
     const savedTheme = localStorage.getItem('novel_reader_theme') || 'rice-paper';
     applyTheme(savedTheme);
@@ -740,7 +799,7 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
       });
     }
 
-    // 3. 字體縮放持久化
+    // 4. 字體縮放持久化
     const fontDecrease = document.getElementById('font-decrease');
     const fontIncrease = document.getElementById('font-increase');
     let currentFontSize = parseFloat(localStorage.getItem('novel_reader_fontsize') || '1.15');
@@ -769,18 +828,31 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
       });
     }
 
-    // 4. 滾動進度條與歷史段落記憶
+    // 5. 滾動進度條、向上滾動喚醒 Header 與歷史段落記憶
     const progressBar = document.getElementById('reading-progress-bar');
     window.addEventListener('scroll', () => {
-      const winScroll = document.documentElement.scrollTop || document.body.scrollTop;
+      const currentScrollY = window.scrollY || document.documentElement.scrollTop;
+      const scrollDiff = currentScrollY - lastScrollY;
+
+      // 向上滾動超過 8px 且不在頂部時喚醒 Header，向下滾動超過 15px 時收起 Header
+      if (scrollDiff < -8) {
+        showHeader();
+        scheduleHideHeader(3000);
+      } else if (scrollDiff > 15 && currentScrollY > 100) {
+        if (!readerHeader?.matches(':hover') && !isDrawerOpen) {
+          readerHeader?.classList.remove('visible');
+        }
+      }
+      lastScrollY = currentScrollY;
+
       const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
       if (height > 0 && progressBar) {
-        const scrolled = (winScroll / height) * 100;
+        const scrolled = (currentScrollY / height) * 100;
         progressBar.style.width = `${scrolled}%`;
       }
     });
 
-    // 5. 無縫滾動加載 (Continuous Infinite Scroll)
+    // 6. 無縫滾動加載 (Continuous Infinite Scroll)
     let allChaptersData = null;
     let loadedSlugs = new Set([initialSlug]);
     let isLoadingNext = false;
@@ -793,38 +865,53 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
 
     // 預載全書章節清單
     async function loadBookData() {
+      if (allChaptersData) return allChaptersData;
       try {
-        const res = await fetch(`${baseUrl}shanzhuang/novels/${bookSlug}/chapters.json`.replace(/\/+/g, '/'));
+        const cleanBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+        const fetchUrl = `${cleanBase}shanzhuang/novels/${bookSlug}/chapters.json`.replace(/([^:]\/)\/+/g, '$1');
+        const res = await fetch(fetchUrl);
         if (res.ok) {
           const json = await res.json();
           allChaptersData = json.chapters || [];
+          return allChaptersData;
         }
       } catch (e) {
         console.error('Failed to preload chapters:', e);
       }
+      return null;
     }
     loadBookData();
 
     async function loadNextChapter() {
-      if (isLoadingNext || isAllLoaded || !allChaptersData) return;
-      
-      const lastSlug = Array.from(loadedSlugs)[loadedSlugs.size - 1];
-      const lastIndex = allChaptersData.findIndex(c => c.slug === lastSlug);
-      
-      if (lastIndex === -1 || lastIndex >= allChaptersData.length - 1) {
-        isAllLoaded = true;
-        if (sentinelEnd) sentinelEnd.classList.remove('hidden');
-        if (sentinelLoader) sentinelLoader.classList.add('hidden');
-        return;
-      }
-
-      const nextData = allChaptersData[lastIndex + 1];
-      if (loadedSlugs.has(nextData.slug)) return;
-
+      if (isLoadingNext || isAllLoaded) return;
       isLoadingNext = true;
       if (sentinelLoader) sentinelLoader.classList.remove('hidden');
 
       try {
+        const data = await loadBookData();
+        if (!data || data.length === 0) {
+          isLoadingNext = false;
+          if (sentinelLoader) sentinelLoader.classList.add('hidden');
+          return;
+        }
+
+        const lastSlug = Array.from(loadedSlugs)[loadedSlugs.size - 1];
+        const lastIndex = data.findIndex(c => c.slug === lastSlug);
+
+        if (lastIndex === -1 || lastIndex >= data.length - 1) {
+          isAllLoaded = true;
+          if (sentinelEnd) sentinelEnd.classList.remove('hidden');
+          if (sentinelLoader) sentinelLoader.classList.add('hidden');
+          return;
+        }
+
+        const nextData = data[lastIndex + 1];
+        if (loadedSlugs.has(nextData.slug)) {
+          isLoadingNext = false;
+          if (sentinelLoader) sentinelLoader.classList.add('hidden');
+          return;
+        }
+
         // 構建新小節 DOM
         const article = document.createElement('article');
         article.className = 'chapter-article';
@@ -833,20 +920,33 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
         article.setAttribute('data-title', nextData.title);
         article.setAttribute('data-order', nextData.order);
 
-        const vTitle = nextData.volume?.title || `第${nextData.volume?.number || 1}卷`;
-        const cTitle = nextData.chapter?.title || `第${nextData.chapter?.number || 1}章`;
+        const vTitle = nextData.volume?.title || (nextData.volume?.number ? `第${nextData.volume.number}卷` : '');
+        const cTitle = nextData.chapter?.title || (nextData.chapter?.number ? `第${nextData.chapter.number}章` : '');
         const sTitle = nextData.section?.title || nextData.title;
+        const badgeText = [vTitle, cTitle, sTitle].filter(Boolean).join(' · ');
 
-        // 分隔線與標題
+        // Markdown 轉換為優雅段落
+        const bodyHtml = nextData.body
+          ? nextData.body.split(/\n\n+/).filter(p => p.trim()).map(p => {
+              const cleanP = p.trim();
+              if (cleanP.startsWith('### ')) return `<h3>${cleanP.slice(4)}</h3>`;
+              if (cleanP.startsWith('## ')) return `<h2>${cleanP.slice(3)}</h2>`;
+              return `<p>${cleanP}</p>`;
+            }).join('')
+          : '';
+
         article.innerHTML = `
           <div class="section-divider">
-            <span>❖ ${vTitle} · ${cTitle} · ${sTitle} ❖</span>
+            <span>❖ ${badgeText || nextData.title} ❖</span>
           </div>
           <header class="section-header">
+            <div class="section-hierarchy-badge">
+              <span>${badgeText}</span>
+            </div>
             <h2 class="section-main-title">${nextData.title}</h2>
           </header>
           <div class="novel-body markdown-body prose prose-invert">
-            ${nextData.body.split('\n\n').filter(p => p.trim()).map(p => `<p>${p.trim()}</p>`).join('')}
+            ${bodyHtml}
           </div>
         `;
 
@@ -865,6 +965,12 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
 
           // 監聽新章節的可視性
           observeChapter(article);
+
+          // 檢查是否已是全書最後一小節
+          if (lastIndex + 1 >= data.length - 1) {
+            isAllLoaded = true;
+            if (sentinelEnd) sentinelEnd.classList.remove('hidden');
+          }
         }
       } catch (err) {
         console.error('Error loading next chapter:', err);
@@ -881,7 +987,7 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
           loadNextChapter();
         }
       });
-    }, { rootMargin: '400px' });
+    }, { rootMargin: '300px' });
 
     if (sentinel) sentinelObserver.observe(sentinel);
 
@@ -893,7 +999,8 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
           const targetTitle = entry.target.getAttribute('data-title');
           if (targetSlug) {
             // 動態替換網址列 (不污染歷史堆疊)
-            const newUrl = `${baseUrl}shanzhuang/novels/${bookSlug}/${targetSlug}/`.replace(/\/+/g, '/');
+            const cleanBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+            const newUrl = `${cleanBase}shanzhuang/novels/${bookSlug}/${targetSlug}/`.replace(/([^:]\/)\/+/g, '$1');
             window.history.replaceState({ slug: targetSlug }, '', newUrl);
             document.title = `${targetTitle} · ${bookSlug} | 晚餐後的書桌`;
 
