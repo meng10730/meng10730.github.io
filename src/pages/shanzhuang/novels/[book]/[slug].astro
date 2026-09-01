@@ -25,17 +25,55 @@ export async function getStaticPaths() {
 const { chapter, book, allChapters = [] } = Astro.props;
 const baseUrl = import.meta.env.BASE_URL;
 
-const { Content } = await chapter.render();
-
 // 依 order 排序章節清單
 const sortedChapters = [...allChapters].sort((a: any, b: any) => (a.data.order || 0) - (b.data.order || 0));
-const currentIndex = sortedChapters.findIndex(c => c.slug === chapter.slug);
-const prevChapter = currentIndex > 0 ? sortedChapters[currentIndex - 1] : null;
-const nextChapter = currentIndex < sortedChapters.length - 1 ? sortedChapters[currentIndex + 1] : null;
 
-const partTitle = chapter.data.part?.title || `第${chapter.data.part?.number || 1}部`;
-const volTitle = chapter.data.volume?.title || `第${chapter.data.volume?.number || 1}卷`;
-const chapTitle = chapter.data.chapter?.title || `第${chapter.data.chapter?.number || 1}章`;
+const curPartNum = chapter.data.part?.number || 1;
+const curVolNum = chapter.data.volume?.number || 1;
+const curChapNum = chapter.data.chapter?.number || 1;
+
+// 1. 篩選出屬於「當前章（Chapter）」的所有小節（已按 order 排序，同章內連貫閱讀）
+const currentChapterSections = sortedChapters.filter(c => 
+  (c.data.part?.number || 1) === curPartNum &&
+  (c.data.volume?.number || 1) === curVolNum &&
+  (c.data.chapter?.number || 1) === curChapNum
+);
+
+// 2. 預先渲染當前章內的所有小節
+const renderedSections = await Promise.all(
+  currentChapterSections.map(async (sec) => {
+    const { Content: SecContent } = await sec.render();
+    return {
+      sec,
+      SecContent,
+    };
+  })
+);
+
+// 3. 聚合計算所有不重複的「章（Chapter）」代表節（以每章的第一節為換章跳轉入口）
+const chapterGroups: typeof sortedChapters = [];
+const seenChapKeys = new Set<string>();
+
+for (const c of sortedChapters) {
+  const key = `${c.data.part?.number || 1}-${c.data.volume?.number || 1}-${c.data.chapter?.number || 1}`;
+  if (!seenChapKeys.has(key)) {
+    seenChapKeys.add(key);
+    chapterGroups.push(c);
+  }
+}
+
+const currentChapGroupIndex = chapterGroups.findIndex(c => 
+  (c.data.part?.number || 1) === curPartNum &&
+  (c.data.volume?.number || 1) === curVolNum &&
+  (c.data.chapter?.number || 1) === curChapNum
+);
+
+const prevChapter = currentChapGroupIndex > 0 ? chapterGroups[currentChapGroupIndex - 1] : null;
+const nextChapter = currentChapGroupIndex < chapterGroups.length - 1 ? chapterGroups[currentChapGroupIndex + 1] : null;
+
+const partTitle = chapter.data.part?.title || `第${curPartNum}部`;
+const volTitle = chapter.data.volume?.title || `第${curVolNum}卷`;
+const chapTitle = chapter.data.chapter?.title || `第${curChapNum}章`;
 const secTitle = chapter.data.section?.title || chapter.data.title;
 ---
 
@@ -111,35 +149,50 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
       </aside>
       <div class="drawer-overlay" id="toc-drawer-overlay"></div>
 
-      <!-- 中央正文閱讀串流容器 (支援向下連續滾動加載) -->
+      <!-- 中央正文閱讀串流容器 (同章內所有小節連貫排版) -->
       <main class="reader-main-content">
         <div id="chapters-stream-container" class="chapters-stream">
-          <!-- 初始第一小節 (SSR 渲染) -->
-          <article class="chapter-article current-section" id={`chapter-${chapter.slug}`} data-slug={chapter.slug} data-title={chapter.data.title} data-order={chapter.data.order}>
-            <header class="section-header">
-              <div class="section-hierarchy-badge">
-                <span>{partTitle}</span> · <span>{volTitle}</span> · <span>{chapTitle}</span>
-              </div>
-              <h1 class="section-main-title">{chapter.data.title}</h1>
-              <div class="section-meta-info">
-                <span>字數約 {chapter.body ? chapter.body.length : 0} 字</span>
-                {chapter.data.pubDate && (
-                  <span>發布於 {new Date(chapter.data.pubDate).toLocaleDateString('zh-TW')}</span>
-                )}
-              </div>
-            </header>
+          {renderedSections.map(({ sec, SecContent }, idx) => (
+            <article 
+              class={`chapter-article ${sec.slug === chapter.slug ? 'current-section' : ''}`} 
+              id={`section-${sec.slug}`} 
+              data-slug={sec.slug} 
+              data-title={sec.data.title} 
+              data-order={sec.data.order}
+            >
+              {idx > 0 && (
+                <div class="section-divider">
+                  <span>❖ {sec.data.section?.title || sec.data.title} ❖</span>
+                </div>
+              )}
 
-            <div class="novel-body markdown-body prose prose-invert">
-              <Content />
-            </div>
-          </article>
+              <header class="section-header">
+                {idx === 0 && (
+                  <div class="section-hierarchy-badge">
+                    <span>{partTitle}</span> · <span>{volTitle}</span> · <span>{chapTitle}</span>
+                  </div>
+                )}
+                <h1 class="section-main-title">{idx === 0 ? chapTitle : (sec.data.section?.title || sec.data.title)}</h1>
+                <div class="section-meta-info">
+                  <span>字數約 {sec.body ? sec.body.length : 0} 字</span>
+                  {sec.data.pubDate && (
+                    <span>發布於 {new Date(sec.data.pubDate).toLocaleDateString('zh-TW')}</span>
+                  )}
+                </div>
+              </header>
+
+              <div class="novel-body markdown-body prose prose-invert">
+                <SecContent />
+              </div>
+            </article>
+          ))}
         </div>
 
-        <!-- 章節讀畢裝飾標誌 -->
+        <!-- 整章讀畢裝飾標誌 (整章所有小節閱讀完畢後才出現) -->
         <div class="chapter-end-decoration">
           {nextChapter ? (
             <div class="status-divider">
-              <span>❖ 本章讀畢 ❖</span>
+              <span>❖ {chapTitle} 讀畢 ❖</span>
             </div>
           ) : (
             <div class="status-divider finished">
@@ -148,12 +201,12 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
           )}
         </div>
 
-        <!-- 底部手動三鍵式換章導航列 -->
+        <!-- 底部手動三鍵式換章導航列 (章與章之間翻頁) -->
         <nav class="chapter-bottom-nav" aria-label="章節翻頁導航">
           {prevChapter ? (
-            <a href={`${baseUrl}shanzhuang/novels/${book.slug}/${prevChapter.slug}/`} class="nav-chapter-btn prev-chapter" id="nav-prev-link" rel="prev" title={`上一章：${prevChapter.data.title} (按 ← 鍵)`}>
+            <a href={`${baseUrl}shanzhuang/novels/${book.slug}/${prevChapter.slug}/`} class="nav-chapter-btn prev-chapter" id="nav-prev-link" rel="prev" title={`上一章：${prevChapter.data.chapter?.title || prevChapter.data.title} (按 ← 鍵)`}>
               <span class="btn-subtext">← 上一章</span>
-              <span class="btn-maintext">{prevChapter.data.title}</span>
+              <span class="btn-maintext">{prevChapter.data.chapter?.title || prevChapter.data.title}</span>
             </a>
           ) : (
             <div class="nav-chapter-btn disabled">
@@ -168,9 +221,9 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
           </a>
 
           {nextChapter ? (
-            <a href={`${baseUrl}shanzhuang/novels/${book.slug}/${nextChapter.slug}/`} class="nav-chapter-btn next-chapter" id="nav-next-link" rel="next" data-astro-prefetch title={`下一章：${nextChapter.data.title} (按 → 鍵)`}>
+            <a href={`${baseUrl}shanzhuang/novels/${book.slug}/${nextChapter.slug}/`} class="nav-chapter-btn next-chapter" id="nav-next-link" rel="next" data-astro-prefetch title={`下一章：${nextChapter.data.chapter?.title || nextChapter.data.title} (按 → 鍵)`}>
               <span class="btn-subtext">下一章 →</span>
-              <span class="btn-maintext">{nextChapter.data.title}</span>
+              <span class="btn-maintext">{nextChapter.data.chapter?.title || nextChapter.data.title}</span>
             </a>
           ) : (
             <a href={`${baseUrl}shanzhuang/novels/${book.slug}/`} class="nav-chapter-btn finished-chapter" title="返回小說總覽">
@@ -941,30 +994,52 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
       }
     });
 
-    // 6. 專有名詞識別觸發 (若是初次進入或切換章節)
-    const currentArticle = document.querySelector('.chapter-article');
-    if (currentArticle && (window as any).refreshGlossaryTerms) {
-      (window as any).refreshGlossaryTerms(currentArticle);
-    }
-
-    // 7. 儲存至 LocalStorage 閱讀進度
-    if (bookSlug && initialSlug) {
-      const currentTitle = document.querySelector('.section-main-title')?.textContent || '';
-      localStorage.setItem(`novel_progress_${bookSlug}`, JSON.stringify({
-        slug: initialSlug,
-        title: currentTitle,
-        timestamp: Date.now()
-      }));
-    }
-
-    // 8. 側邊目錄目前章節 Active 狀態更新
-    document.querySelectorAll('.toc-section-link').forEach(link => {
-      const isActive = link.getAttribute('data-slug') === initialSlug;
-      link.classList.toggle('active', isActive);
-      if (isActive) {
-        const detailsParent = link.closest('details');
-        if (detailsParent) detailsParent.open = true;
+    // 6. 專有名詞識別觸發 (對當前章的所有小節進行掃描)
+    document.querySelectorAll('.chapter-article').forEach(article => {
+      if ((window as any).refreshGlossaryTerms) {
+        (window as any).refreshGlossaryTerms(article);
       }
+    });
+
+    // 7. 初始小節定位 (若讀者點擊了特定小節進入)
+    if (initialSlug) {
+      const targetSecEl = document.getElementById(`section-${initialSlug}`);
+      if (targetSecEl && targetSecEl !== document.querySelector('.chapter-article')) {
+        targetSecEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+
+    // 8. 側邊目錄目前小節 Active 狀態監聽與進度記錄
+    const sectionObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const activeSlug = entry.target.getAttribute('data-slug');
+          const activeTitle = entry.target.getAttribute('data-title') || '';
+          if (activeSlug) {
+            document.querySelectorAll('.toc-section-link').forEach(link => {
+              const isActive = link.getAttribute('data-slug') === activeSlug;
+              link.classList.toggle('active', isActive);
+              if (isActive) {
+                const detailsParent = link.closest('details');
+                if (detailsParent) detailsParent.open = true;
+              }
+            });
+
+            // 記錄至 LocalStorage
+            if (bookSlug) {
+              localStorage.setItem(`novel_progress_${bookSlug}`, JSON.stringify({
+                slug: activeSlug,
+                title: activeTitle,
+                timestamp: Date.now()
+              }));
+            }
+          }
+        }
+      });
+    }, { threshold: 0.2 });
+
+    document.querySelectorAll('.chapter-article').forEach(article => {
+      sectionObserver.observe(article);
     });
   }
 
