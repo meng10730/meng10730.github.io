@@ -2578,6 +2578,12 @@ class MainWindow(QMainWindow):
         except Exception as e:
             files = []
             self.log(f"⚠️ 無法取得 Git 狀態: {e}")
+
+        # 若無任何新變更，直接提示無需重複發布
+        if not files:
+            self.log("ℹ️ 檢查完畢：目前沒有任何新增或修改的內容，所有檔案皆已是最新狀態。")
+            QMessageBox.information(self, "目前無新內容", "ℹ️ 目前沒有任何新增或修改的內容，所有章節與設定皆已是最新狀態，無需重複發布！")
+            return
             
         dialog = PublishDialog(files, self)
         if dialog.exec() == QDialog.Accepted:
@@ -2626,14 +2632,16 @@ class MainWindow(QMainWindow):
             if success:
                 self.refresh_file_list()
                 if hasattr(self, "tray_icon") and self.tray_icon.isSystemTrayAvailable():
-                    self.tray_icon.showMessage("網站發布完成", "網站發布完成", QSystemTrayIcon.Information, 3000)
+                    self.tray_icon.showMessage("本地推送完成", "正在監控 GitHub 雲端部署進度...", QSystemTrayIcon.Information, 3000)
+                # 啟動 GitHub Actions 實時雲端進度監控
+                self.start_github_actions_monitor()
 
         def step_push():
             self.log("🚀 正在將代碼推送到 GitHub 儲存庫...")
             self.progress_bar.setValue(75)
             self.run_git_process(
                 ["push"],
-                "🎉 網站發布成功！已順利上傳至線上個人網站。",
+                "✓ 本地代碼已成功推送到 GitHub！正在啟動雲端部署監聽...",
                 "❌ 發布推送失敗！可能是遠端有更新，請先點擊「同步線上編輯」按鈕。",
                 on_finish=lambda: finish_publish(True),
                 on_error_finish=lambda: finish_publish(False)
@@ -2667,6 +2675,62 @@ class MainWindow(QMainWindow):
             "❌ Git 暫存失敗！",
             on_error_finish=lambda: finish_publish(False)
         )
+
+    def start_github_actions_monitor(self):
+        """在背景實時輪詢 GitHub Actions 雲端部署進度並輸出至控制台日誌"""
+        self.log("📡 正在即時監聽 GitHub Actions 雲端部署進度...")
+        self.actions_poll_count = 0
+        self.last_actions_status = None
+
+        if hasattr(self, "actions_timer") and self.actions_timer.isActive():
+            self.actions_timer.stop()
+
+        self.actions_timer = QTimer(self)
+        self.actions_timer.setInterval(4000)  # 每 4 秒自動檢查一次
+        self.actions_timer.timeout.connect(self.check_github_actions_status)
+        self.actions_timer.start()
+
+    def check_github_actions_status(self):
+        self.actions_poll_count += 1
+        if self.actions_poll_count > 45:  # 超過 3 分鐘自動停止輪詢
+            self.actions_timer.stop()
+            self.log("⏱️ GitHub Actions 監聽已逾時（雲端仍在背景執行中，請稍候重整網站）。")
+            return
+
+        import urllib.request
+        import json
+        api_url = "https://api.github.com/repos/meng10730/meng10730.github.io/actions/runs?per_page=1"
+        try:
+            req = urllib.request.Request(api_url, headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+                "Accept": "application/vnd.github.v3+json"
+            })
+            with urllib.request.urlopen(req, timeout=3.5) as response:
+                if response.status == 200:
+                    data = json.loads(response.read().decode("utf-8"))
+                    runs = data.get("workflow_runs", [])
+                    if runs:
+                        latest_run = runs[0]
+                        status = latest_run.get("status")         # queued, in_progress, completed
+                        conclusion = latest_run.get("conclusion") # success, failure, etc.
+                        run_name = latest_run.get("name", "Deploy to GitHub Pages")
+
+                        current_state = f"{status}:{conclusion}"
+                        if current_state != self.last_actions_status:
+                            self.last_actions_status = current_state
+                            if status == "queued":
+                                self.log(f"⏳ [GitHub 雲端] 部署任務「{run_name}」已進入排隊中 (Queued)...")
+                            elif status == "in_progress":
+                                self.log(f"⚙️ [GitHub 雲端] 正在自動構建與部署網站 (Building & Deploying)...")
+                            elif status == "completed":
+                                self.actions_timer.stop()
+                                if conclusion == "success":
+                                    self.log(f"🎉 [GitHub 雲端] 部署成功！網站已順利發布上線！")
+                                    QMessageBox.information(self, "發布成功", "🎉 網站已成功發布上線！")
+                                else:
+                                    self.log(f"❌ [GitHub 雲端] 部署失敗 (結論: {conclusion})，請檢視 GitHub 倉庫日誌。")
+        except Exception:
+            pass
 
     def run_git_process(self, args, on_success, on_error, next_on_error=False, on_finish=None, on_error_finish=None):
         proc = QProcess(self)
