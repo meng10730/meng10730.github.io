@@ -100,7 +100,7 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     <!-- 主體內容區塊：左側折疊抽屜 + 中央閱讀本文 -->
     <div class="reader-body-layout">
       <!-- 左側五層折疊目錄抽屜（預設收起） -->
-      <aside class="toc-drawer hidden" id="toc-drawer">
+      <aside class="toc-drawer" id="toc-drawer">
         <div class="drawer-header">
           <span class="drawer-title">❖ {book.data.title} 目錄 ❖</span>
           <button type="button" class="drawer-close-btn" id="toc-drawer-close">✕</button>
@@ -109,7 +109,7 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
           <NovelReaderTOC bookSlug={book.slug} currentSlug={chapter.slug} chapters={sortedChapters} compact={true} />
         </div>
       </aside>
-      <div class="drawer-overlay hidden" id="toc-drawer-overlay"></div>
+      <div class="drawer-overlay" id="toc-drawer-overlay"></div>
 
       <!-- 中央正文閱讀串流容器 (支援向下連續滾動加載) -->
       <main class="reader-main-content">
@@ -342,7 +342,7 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     padding: 40px 20px 80px;
   }
 
-  /* 左側五層目錄抽屜 (Drawer - 頂部對齊雙行橫條下方，絕不被全站 Header 遮擋) */
+  /* 左側五層目錄抽屜 (預設收起在左側視窗外，打開時加 .open，絕不閃現) */
   .toc-drawer {
     position: fixed;
     top: 145px; /* 65px site-header + ~80px sub-header */
@@ -355,11 +355,15 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     box-shadow: 4px 4px 24px rgba(44, 37, 32, 0.15);
     display: flex;
     flex-direction: column;
-    transform: translateX(0);
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  .toc-drawer.hidden {
     transform: translateX(-100%);
+    visibility: hidden;
+    pointer-events: none;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.3s ease;
+  }
+  .toc-drawer.open {
+    transform: translateX(0);
+    visibility: visible;
+    pointer-events: auto;
   }
 
   .drawer-header {
@@ -402,10 +406,15 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     background: rgba(44, 37, 32, 0.35);
     z-index: 999;
     backdrop-filter: blur(4px);
-    transition: opacity 0.3s ease;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
   }
-  .drawer-overlay.hidden {
-    display: none;
+  .drawer-overlay.open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
   }
 
   /* 正文文章排版 */
@@ -714,13 +723,13 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     const closeTocBtn = document.getElementById('toc-drawer-close');
 
     function openDrawer() {
-      if (tocDrawer) tocDrawer.classList.remove('hidden');
-      if (tocOverlay) tocOverlay.classList.remove('hidden');
+      if (tocDrawer) tocDrawer.classList.add('open');
+      if (tocOverlay) tocOverlay.classList.add('open');
       document.body.style.overflow = 'hidden';
     }
     function closeDrawer() {
-      if (tocDrawer) tocDrawer.classList.add('hidden');
-      if (tocOverlay) tocOverlay.classList.add('hidden');
+      if (tocDrawer) tocDrawer.classList.remove('open');
+      if (tocOverlay) tocOverlay.classList.remove('open');
       document.body.style.overflow = '';
     }
 
