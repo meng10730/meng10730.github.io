@@ -51,7 +51,7 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     { name: chapter.data.title, url: `${baseUrl}shanzhuang/novels/${book.slug}/${chapter.slug}/` }
   ]}
 >
-  <div class="novel-reader-wrapper" id="reader-wrapper" data-book={book.slug} data-current-slug={chapter.slug}>
+  <div class="novel-reader-wrapper" id="reader-wrapper" data-book={book.slug} data-current-slug={chapter.slug} data-has-next={nextChapter ? 'true' : 'false'}>
     <!-- 小說專屬控制橫條 (位於全站導覽列正下方，向下並排兩行，絕不遮擋正文) -->
     <nav class="reader-sub-header" id="reader-sub-header">
       <!-- 第一行：目錄按鈕 + 完整章節路徑 -->
@@ -141,7 +141,7 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
             <span class="ink-spinner"></span>
             <span class="loader-text">墨痕流轉，正在加載下一小節……</span>
           </div>
-          <div class="sentinel-end hidden" id="sentinel-end">
+          <div class={`sentinel-end ${nextChapter ? 'hidden' : ''}`} id="sentinel-end">
             <span>❖ 本卷暫已讀畢 · 靜候作者續筆 ❖</span>
           </div>
         </div>
@@ -797,12 +797,17 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     let allChaptersData: any = null;
     let loadedSlugs = new Set([initialSlug]);
     let isLoadingNext = false;
-    let isAllLoaded = false;
+    let isAllLoaded = wrapper.getAttribute('data-has-next') !== 'true';
 
     const streamContainer = document.getElementById('chapters-stream-container');
     const sentinel = document.getElementById('infinite-scroll-sentinel');
     const sentinelLoader = document.getElementById('sentinel-loader');
     const sentinelEnd = document.getElementById('sentinel-end');
+
+    if (isAllLoaded) {
+      if (sentinelEnd) sentinelEnd.classList.remove('hidden');
+      if (sentinelLoader) sentinelLoader.classList.add('hidden');
+    }
 
     // 預載全書章節清單
     async function loadBookData() {
@@ -825,14 +830,10 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
 
     async function loadNextChapter() {
       if (isLoadingNext || isAllLoaded) return;
-      isLoadingNext = true;
-      if (sentinelLoader) sentinelLoader.classList.remove('hidden');
 
       try {
         const data = await loadBookData();
         if (!data || data.length === 0) {
-          isLoadingNext = false;
-          if (sentinelLoader) sentinelLoader.classList.add('hidden');
           return;
         }
 
@@ -845,6 +846,10 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
           if (sentinelLoader) sentinelLoader.classList.add('hidden');
           return;
         }
+
+        // 確鑿有下一節才開啟加載鎖與動畫
+        isLoadingNext = true;
+        if (sentinelLoader) sentinelLoader.classList.remove('hidden');
 
         const nextData = data[lastIndex + 1];
         if (loadedSlugs.has(nextData.slug)) {
