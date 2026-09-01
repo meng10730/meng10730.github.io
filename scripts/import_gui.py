@@ -3744,8 +3744,10 @@ pubDate: {datetime.date.today().isoformat()}
         target_filepath = os.path.join(chapters_dir, target_filename)
 
         # 智慧段落排版正規化 (Smart Paragraph Normalization)
-        # 若使用者粘貼為單行換行文本，自動轉化為標準 Markdown 段落（保留空行並為緊鄰的非空行補充空行）
-        raw_lines = [l.rstrip() for l in body.split("\n")]
+        # 1. 自動清洗行首多餘的全形/半形空格（避免與系統 CSS 縮排重疊）
+        # 2. 若使用者粘貼為單行換行文本，自動轉化為標準 Markdown 段落（補充空行）
+        import re
+        raw_lines = [re.sub(r"^[ \t\u3000]+", "", l.rstrip()) for l in body.split("\n")]
         formatted_lines = []
         for i, l in enumerate(raw_lines):
             formatted_lines.append(l)

@@ -551,8 +551,24 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
   .novel-body :global(p) {
     margin-top: 0;
     margin-bottom: 1.6em;
-    text-indent: 2em;
+    text-indent: 2em; /* 預設中文小說首行縮排 2 字符 */
     line-height: 2.1;
+  }
+
+  /* 對話引號開頭：與左側齊平 (text-indent: 0) */
+  .novel-body :global(p.dialogue-line) {
+    text-indent: 0 !important;
+  }
+
+  /* 場景轉場符號：居中水墨花紋 */
+  .novel-body :global(p.scene-break) {
+    text-indent: 0 !important;
+    text-align: center !important;
+    color: var(--color-mountain-accent, #c48c3b) !important;
+    letter-spacing: 0.8em !important;
+    font-size: 1.1rem !important;
+    margin: 2.4em 0 !important;
+    opacity: 0.9;
   }
 
   .novel-body :global(blockquote) {
@@ -940,6 +956,17 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     const tocOverlay = document.getElementById('toc-drawer-overlay');
     const leftTocTrigger = document.getElementById('left-toc-trigger');
     const closeTocBtn = document.getElementById('toc-drawer-close');
+
+    // 0. 中文小說段落智慧偵測 (對話引號齊左、場景符號居中水墨花紋)
+    document.querySelectorAll('.novel-body p').forEach(p => {
+      const text = p.textContent ? p.textContent.trim() : '';
+      if (/^[「『“"‘'‹«]/.test(text)) {
+        p.classList.add('dialogue-line');
+      } else if (/^([。*·•—\-~～\s❖#]{2,}|[。]{2,})$/.test(text) || text === '。。' || text === '***' || text === '……') {
+        p.classList.add('scene-break');
+        p.innerHTML = '❖ ❖ ❖';
+      }
+    });
 
     function openDrawer() {
       if (tocDrawer) tocDrawer.classList.add('open');
