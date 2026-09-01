@@ -3574,7 +3574,7 @@ pubDate: {datetime.date.today().isoformat()}
         proc.finished.connect(on_git_finish)
 
         cmd = 'git add src/content/ && git commit -m "feat(novel): publish new chapters" && git push'
-        proc.start("powershell", ["-Command", cmd])
+        proc.start("cmd.exe", ["/c", cmd])
 
     def create_desktop_shortcut(self):
         desktop = os.path.expanduser("~/Desktop")
