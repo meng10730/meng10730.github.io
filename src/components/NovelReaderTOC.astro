@@ -112,7 +112,7 @@ sortedChapters.forEach((ch) => {
 
 <div class={`novel-toc-container ${compact ? "compact" : ""}`} id="novel-toc-tree">
   <div class="toc-toolbar">
-    <span class="toc-title">❖ 卷軸全目 ({chapters.length} 節)</span>
+    <span class="toc-title">❖ 卷軸全目 ({chapters.length} 章)</span>
     <div class="toc-actions">
       <button type="button" class="toc-tool-btn" id="toc-expand-all">展開</button>
       <button type="button" class="toc-tool-btn" id="toc-collapse-all">收合</button>
@@ -126,7 +126,7 @@ sortedChapters.forEach((ch) => {
           <summary class="toc-part-summary">
             <span class="toc-icon">❖</span>
             <span class="toc-part-title">{part.title}</span>
-            <span class="toc-badge">{part.volumes.reduce((acc, v) => acc + v.chapters.reduce((cAcc, c) => cAcc + c.sections.length, 0), 0)} 節</span>
+            <span class="toc-badge">{part.volumes.reduce((acc, v) => acc + v.chapters.reduce((cAcc, c) => cAcc + c.sections.length, 0), 0)} 章</span>
           </summary>
 
           <div class="toc-part-content">
@@ -135,7 +135,7 @@ sortedChapters.forEach((ch) => {
                 <summary class="toc-vol-summary">
                   <span class="toc-arrow">▸</span>
                   <span class="toc-vol-title">{vol.title}</span>
-                  <span class="toc-sub-badge">{vol.chapters.reduce((acc, c) => acc + c.sections.length, 0)} 節</span>
+                  <span class="toc-sub-badge">{vol.chapters.reduce((acc, c) => acc + c.sections.length, 0)} 章</span>
                 </summary>
 
                 <div class="toc-vol-content">

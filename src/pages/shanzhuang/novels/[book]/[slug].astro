@@ -139,7 +139,7 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
         <div class="chapter-end-decoration">
           {nextChapter ? (
             <div class="status-divider">
-              <span>❖ 本節讀畢 ❖</span>
+              <span>❖ 本章讀畢 ❖</span>
             </div>
           ) : (
             <div class="status-divider finished">
@@ -151,14 +151,14 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
         <!-- 底部手動三鍵式換章導航列 -->
         <nav class="chapter-bottom-nav" aria-label="章節翻頁導航">
           {prevChapter ? (
-            <a href={`${baseUrl}shanzhuang/novels/${book.slug}/${prevChapter.slug}/`} class="nav-chapter-btn prev-chapter" id="nav-prev-link" rel="prev" title={`上一節：${prevChapter.data.title} (按 ← 鍵)`}>
-              <span class="btn-subtext">← 上一節</span>
+            <a href={`${baseUrl}shanzhuang/novels/${book.slug}/${prevChapter.slug}/`} class="nav-chapter-btn prev-chapter" id="nav-prev-link" rel="prev" title={`上一章：${prevChapter.data.title} (按 ← 鍵)`}>
+              <span class="btn-subtext">← 上一章</span>
               <span class="btn-maintext">{prevChapter.data.title}</span>
             </a>
           ) : (
             <div class="nav-chapter-btn disabled">
-              <span class="btn-subtext">已是第一節</span>
-              <span class="btn-maintext">無上一小節</span>
+              <span class="btn-subtext">已是第一章</span>
+              <span class="btn-maintext">無上一章</span>
             </div>
           )}
 
@@ -168,8 +168,8 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
           </a>
 
           {nextChapter ? (
-            <a href={`${baseUrl}shanzhuang/novels/${book.slug}/${nextChapter.slug}/`} class="nav-chapter-btn next-chapter" id="nav-next-link" rel="next" data-astro-prefetch title={`下一節：${nextChapter.data.title} (按 → 鍵)`}>
-              <span class="btn-subtext">下一節 →</span>
+            <a href={`${baseUrl}shanzhuang/novels/${book.slug}/${nextChapter.slug}/`} class="nav-chapter-btn next-chapter" id="nav-next-link" rel="next" data-astro-prefetch title={`下一章：${nextChapter.data.title} (按 → 鍵)`}>
+              <span class="btn-subtext">下一章 →</span>
               <span class="btn-maintext">{nextChapter.data.title}</span>
             </a>
           ) : (

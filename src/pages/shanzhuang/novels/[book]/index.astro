@@ -74,7 +74,7 @@ const statusInfo = statusMap[book.data.status || 'ongoing'] || { text: '連載�
         <p class="novel-desc">{book.data.description || "暫無故事簡介。"}</p>
 
         <div class="novel-stats">
-          <span class="stat-item">❖ 共收錄 <strong>{sortedChapters.length}</strong> 節</span>
+          <span class="stat-item">❖ 共收錄 <strong>{sortedChapters.length}</strong> 章</span>
           {sortedChapters.length > 0 && (
             <span class="stat-item">❖ 最新：<strong>{sortedChapters[sortedChapters.length - 1].data.title}</strong></span>
           )}
