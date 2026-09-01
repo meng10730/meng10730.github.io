@@ -2880,18 +2880,18 @@ class MainWindow(QMainWindow):
         intro_layout.setContentsMargins(12, 10, 12, 10)
         intro_title = QLabel("📖 小說極速連載工作台")
         intro_title.setStyleSheet("color: #e5a93b; font-size: 15px; font-weight: bold;")
-        intro_desc = QLabel("⚡ 專為長篇連載打造：選擇章節 ➔ 拖入 .md 檔案 ➔ 點擊儲存即可自動遞增小節並寫入，最後一鍵推送發布！")
+        intro_desc = QLabel("⚡ 專為長篇連載打造：支援直接手動輸入/修改部、卷、章名稱，或從歷史選單快速帶入。拖入 .md 檔案即可自動發布！")
         intro_desc.setStyleSheet("color: #a2a2ab; font-size: 12px;")
         intro_layout.addWidget(intro_title)
         intro_layout.addWidget(intro_desc)
         layout.addWidget(intro_card)
 
-        # 1. 作品與階層連鎖選擇卡片
+        # 1. 作品與階層設定卡片 (直接提供部、卷、章名稱輸入框)
         sel_card = QFrame()
         sel_card.setObjectName("cardFrame")
         sel_layout = QVBoxLayout(sel_card)
-        sel_layout.setContentsMargins(12, 10, 12, 10)
-        sel_layout.setSpacing(8)
+        sel_layout.setContentsMargins(14, 12, 14, 12)
+        sel_layout.setSpacing(10)
 
         # 作品列
         row_book = QHBoxLayout()
@@ -2901,60 +2901,96 @@ class MainWindow(QMainWindow):
         self.novel_book_combo = NoScrollComboBox()
         self.novel_book_combo.currentIndexChanged.connect(self.on_novel_publisher_book_changed)
         btn_add_book = QPushButton("➕ 新建作品")
-        btn_add_book.setFixedWidth(90)
+        btn_add_book.setFixedWidth(95)
         btn_add_book.clicked.connect(self.add_novel_book_quick_dialog)
         row_book.addWidget(lbl_book)
-        row_book.addWidget(self.novel_book_combo)
+        row_book.addWidget(self.novel_book_combo, 1)
         row_book.addWidget(btn_add_book)
         sel_layout.addLayout(row_book)
 
-        # 部、卷、章連鎖選擇列
-        row_hier = QHBoxLayout()
-        
+        # 快速帶入歷史章節選單
+        row_preset = QHBoxLayout()
+        lbl_preset = QLabel("📚 歷史章節:")
+        lbl_preset.setFixedWidth(85)
+        lbl_preset.setStyleSheet("color: #a2a2ab; font-weight: bold;")
+        self.novel_history_combo = NoScrollComboBox()
+        self.novel_history_combo.currentIndexChanged.connect(self.on_novel_history_selected)
+        btn_refresh_preset = QPushButton("🔄 重新整理")
+        btn_refresh_preset.setFixedWidth(95)
+        btn_refresh_preset.clicked.connect(self.reload_novel_publisher_data)
+        row_preset.addWidget(lbl_preset)
+        row_preset.addWidget(self.novel_history_combo, 1)
+        row_preset.addWidget(btn_refresh_preset)
+        sel_layout.addLayout(row_preset)
+
+        # 階層直接編輯欄位 (部、卷、章 序號與自訂名稱框)
+        hier_box = QFrame()
+        hier_box.setStyleSheet("background-color: #1a1a22; border: 1px solid #2e2e3a; border-radius: 6px; padding: 6px;")
+        hier_layout = QVBoxLayout(hier_box)
+        hier_layout.setSpacing(8)
+
         # 部 (Part)
-        lbl_part = QLabel("部:")
-        lbl_part.setStyleSheet("color: #a2a2ab; font-weight: bold;")
-        self.novel_part_combo = NoScrollComboBox()
-        self.novel_part_combo.currentIndexChanged.connect(self.on_novel_publisher_part_changed)
-        btn_add_part = QPushButton("➕")
-        btn_add_part.setFixedWidth(32)
-        btn_add_part.setToolTip("新增部 (如：第二部 天命再臨)")
-        btn_add_part.clicked.connect(self.add_novel_part_quick_dialog)
+        row_p = QHBoxLayout()
+        lbl_p_num = QLabel("❖ 部 (Part):")
+        lbl_p_num.setFixedWidth(90)
+        lbl_p_num.setStyleSheet("color: #e5a93b; font-weight: bold;")
+        self.novel_part_num_input = QLineEdit("1")
+        self.novel_part_num_input.setFixedWidth(45)
+        self.novel_part_num_input.setAlignment(Qt.AlignCenter)
+        self.novel_part_num_input.textChanged.connect(self.update_novel_target_preview)
+        self.novel_part_title_input = QLineEdit("第一部 天命初顯")
+        self.novel_part_title_input.setPlaceholderText("請輸入部名稱 (如：第一部 天命初顯)")
+        self.novel_part_title_input.textChanged.connect(self.update_novel_target_preview)
+        row_p.addWidget(lbl_p_num)
+        row_p.addWidget(QLabel("第"))
+        row_p.addWidget(self.novel_part_num_input)
+        row_p.addWidget(QLabel("部  名稱:"))
+        row_p.addWidget(self.novel_part_title_input, 1)
+        hier_layout.addLayout(row_p)
 
         # 卷 (Volume)
-        lbl_vol = QLabel("卷:")
-        lbl_vol.setStyleSheet("color: #a2a2ab; font-weight: bold;")
-        self.novel_vol_combo = NoScrollComboBox()
-        self.novel_vol_combo.currentIndexChanged.connect(self.on_novel_publisher_vol_changed)
-        btn_add_vol = QPushButton("➕")
-        btn_add_vol.setFixedWidth(32)
-        btn_add_vol.setToolTip("新增卷 (如：第二卷 刀鳴幽谷)")
-        btn_add_vol.clicked.connect(self.add_novel_vol_quick_dialog)
+        row_v = QHBoxLayout()
+        lbl_v_num = QLabel("❖ 卷 (Volume):")
+        lbl_v_num.setFixedWidth(90)
+        lbl_v_num.setStyleSheet("color: #e5a93b; font-weight: bold;")
+        self.novel_vol_num_input = QLineEdit("1")
+        self.novel_vol_num_input.setFixedWidth(45)
+        self.novel_vol_num_input.setAlignment(Qt.AlignCenter)
+        self.novel_vol_num_input.textChanged.connect(self.update_novel_target_preview)
+        self.novel_vol_title_input = QLineEdit("第一卷 風起青萍")
+        self.novel_vol_title_input.setPlaceholderText("請輸入卷名稱 (如：第一卷 風起青萍)")
+        self.novel_vol_title_input.textChanged.connect(self.update_novel_target_preview)
+        row_v.addWidget(lbl_v_num)
+        row_v.addWidget(QLabel("第"))
+        row_v.addWidget(self.novel_vol_num_input)
+        row_v.addWidget(QLabel("卷  名稱:"))
+        row_v.addWidget(self.novel_vol_title_input, 1)
+        hier_layout.addLayout(row_v)
 
         # 章 (Chapter)
-        lbl_chap = QLabel("章:")
-        lbl_chap.setStyleSheet("color: #a2a2ab; font-weight: bold;")
-        self.novel_chap_combo = NoScrollComboBox()
-        self.novel_chap_combo.currentIndexChanged.connect(self.on_novel_publisher_chap_changed)
-        btn_add_chap = QPushButton("➕")
-        btn_add_chap.setFixedWidth(32)
-        btn_add_chap.setToolTip("新增章 (如：第二章 夜半刀鳴)")
-        btn_add_chap.clicked.connect(self.add_novel_chap_quick_dialog)
+        row_c = QHBoxLayout()
+        lbl_c_num = QLabel("❖ 章 (Chapter):")
+        lbl_c_num.setFixedWidth(90)
+        lbl_c_num.setStyleSheet("color: #e5a93b; font-weight: bold;")
+        self.novel_chap_num_input = QLineEdit("1")
+        self.novel_chap_num_input.setFixedWidth(45)
+        self.novel_chap_num_input.setAlignment(Qt.AlignCenter)
+        self.novel_chap_num_input.textChanged.connect(self.update_novel_target_preview)
+        self.novel_chap_title_input = QLineEdit("第一章 孤崖夜雨")
+        self.novel_chap_title_input.setPlaceholderText("請輸入章名稱 (如：第一章 孤崖夜雨)")
+        self.novel_chap_title_input.textChanged.connect(self.update_novel_target_preview)
+        row_c.addWidget(lbl_c_num)
+        row_c.addWidget(QLabel("第"))
+        row_c.addWidget(self.novel_chap_num_input)
+        row_c.addWidget(QLabel("章  名稱:"))
+        row_c.addWidget(self.novel_chap_title_input, 1)
+        hier_layout.addLayout(row_c)
 
-        row_hier.addWidget(lbl_part)
-        row_hier.addWidget(self.novel_part_combo, 2)
-        row_hier.addWidget(btn_add_part)
-        row_hier.addWidget(lbl_vol)
-        row_hier.addWidget(self.novel_vol_combo, 2)
-        row_hier.addWidget(btn_add_vol)
-        row_hier.addWidget(lbl_chap)
-        row_hier.addWidget(self.novel_chap_combo, 3)
-        row_hier.addWidget(btn_add_chap)
-        sel_layout.addLayout(row_hier)
+        sel_layout.addWidget(hier_box)
 
         # 當前準備發布之小節資訊預覽條
         self.novel_target_sec_info = QLabel("❖ 當前準備發布：正在計算章節位置...")
-        self.novel_target_sec_info.setStyleSheet("color: #4cd964; font-weight: bold; background: #162218; border: 1px solid #234827; border-radius: 4px; padding: 6px 10px;")
+        self.novel_target_sec_info.setStyleSheet("color: #4cd964; font-weight: bold; background: #162218; border: 1px solid #234827; border-radius: 4px; padding: 8px 12px; font-size: 13px;")
         sel_layout.addWidget(self.novel_target_sec_info)
 
         layout.addWidget(sel_card)
@@ -3053,8 +3089,8 @@ class MainWindow(QMainWindow):
         staging_head = QHBoxLayout()
         lbl_staging = QLabel("📋 本次工作階段已建立小節:")
         lbl_staging.setStyleSheet("color: #a2a2ab; font-size: 12px; font-weight: bold;")
-        btn_refresh_novel_tree = QPushButton("🔄 重新整理章節樹")
-        btn_refresh_novel_tree.setFixedWidth(130)
+        btn_refresh_novel_tree = QPushButton("🔄 重新整理")
+        btn_refresh_novel_tree.setFixedWidth(100)
         btn_refresh_novel_tree.setStyleSheet("font-size: 11px; padding: 3px;")
         btn_refresh_novel_tree.clicked.connect(self.reload_novel_publisher_data)
         staging_head.addWidget(lbl_staging)
@@ -3076,6 +3112,7 @@ class MainWindow(QMainWindow):
     def reload_novel_publisher_data(self):
         """掃描小說作品與章節資料庫，建構階層快取樹"""
         self.novel_hierarchy = {}
+        self.novel_history_items = []  # [ { label: str, b_slug, p_num, p_title, v_num, v_title, c_num, c_title, max_s_num } ]
         
         # 1. 讀取作品列表
         novels_dir = os.path.join(self.project_dir, "src", "content", "novels")
@@ -3117,9 +3154,9 @@ class MainWindow(QMainWindow):
                         if m:
                             fm_str = m.group(1)
                             b_slug = "tianxia"
-                            p_num, p_title = 1, "第一部"
-                            v_num, v_title = 1, "第一卷"
-                            c_num, c_title = 1, "第一章"
+                            p_num, p_title = 1, "第一部 天命初顯"
+                            v_num, v_title = 1, "第一卷 風起青萍"
+                            c_num, c_title = 1, "第一章 孤崖夜雨"
                             s_num = 1
                             
                             mb = re.search(r"book:\s*[\"']?([^\"'\n]+)", fm_str)
@@ -3170,93 +3207,105 @@ class MainWindow(QMainWindow):
             self.novel_book_combo.addItem(f"{b_info['title']} ({b_slug})", b_slug)
         self.novel_book_combo.blockSignals(False)
 
-        # 觸發連鎖更新
-        self.on_novel_publisher_book_changed()
+        # 4. 刷新歷史章節預設選單
+        self.refresh_novel_history_combo()
 
-    def on_novel_publisher_book_changed(self):
+    def refresh_novel_history_combo(self):
         b_slug = self.novel_book_combo.currentData() or "tianxia"
         b_info = self.novel_hierarchy.get(b_slug, {"parts": {}})
         parts = b_info.get("parts", {})
 
-        self.novel_part_combo.blockSignals(True)
-        self.novel_part_combo.clear()
+        self.novel_history_combo.blockSignals(True)
+        self.novel_history_combo.clear()
+        self.novel_history_combo.addItem("-- 請選擇要帶入的既有章節 (或在下方直接手動輸入) --", None)
 
-        if parts:
-            for p_num in sorted(parts.keys()):
-                p_title = parts[p_num]["title"]
-                self.novel_part_combo.addItem(p_title, p_num)
-        else:
-            self.novel_part_combo.addItem("第一部", 1)
+        history_items = []
+        for p_num, p_data in sorted(parts.items()):
+            p_title = p_data["title"]
+            for v_num, v_data in sorted(p_data.get("volumes", {}).items()):
+                v_title = v_data["title"]
+                for c_num, c_data in sorted(v_data.get("chapters", {}).items()):
+                    c_title = c_data["title"]
+                    secs = c_data.get("sections", [])
+                    max_s = max(secs) if secs else 0
+                    label = f"{v_title} ➔ {c_title} (已有 {len(secs)} 節)"
+                    item_data = {
+                        "p_num": p_num,
+                        "p_title": p_title,
+                        "v_num": v_num,
+                        "v_title": v_title,
+                        "c_num": c_num,
+                        "c_title": c_title,
+                        "max_s": max_s
+                    }
+                    self.novel_history_combo.addItem(label, item_data)
+                    history_items.append(item_data)
 
-        self.novel_part_combo.blockSignals(False)
-        self.on_novel_publisher_part_changed()
+        self.novel_history_combo.blockSignals(False)
 
-    def on_novel_publisher_part_changed(self):
-        b_slug = self.novel_book_combo.currentData() or "tianxia"
-        p_num = self.novel_part_combo.currentData() or 1
-        b_info = self.novel_hierarchy.get(b_slug, {"parts": {}})
-        part_info = b_info.get("parts", {}).get(p_num, {"volumes": {}})
-        vols = part_info.get("volumes", {})
+        # 若有歷史章節，預設選取最新的一個章節帶入輸入框
+        if history_items:
+            latest = history_items[-1]
+            self.novel_part_num_input.setText(str(latest["p_num"]))
+            self.novel_part_title_input.setText(latest["p_title"])
+            self.novel_vol_num_input.setText(str(latest["v_num"]))
+            self.novel_vol_title_input.setText(latest["v_title"])
+            self.novel_chap_num_input.setText(str(latest["c_num"]))
+            self.novel_chap_title_input.setText(latest["c_title"])
+            self.current_novel_next_sec_num = latest["max_s"] + 1
 
-        self.novel_vol_combo.blockSignals(True)
-        self.novel_vol_combo.clear()
+        self.update_novel_target_preview()
 
-        if vols:
-            for v_num in sorted(vols.keys()):
-                v_title = vols[v_num]["title"]
-                self.novel_vol_combo.addItem(v_title, v_num)
-        else:
-            self.novel_vol_combo.addItem("第一卷", 1)
+    def on_novel_publisher_book_changed(self):
+        self.refresh_novel_history_combo()
 
-        self.novel_vol_combo.blockSignals(False)
-        self.on_novel_publisher_vol_changed()
-
-    def on_novel_publisher_vol_changed(self):
-        b_slug = self.novel_book_combo.currentData() or "tianxia"
-        p_num = self.novel_part_combo.currentData() or 1
-        v_num = self.novel_vol_combo.currentData() or 1
-        b_info = self.novel_hierarchy.get(b_slug, {"parts": {}})
-        vols = b_info.get("parts", {}).get(p_num, {"volumes": {}})
-        vol_info = vols.get(v_num, {"chapters": {}})
-        chaps = vol_info.get("chapters", {})
-
-        self.novel_chap_combo.blockSignals(True)
-        self.novel_chap_combo.clear()
-
-        if chaps:
-            for c_num in sorted(chaps.keys()):
-                c_title = chaps[c_num]["title"]
-                self.novel_chap_combo.addItem(c_title, c_num)
-        else:
-            self.novel_chap_combo.addItem("第一章", 1)
-
-        self.novel_chap_combo.blockSignals(False)
-        self.on_novel_publisher_chap_changed()
-
-    def on_novel_publisher_chap_changed(self):
-        b_slug = self.novel_book_combo.currentData() or "tianxia"
-        p_num = self.novel_part_combo.currentData() or 1
-        v_num = self.novel_vol_combo.currentData() or 1
-        c_num = self.novel_chap_combo.currentData() or 1
+    def on_novel_history_selected(self, index):
+        data = self.novel_history_combo.currentData()
+        if not data:
+            return
         
+        self.novel_part_num_input.setText(str(data["p_num"]))
+        self.novel_part_title_input.setText(data["p_title"])
+        self.novel_vol_num_input.setText(str(data["v_num"]))
+        self.novel_vol_title_input.setText(data["v_title"])
+        self.novel_chap_num_input.setText(str(data["c_num"]))
+        self.novel_chap_title_input.setText(data["c_title"])
+        self.current_novel_next_sec_num = data["max_s"] + 1
+        self.update_novel_target_preview()
+
+    def update_novel_target_preview(self):
+        b_slug = self.novel_book_combo.currentData() or "tianxia"
+        try:
+            p_num = int(self.novel_part_num_input.text().strip() or "1")
+        except ValueError:
+            p_num = 1
+        try:
+            v_num = int(self.novel_vol_num_input.text().strip() or "1")
+        except ValueError:
+            v_num = 1
+        try:
+            c_num = int(self.novel_chap_num_input.text().strip() or "1")
+        except ValueError:
+            c_num = 1
+
+        p_title = self.novel_part_title_input.text().strip() or f"第{to_chinese_num(p_num)}部"
+        v_title = self.novel_vol_title_input.text().strip() or f"第{to_chinese_num(v_num)}卷"
+        c_title = self.novel_chap_title_input.text().strip() or f"第{to_chinese_num(c_num)}章"
+
+        # 尋找當前章已有多少節
         b_info = self.novel_hierarchy.get(b_slug, {"parts": {}})
         chaps = b_info.get("parts", {}).get(p_num, {}).get("volumes", {}).get(v_num, {}).get("chapters", {}).get(c_num, {})
-        sections = chaps.get("sections", []) if isinstance(chaps, dict) else []
-
-        # 自動推算下一個小節序號
-        next_sec_num = max(sections) + 1 if sections else 1
-        sec_title = f"第{to_chinese_num(next_sec_num)}節"
+        secs = chaps.get("sections", []) if isinstance(chaps, dict) else []
         
-        target_filename = f"{b_slug}-vol{v_num:02d}-c{c_num:02d}-s{next_sec_num:02d}.md"
-        p_title = self.novel_part_combo.currentText()
-        v_title = self.novel_vol_combo.currentText()
-        c_title = self.novel_chap_combo.currentText()
+        if not hasattr(self, "current_novel_next_sec_num") or self.current_novel_next_sec_num <= (max(secs) if secs else 0):
+            self.current_novel_next_sec_num = max(secs) + 1 if secs else 1
 
-        self.current_novel_next_sec_num = next_sec_num
-        self.current_novel_target_filename = target_filename
+        s_num = self.current_novel_next_sec_num
+        s_title = f"第{to_chinese_num(s_num)}節"
+        target_filename = f"{b_slug}-vol{v_num:02d}-c{c_num:02d}-s{s_num:02d}.md"
 
         self.novel_target_sec_info.setText(
-            f"❖ 當前準備發布：{p_title} · {v_title} · {c_title} ➔ 【{sec_title}】 (預計檔名: {target_filename})"
+            f"❖ 當前準備發布：{p_title} · {v_title} · {c_title} ➔ 【{s_title}】 (預計檔名: {target_filename})"
         )
 
     def add_novel_book_quick_dialog(self):
@@ -3278,51 +3327,6 @@ class MainWindow(QMainWindow):
                         with open(target_file, "w", encoding="utf-8") as f:
                             f.write(f"---\ntitle: \"{clean_title}\"\ndescription: \"原創小說 {clean_title}\"\ngenre: [\"仙俠\", \"武俠\"]\nstatus: \"ongoing\"\npubDate: {datetime.date.today().isoformat()}\n---\n\n暫無簡介。\n")
                     self.log(f"✓ 已建立新小說作品檔: {clean_slug}.md")
-
-    def add_novel_part_quick_dialog(self):
-        b_slug = self.novel_book_combo.currentData() or "tianxia"
-        parts = self.novel_hierarchy.setdefault(b_slug, {}).setdefault("parts", {})
-        next_p_num = max(parts.keys()) + 1 if parts else 1
-        default_name = f"第{to_chinese_num(next_p_num)}部"
-        
-        name, ok = QInputDialog.getText(self, "➕ 新增部", f"請輸入部名稱 (部編號: {next_p_num}):", text=f"{default_name} ")
-        if ok and name.strip():
-            clean_name = name.strip()
-            parts[next_p_num] = { "title": clean_name, "volumes": {} }
-            self.novel_part_combo.addItem(clean_name, next_p_num)
-            self.novel_part_combo.setCurrentIndex(self.novel_part_combo.count() - 1)
-
-    def add_novel_vol_quick_dialog(self):
-        b_slug = self.novel_book_combo.currentData() or "tianxia"
-        p_num = self.novel_part_combo.currentData() or 1
-        b_info = self.novel_hierarchy.setdefault(b_slug, {}).setdefault("parts", {})
-        vols = b_info.setdefault(p_num, {"title": f"第{to_chinese_num(p_num)}部", "volumes": {}}).setdefault("volumes", {})
-        next_v_num = max(vols.keys()) + 1 if vols else 1
-        default_name = f"第{to_chinese_num(next_v_num)}卷"
-
-        name, ok = QInputDialog.getText(self, "➕ 新增卷", f"請輸入卷名稱 (卷編號: {next_v_num}):", text=f"{default_name} ")
-        if ok and name.strip():
-            clean_name = name.strip()
-            vols[next_v_num] = { "title": clean_name, "chapters": {} }
-            self.novel_vol_combo.addItem(clean_name, next_v_num)
-            self.novel_vol_combo.setCurrentIndex(self.novel_vol_combo.count() - 1)
-
-    def add_novel_chap_quick_dialog(self):
-        b_slug = self.novel_book_combo.currentData() or "tianxia"
-        p_num = self.novel_part_combo.currentData() or 1
-        v_num = self.novel_vol_combo.currentData() or 1
-        b_info = self.novel_hierarchy.setdefault(b_slug, {}).setdefault("parts", {})
-        vols = b_info.setdefault(p_num, {"title": f"第{to_chinese_num(p_num)}部", "volumes": {}}).setdefault("volumes", {})
-        chaps = vols.setdefault(v_num, {"title": f"第{to_chinese_num(v_num)}卷", "chapters": {}}).setdefault("chapters", {})
-        next_c_num = max(chaps.keys()) + 1 if chaps else 1
-        default_name = f"第{to_chinese_num(next_c_num)}章"
-
-        name, ok = QInputDialog.getText(self, "➕ 新增章", f"請輸入章名稱 (章編號: {next_c_num}):", text=f"{default_name} ")
-        if ok and name.strip():
-            clean_name = name.strip()
-            chaps[next_c_num] = { "title": clean_name, "sections": [] }
-            self.novel_chap_combo.addItem(clean_name, next_c_num)
-            self.novel_chap_combo.setCurrentIndex(self.novel_chap_combo.count() - 1)
 
     def paste_novel_clipboard_content(self):
         clipboard = QApplication.clipboard()
@@ -3361,12 +3365,22 @@ class MainWindow(QMainWindow):
             return
 
         b_slug = self.novel_book_combo.currentData() or "tianxia"
-        p_num = self.novel_part_combo.currentData() or 1
-        p_title = self.novel_part_combo.currentText()
-        v_num = self.novel_vol_combo.currentData() or 1
-        v_title = self.novel_vol_combo.currentText()
-        c_num = self.novel_chap_combo.currentData() or 1
-        c_title = self.novel_chap_combo.currentText()
+        try:
+            p_num = int(self.novel_part_num_input.text().strip() or "1")
+        except ValueError:
+            p_num = 1
+        try:
+            v_num = int(self.novel_vol_num_input.text().strip() or "1")
+        except ValueError:
+            v_num = 1
+        try:
+            c_num = int(self.novel_chap_num_input.text().strip() or "1")
+        except ValueError:
+            c_num = 1
+
+        p_title = self.novel_part_title_input.text().strip() or f"第{to_chinese_num(p_num)}部"
+        v_title = self.novel_vol_title_input.text().strip() or f"第{to_chinese_num(v_num)}卷"
+        c_title = self.novel_chap_title_input.text().strip() or f"第{to_chinese_num(c_num)}章"
         s_num = getattr(self, "current_novel_next_sec_num", 1)
         s_title = f"第{to_chinese_num(s_num)}節"
 
@@ -3415,9 +3429,10 @@ pubDate: {datetime.date.today().isoformat()}
             if s_num not in sec_list:
                 sec_list.append(s_num)
 
-            # 清空正文輸入框，自動切換至下一節！
+            # 遞增至下一節，清空正文並自動對焦！
+            self.current_novel_next_sec_num = s_num + 1
             self.novel_content_edit.clear()
-            self.on_novel_publisher_chap_changed()
+            self.update_novel_target_preview()
             self.novel_content_edit.setFocus()
 
         except Exception as e:
