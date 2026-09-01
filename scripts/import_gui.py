@@ -3116,7 +3116,7 @@ class MainWindow(QMainWindow):
         """)
         self.btn_save_novel_section.clicked.connect(self.save_current_novel_section)
 
-        self.btn_git_push_novels = QPushButton("🚀 一併推送到網站 (Git Push)")
+        self.btn_git_push_novels = QPushButton("🚀 一併推送到網站 (一鍵發布上線)")
         self.btn_git_push_novels.setMinimumHeight(44)
         self.btn_git_push_novels.setStyleSheet("""
             QPushButton {
@@ -3134,7 +3134,7 @@ class MainWindow(QMainWindow):
                 background-color: #236337;
             }
         """)
-        self.btn_git_push_novels.clicked.connect(self.push_novel_chapters_to_git)
+        self.btn_git_push_novels.clicked.connect(self.confirm_publish)
 
         action_layout.addWidget(self.btn_save_novel_section, 3)
         action_layout.addWidget(self.btn_git_push_novels, 2)
@@ -3543,38 +3543,6 @@ pubDate: {datetime.date.today().isoformat()}
         except Exception as e:
             QMessageBox.critical(self, "儲存失敗", f"無法寫入章節檔案: {e}")
             self.log(f"❌ 寫入失敗: {e}")
-
-    def push_novel_chapters_to_git(self):
-        if self.novel_staging_list.count() == 0:
-            reply = QMessageBox.question(self, "確認推送", "目前本次工作階段尚未新增小節。是否仍要同步並推送到 GitHub？", QMessageBox.Yes | QMessageBox.No)
-            if reply != QMessageBox.Yes:
-                return
-
-        self.log("🚀 正在將小說章節檔案加入 Git 並推送到 GitHub...")
-        proc = QProcess(self)
-        self.active_processes.append(proc)
-
-        def on_git_output():
-            out = proc.readAllStandardOutput().data().decode("utf-8", errors="ignore")
-            err = proc.readAllStandardError().data().decode("utf-8", errors="ignore")
-            if out: self.log(out.strip())
-            if err: self.log(err.strip())
-
-        def on_git_finish(code, status):
-            if proc in self.active_processes:
-                self.active_processes.remove(proc)
-            if code == 0:
-                self.log("🎉 小說章節已成功推送到 GitHub！GitHub Actions 正在為您自動發布上線！")
-                QMessageBox.information(self, "發布成功", "🎉 小說章節已成功推送到 GitHub！\n\nGitHub Actions 正在自動為您建置與部署，稍候片刻即可在網站上閱讀！")
-            else:
-                self.log("❌ Git 推送過程中出現錯誤，請檢視上方日誌。")
-
-        proc.readyReadStandardOutput.connect(on_git_output)
-        proc.readyReadStandardError.connect(on_git_output)
-        proc.finished.connect(on_git_finish)
-
-        cmd = 'git add src/content/ && git commit -m "feat(novel): publish new chapters" && git push'
-        proc.start("cmd.exe", ["/c", cmd])
 
     def create_desktop_shortcut(self):
         desktop = os.path.expanduser("~/Desktop")
