@@ -768,27 +768,28 @@ const jsonLd = {
     z-index: 100;
   }
 
-  /* 智慧懸浮模式（小說閱讀器專用） */
+  /* 小說閱讀器專用：全站頂部懸浮導航列 */
   .site-header.hover-header {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    z-index: 992;
-    background: rgba(253, 252, 247, 0.98);
-    border-bottom: 1px solid var(--color-border, #e6dfcc);
-    box-shadow: 0 4px 20px rgba(44, 37, 32, 0.08);
-    transform: translateY(-100%);
-    opacity: 0;
-    pointer-events: none;
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 56px !important;
+    z-index: 992 !important;
+    background: rgba(253, 252, 247, 0.98) !important;
+    border-bottom: 1px solid var(--color-border, #e6dfcc) !important;
+    box-shadow: 0 2px 10px rgba(44, 37, 32, 0.05) !important;
+    transform: translateY(-100%) !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease !important;
   }
 
   .site-header.hover-header.visible,
   .site-header.hover-header:hover {
-    transform: translateY(0);
-    opacity: 1;
-    pointer-events: auto;
+    transform: translateY(0) !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
   }
 
   .nav-container {

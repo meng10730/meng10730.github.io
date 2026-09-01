@@ -53,17 +53,19 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
   ]}
 >
   <div class="novel-reader-wrapper" id="reader-wrapper" data-book={book.slug} data-current-slug={chapter.slug}>
-    <!-- 頂部滑鼠感應觸發區 -->
+    <!-- 頂部滑鼠感應觸發區 (靠近螢幕最頂端即滑出全站導航與閱讀控制列) -->
     <div class="header-hover-trigger" id="header-hover-trigger"></div>
 
-    <!-- 頂部智慧懸浮控制工具列 (預設隱藏，滑鼠靠近或向上滾動時顯示) -->
+    <!-- 小說專屬控制工具列 (位於全站導航列下方，滑鼠懸浮時同步滑出) -->
     <header class="reader-header" id="reader-header">
       <div class="header-left">
+        <!-- 目錄抽屜開關按鈕 -->
         <button type="button" class="tool-btn toggle-toc-btn" id="toggle-toc-drawer" aria-label="切換目錄">
           <span class="btn-icon">❖</span>
           <span class="btn-label">目錄</span>
         </button>
 
+        <!-- 當前章節麵包屑導航 -->
         <nav class="reader-breadcrumb">
           <a href={`${baseUrl}shanzhuang/novels/${book.slug}/`} class="crumb-book">{book.data.title}</a>
           <span class="crumb-sep">/</span>
@@ -195,22 +197,23 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     pointer-events: auto;
   }
 
-  /* 頂部智慧懸浮控制列（位於全站導航列下方，滑鼠懸浮或向上滾動時同步滑出） */
+  /* 頂部小說專屬智慧控制列（位於全站導航列下方，滑鼠懸浮時同步滑出） */
   .reader-header {
     position: fixed;
-    top: 60px;
+    top: 56px;
     left: 0;
     width: 100%;
+    height: 48px;
     z-index: 991;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 24px;
+    padding: 0 24px;
     background: rgba(253, 252, 247, 0.98);
     border-bottom: 1px solid var(--color-border, #e6dfcc);
     backdrop-filter: blur(12px);
     box-shadow: 0 4px 16px rgba(44, 37, 32, 0.08);
-    transform: translateY(-200%);
+    transform: translateY(-120px);
     opacity: 0;
     pointer-events: none;
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
@@ -705,7 +708,7 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     const initialSlug = wrapper.getAttribute('data-current-slug');
     const baseUrl = document.querySelector('meta[name="base-url"]')?.getAttribute('content') || '/';
 
-    // 1. 頂部智慧懸浮控制列 (全站導航列 + 閱讀器工具列同步滑出)
+    // 1. 頂部智慧懸浮控制列 (全站導航列 + 小說控制列同步滑出)
     const siteHeader = document.getElementById('site-header');
     const readerHeader = document.getElementById('reader-header');
     const hoverTrigger = document.getElementById('header-hover-trigger');
@@ -738,7 +741,7 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     showHeader();
     scheduleHideHeader(2000);
 
-    // 滑鼠移至頂部 55px 範圍內喚醒全站導航與閱讀工具列
+    // 滑鼠移至頂部 55px 範圍內喚醒兩層工具列
     window.addEventListener('mousemove', (e) => {
       if (e.clientY <= 55) {
         showHeader();
