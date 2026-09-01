@@ -43,7 +43,6 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
   title={`${chapter.data.title} · ${book.data.title} | 晚餐後的書桌`}
   description={`${book.data.title} - ${partTitle} ${volTitle} ${chapTitle} ${secTitle}`}
   type="article"
-  hoverHeader={true}
   breadcrumbs={[
     { name: "首頁", url: `${baseUrl}` },
     { name: "山莊藏書閣", url: `${baseUrl}shanzhuang/` },
@@ -53,52 +52,59 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
   ]}
 >
   <div class="novel-reader-wrapper" id="reader-wrapper" data-book={book.slug} data-current-slug={chapter.slug}>
-    <!-- 頂部滑鼠感應觸發區 (靠近螢幕最頂端即滑出全站導航與閱讀控制列) -->
-    <div class="header-hover-trigger" id="header-hover-trigger"></div>
+    <!-- 左側浮動目錄按鈕 (位於頂部導覽列下方) -->
+    <aside class="reader-floating-left">
+      <button type="button" class="side-tool-btn" id="left-toc-trigger" aria-label="打開章節目錄" title="查看目錄">
+        <span class="btn-symbol">❖</span>
+        <span class="btn-text">目錄</span>
+      </button>
+    </aside>
 
-    <!-- 小說專屬控制工具列 (位於全站導航列下方，滑鼠懸浮時同步滑出) -->
-    <header class="reader-header" id="reader-header">
-      <div class="header-left">
-        <!-- 目錄抽屜開關按鈕 -->
-        <button type="button" class="tool-btn toggle-toc-btn" id="toggle-toc-drawer" aria-label="切換目錄">
-          <span class="btn-icon">❖</span>
-          <span class="btn-label">目錄</span>
-        </button>
+    <!-- 右側浮動閱讀設定按鈕與滑出面板 (位於頂部導覽列下方) -->
+    <aside class="reader-floating-right" id="reader-settings-container">
+      <button type="button" class="side-tool-btn" id="right-settings-trigger" aria-label="打開閱讀設定" title="閱讀設定">
+        <span class="btn-text">閱讀設定</span>
+      </button>
 
-        <!-- 當前章節麵包屑導航 -->
-        <nav class="reader-breadcrumb">
-          <a href={`${baseUrl}shanzhuang/novels/${book.slug}/`} class="crumb-book">{book.data.title}</a>
-          <span class="crumb-sep">/</span>
-          <span class="crumb-part">{partTitle}</span>
-          <span class="crumb-sep">/</span>
-          <span class="crumb-vol">{volTitle}</span>
-          <span class="crumb-sep">/</span>
-          <span class="crumb-chap">{chapTitle}</span>
-        </nav>
-      </div>
-
-      <div class="header-right">
-        <!-- 主題切換按鈕 -->
-        <div class="theme-switch-group">
-          <button type="button" class="theme-btn active" data-theme="rice-paper" title="仿古宣紙 (預設)">宣紙</button>
-          <button type="button" class="theme-btn" data-theme="dark" title="深邃夜讀">夜讀</button>
-          <button type="button" class="theme-btn" data-theme="eyecare" title="溫潤護眼">護眼</button>
-          <button type="button" class="theme-btn" data-theme="light" title="素雅純白">明亮</button>
+      <!-- 右側滑出設定面板 (滑鼠懸停或點擊時滑出) -->
+      <div class="reader-settings-panel" id="reader-settings-panel">
+        <div class="panel-header">
+          <span class="panel-title">閱讀設定</span>
+          <button type="button" class="panel-close-btn" id="settings-panel-close" title="收起設定">✕</button>
         </div>
+        
+        <div class="panel-body">
+          <!-- 1. 主題配色 -->
+          <div class="setting-item">
+            <div class="setting-label">背景主題</div>
+            <div class="theme-switch-group">
+              <button type="button" class="theme-btn active" data-theme="rice-paper" title="仿古宣紙 (預設)">宣紙</button>
+              <button type="button" class="theme-btn" data-theme="dark" title="深邃夜讀">夜讀</button>
+              <button type="button" class="theme-btn" data-theme="eyecare" title="溫潤護眼">護眼</button>
+              <button type="button" class="theme-btn" data-theme="light" title="素雅純白">明亮</button>
+            </div>
+          </div>
 
-        <!-- 字級縮放 -->
-        <div class="font-size-group">
-          <button type="button" class="tool-btn font-btn" id="font-decrease" title="縮小字體">A-</button>
-          <button type="button" class="tool-btn font-btn" id="font-increase" title="放大字體">A+</button>
+          <!-- 2. 字級大小 -->
+          <div class="setting-item">
+            <div class="setting-label">字體大小</div>
+            <div class="font-size-group">
+              <button type="button" class="tool-btn font-btn" id="font-decrease" title="縮小字體">字級 A-</button>
+              <button type="button" class="tool-btn font-btn" id="font-increase" title="放大字體">字級 A+</button>
+            </div>
+          </div>
+
+          <!-- 3. 返回作品目錄 -->
+          <div class="setting-item setting-footer">
+            <a href={`${baseUrl}shanzhuang/novels/${book.slug}/`} class="tool-btn exit-btn" title="返回作品總覽">
+              返回作品總覽
+            </a>
+          </div>
         </div>
-
-        <a href={`${baseUrl}shanzhuang/novels/${book.slug}/`} class="tool-btn exit-btn" title="返回作品總覽">
-          <span>✕</span>
-        </a>
       </div>
-    </header>
+    </aside>
 
-    <!-- 頂部閱讀進度指示條 -->
+    <!-- 頂部閱讀進度指示條 (全站 Header 底部) -->
     <div class="reading-progress-bar-container">
       <div class="reading-progress-bar" id="reading-progress-bar"></div>
     </div>
@@ -186,83 +192,146 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     transition: background-color 0.3s ease, color 0.3s ease;
   }
 
-  /* 頂部滑鼠感應觸發區 (靠近螢幕頂端 50px 自動滑出工具列) */
-  .header-hover-trigger {
+  /* 左側與右側浮動按鈕 (位於全站頂部導覽列下方) */
+  .reader-floating-left {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 50px;
-    z-index: 989;
+    top: 84px;
+    left: 24px;
+    z-index: 950;
     pointer-events: auto;
   }
 
-  /* 頂部小說專屬智慧控制列（位於全站導航列下方，滑鼠懸浮時同步滑出） */
-  .reader-header {
+  .reader-floating-right {
     position: fixed;
-    top: 56px;
-    left: 0;
-    width: 100%;
-    height: 48px;
-    z-index: 991;
-    display: flex;
-    justify-content: space-between;
+    top: 84px;
+    right: 24px;
+    z-index: 950;
+    pointer-events: auto;
+  }
+
+  /* 側邊優雅浮動按鈕 */
+  .side-tool-btn {
+    display: inline-flex;
     align-items: center;
-    padding: 0 24px;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: rgba(250, 247, 238, 0.92);
+    color: var(--color-ink-text, #2c2c2c);
+    border: 1px solid var(--color-border, #e6dfcc);
+    border-radius: 8px;
+    font-family: var(--font-serif, 'LXGW WenKai TC', serif);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(44, 37, 32, 0.08);
+    backdrop-filter: blur(8px);
+    transition: all 0.25s ease;
+  }
+
+  .side-tool-btn:hover {
+    background: var(--color-paper-dark, #f3edd8);
+    color: var(--color-mountain-accent, #c48c3b);
+    border-color: var(--color-mountain-accent, #c48c3b);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(196, 140, 59, 0.18);
+  }
+
+  .btn-symbol {
+    font-size: 0.85rem;
+    color: var(--color-mountain-accent, #c48c3b);
+  }
+
+  /* 右側滑出設定面板 */
+  .reader-settings-panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 260px;
     background: rgba(253, 252, 247, 0.98);
-    border-bottom: 1px solid var(--color-border, #e6dfcc);
-    backdrop-filter: blur(12px);
-    box-shadow: 0 4px 16px rgba(44, 37, 32, 0.08);
-    transform: translateY(-120px);
+    border: 1px solid var(--color-border, #e6dfcc);
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(44, 37, 32, 0.15);
+    backdrop-filter: blur(16px);
+    padding: 16px;
+    transform: translateX(120%);
     opacity: 0;
     pointer-events: none;
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+    z-index: 951;
   }
 
-  .reader-header.visible {
-    transform: translateY(0);
+  .reader-settings-panel.visible,
+  .reader-floating-right:hover .reader-settings-panel {
+    transform: translateX(0);
     opacity: 1;
     pointer-events: auto;
   }
 
-  .header-left, .header-right {
+  .panel-header {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--color-border, #e6dfcc);
+    margin-bottom: 14px;
   }
 
-  .reader-breadcrumb {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.85rem;
-    color: var(--color-ink-grey, #5c5c5c);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 48vw;
-  }
-  .crumb-book {
-    color: var(--color-mountain-accent, #c48c3b);
+  .panel-title {
+    font-size: 0.95rem;
     font-weight: bold;
-    text-decoration: none;
+    color: var(--color-ink-black, #1c1c1c);
   }
-  .crumb-book:hover {
-    text-decoration: underline;
+
+  .panel-close-btn {
+    background: transparent;
+    border: none;
+    font-size: 1rem;
+    color: var(--color-ink-grey, #777);
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
   }
-  .crumb-sep {
-    color: var(--color-border, #e6dfcc);
+
+  .panel-close-btn:hover {
+    color: var(--color-mountain-accent, #c48c3b);
+    background: rgba(196, 140, 59, 0.1);
+  }
+
+  .panel-body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .setting-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .setting-label {
+    font-size: 0.8rem;
+    color: var(--color-ink-grey, #666);
+    font-weight: 500;
+  }
+
+  .setting-footer {
+    padding-top: 6px;
+    border-top: 1px dashed var(--color-border, #e6dfcc);
   }
 
   /* 工具按鈕（預設宣紙水墨） */
   .tool-btn {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
     background: var(--color-paper-bg, #faf7ee);
     border: 1px solid var(--color-border, #e6dfcc);
     color: var(--color-ink-text, #2c2c2c);
-    padding: 6px 12px;
+    padding: 7px 12px;
     border-radius: 6px;
     font-size: 0.85rem;
     cursor: pointer;
@@ -275,24 +344,31 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     border-color: var(--color-mountain-accent, #c48c3b);
   }
 
-  /* 主題切換群組（預設宣紙水墨） */
+  .exit-btn {
+    width: 100%;
+    text-align: center;
+  }
+
+  /* 主題切換群組 */
   .theme-switch-group {
-    display: flex;
-    background: var(--color-paper-bg, #faf7ee);
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    background: var(--color-paper-dark, #f3edd8);
     border: 1px solid var(--color-border, #e6dfcc);
     border-radius: 6px;
-    padding: 2px;
-    gap: 2px;
+    padding: 3px;
+    gap: 3px;
   }
   .theme-btn {
     background: transparent;
     border: 1px solid transparent;
-    padding: 3px 8px;
+    padding: 5px 0;
     border-radius: 4px;
     cursor: pointer;
     font-size: 0.78rem;
     font-family: var(--font-serif, 'LXGW WenKai TC', serif);
     color: var(--color-ink-grey, #5c5c5c);
+    text-align: center;
     transition: all 0.2s ease;
   }
   .theme-btn:hover {
@@ -300,20 +376,22 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     background: rgba(196, 140, 59, 0.08);
   }
   .theme-btn.active {
-    background: rgba(196, 140, 59, 0.15);
+    background: #ffffff;
     color: var(--color-mountain-accent, #c48c3b);
-    border-color: rgba(196, 140, 59, 0.35);
+    border-color: var(--color-border, #e6dfcc);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
     font-weight: bold;
   }
 
   /* 字體縮放按鈕 */
   .font-size-group {
-    display: flex;
-    gap: 4px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
   }
   .font-btn {
-    padding: 6px 10px;
-    font-size: 0.8rem;
+    padding: 7px 10px;
+    font-size: 0.82rem;
     font-weight: bold;
   }
 
@@ -452,10 +530,30 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     background-color: #16151a !important;
     color: #dfd8cf !important;
   }
-  :global(body.theme-dark) .reader-header {
-    background: rgba(22, 21, 26, 0.96) !important;
-    border-bottom-color: #2e2822 !important;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+  :global(body.theme-dark) .side-tool-btn {
+    background: rgba(30, 27, 23, 0.92) !important;
+    border-color: #42382e !important;
+    color: #d1c5b4 !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4) !important;
+  }
+  :global(body.theme-dark) .side-tool-btn:hover {
+    background: #362e26 !important;
+    color: #e5a93b !important;
+    border-color: #e5a93b !important;
+  }
+  :global(body.theme-dark) .reader-settings-panel {
+    background: rgba(26, 23, 20, 0.98) !important;
+    border-color: #42382e !important;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6) !important;
+  }
+  :global(body.theme-dark) .panel-header {
+    border-bottom-color: #362e24 !important;
+  }
+  :global(body.theme-dark) .panel-title {
+    color: #e5a93b !important;
+  }
+  :global(body.theme-dark) .panel-close-btn {
+    color: #a39583 !important;
   }
   :global(body.theme-dark) .tool-btn {
     background: #25221d !important;
@@ -478,12 +576,6 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     background: rgba(229, 169, 59, 0.25) !important;
     color: #e5a93b !important;
     border-color: rgba(229, 169, 59, 0.4) !important;
-  }
-  :global(body.theme-dark) .reader-breadcrumb {
-    color: #8f8272 !important;
-  }
-  :global(body.theme-dark) .crumb-sep {
-    color: #55493d !important;
   }
   :global(body.theme-dark) .toc-drawer {
     background: #1c1916 !important;
@@ -516,9 +608,14 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     background-color: #faf7ee !important;
     color: #2c2c2c !important;
   }
-  :global(body.theme-rice-paper) .reader-header {
-    background: rgba(253, 252, 247, 0.96) !important;
-    border-bottom-color: #e6dfcc !important;
+  :global(body.theme-rice-paper) .side-tool-btn {
+    background: rgba(250, 247, 238, 0.92) !important;
+    border-color: #e6dfcc !important;
+    color: #2c2c2c !important;
+  }
+  :global(body.theme-rice-paper) .reader-settings-panel {
+    background: rgba(253, 252, 247, 0.98) !important;
+    border-color: #e6dfcc !important;
   }
   :global(body.theme-rice-paper) .tool-btn {
     background: #faf7ee !important;
@@ -526,7 +623,7 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     color: #2c2c2c !important;
   }
   :global(body.theme-rice-paper) .theme-switch-group {
-    background: #faf7ee !important;
+    background: #f3edd8 !important;
     border-color: #e6dfcc !important;
   }
   :global(body.theme-rice-paper) .novel-body {
@@ -545,9 +642,20 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     background-color: #e8f0e6 !important;
     color: #1e2d1c !important;
   }
-  :global(body.theme-eyecare) .reader-header {
-    background: rgba(232, 240, 230, 0.96) !important;
+  :global(body.theme-eyecare) .side-tool-btn {
+    background: rgba(232, 240, 230, 0.92) !important;
+    border-color: #c8d8c4 !important;
+    color: #1e2d1c !important;
+  }
+  :global(body.theme-eyecare) .reader-settings-panel {
+    background: rgba(232, 240, 230, 0.98) !important;
+    border-color: #c8d8c4 !important;
+  }
+  :global(body.theme-eyecare) .panel-header {
     border-bottom-color: #c8d8c4 !important;
+  }
+  :global(body.theme-eyecare) .panel-title {
+    color: #1e4d3a !important;
   }
   :global(body.theme-eyecare) .tool-btn {
     background: #dde8db !important;
@@ -555,16 +663,16 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     color: #1e2d1c !important;
   }
   :global(body.theme-eyecare) .theme-switch-group {
-    background: #dde8db !important;
+    background: #d8e5d5 !important;
     border-color: #b8ccb3 !important;
   }
   :global(body.theme-eyecare) .theme-btn {
     color: #3d5939 !important;
   }
   :global(body.theme-eyecare) .theme-btn.active {
-    background: rgba(45, 95, 90, 0.2) !important;
+    background: #ffffff !important;
     color: #1e4d3a !important;
-    border-color: rgba(45, 95, 90, 0.4) !important;
+    border-color: #b8ccb3 !important;
   }
   :global(body.theme-eyecare) .toc-drawer {
     background: #e8f0e6 !important;
@@ -593,8 +701,16 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     background-color: #ffffff !important;
     color: #222222 !important;
   }
-  :global(body.theme-light) .reader-header {
-    background: rgba(255, 255, 255, 0.96) !important;
+  :global(body.theme-light) .side-tool-btn {
+    background: rgba(255, 255, 255, 0.92) !important;
+    border-color: #e2e2e2 !important;
+    color: #222222 !important;
+  }
+  :global(body.theme-light) .reader-settings-panel {
+    background: rgba(255, 255, 255, 0.98) !important;
+    border-color: #e2e2e2 !important;
+  }
+  :global(body.theme-light) .panel-header {
     border-bottom-color: #e2e2e2 !important;
   }
   :global(body.theme-light) .tool-btn {
@@ -603,14 +719,14 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     color: #333333 !important;
   }
   :global(body.theme-light) .theme-switch-group {
-    background: #f4f4f4 !important;
+    background: #f0f0f0 !important;
     border-color: #dddddd !important;
   }
   :global(body.theme-light) .theme-btn {
     color: #666666 !important;
   }
   :global(body.theme-light) .theme-btn.active {
-    background: #e0e0e0 !important;
+    background: #ffffff !important;
     color: #111111 !important;
     border-color: #cccccc !important;
   }
@@ -708,86 +824,85 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     const initialSlug = wrapper.getAttribute('data-current-slug');
     const baseUrl = document.querySelector('meta[name="base-url"]')?.getAttribute('content') || '/';
 
-    // 1. 頂部智慧懸浮控制列 (全站導航列 + 小說控制列同步滑出)
-    const siteHeader = document.getElementById('site-header');
-    const readerHeader = document.getElementById('reader-header');
-    const hoverTrigger = document.getElementById('header-hover-trigger');
-    let hideHeaderTimer = null;
-    let lastScrollY = window.scrollY;
-    let isDrawerOpen = false;
-
-    function showHeader() {
-      if (hideHeaderTimer) clearTimeout(hideHeaderTimer);
-      if (siteHeader) siteHeader.classList.add('visible');
-      if (readerHeader) readerHeader.classList.add('visible');
-    }
-
-    function scheduleHideHeader(delay = 2500) {
-      if (isDrawerOpen) return;
-      if (hideHeaderTimer) clearTimeout(hideHeaderTimer);
-      hideHeaderTimer = setTimeout(() => {
-        if (!isDrawerOpen) {
-          const isHoveringSite = siteHeader?.matches(':hover');
-          const isHoveringReader = readerHeader?.matches(':hover');
-          if (!isHoveringSite && !isHoveringReader) {
-            if (siteHeader) siteHeader.classList.remove('visible');
-            if (readerHeader) readerHeader.classList.remove('visible');
-          }
-        }
-      }, delay);
-    }
-
-    // 初始短暫展示 2 秒後自動收起
-    showHeader();
-    scheduleHideHeader(2000);
-
-    // 滑鼠移至頂部 55px 範圍內喚醒兩層工具列
-    window.addEventListener('mousemove', (e) => {
-      if (e.clientY <= 55) {
-        showHeader();
-      } else if (e.clientY > 110) {
-        scheduleHideHeader(2000);
-      }
-    });
-
-    if (siteHeader) {
-      siteHeader.addEventListener('mouseenter', showHeader);
-      siteHeader.addEventListener('mouseleave', () => scheduleHideHeader(1500));
-    }
-
-    if (readerHeader) {
-      readerHeader.addEventListener('mouseenter', showHeader);
-      readerHeader.addEventListener('mouseleave', () => scheduleHideHeader(1500));
-    }
-
-    if (hoverTrigger) {
-      hoverTrigger.addEventListener('mouseenter', showHeader);
-    }
-
-    // 2. 抽屜式目錄開關
+    // 1. 左側目錄抽屜開關 (支援點擊與懸停)
     const tocDrawer = document.getElementById('toc-drawer');
     const tocOverlay = document.getElementById('toc-drawer-overlay');
-    const toggleTocBtn = document.getElementById('toggle-toc-btn') || document.getElementById('toggle-toc-drawer');
+    const leftTocTrigger = document.getElementById('left-toc-trigger');
     const closeTocBtn = document.getElementById('toc-drawer-close');
 
     function openDrawer() {
-      isDrawerOpen = true;
-      showHeader();
       if (tocDrawer) tocDrawer.classList.remove('hidden');
       if (tocOverlay) tocOverlay.classList.remove('hidden');
       document.body.style.overflow = 'hidden';
     }
     function closeDrawer() {
-      isDrawerOpen = false;
       if (tocDrawer) tocDrawer.classList.add('hidden');
       if (tocOverlay) tocOverlay.classList.add('hidden');
       document.body.style.overflow = '';
-      scheduleHideHeader(1500);
     }
 
-    if (toggleTocBtn) toggleTocBtn.addEventListener('click', openDrawer);
+    if (leftTocTrigger) {
+      leftTocTrigger.addEventListener('click', openDrawer);
+    }
     if (closeTocBtn) closeTocBtn.addEventListener('click', closeDrawer);
     if (tocOverlay) tocOverlay.addEventListener('click', closeDrawer);
+
+    // 2. 右側閱讀設定面板 (支援懸停滑出與點擊常駐/關閉)
+    const settingsContainer = document.getElementById('reader-settings-container');
+    const rightSettingsTrigger = document.getElementById('right-settings-trigger');
+    const settingsPanel = document.getElementById('reader-settings-panel');
+    const settingsPanelClose = document.getElementById('settings-panel-close');
+    let hidePanelTimer: any = null;
+    let isPanelPinned = false;
+
+    function showSettingsPanel() {
+      if (hidePanelTimer) clearTimeout(hidePanelTimer);
+      if (settingsPanel) settingsPanel.classList.add('visible');
+    }
+
+    function scheduleHideSettingsPanel(delay = 1200) {
+      if (isPanelPinned) return;
+      if (hidePanelTimer) clearTimeout(hidePanelTimer);
+      hidePanelTimer = setTimeout(() => {
+        if (!isPanelPinned && settingsPanel) {
+          settingsPanel.classList.remove('visible');
+        }
+      }, delay);
+    }
+
+    if (settingsContainer) {
+      settingsContainer.addEventListener('mouseenter', showSettingsPanel);
+      settingsContainer.addEventListener('mouseleave', () => scheduleHideSettingsPanel(1200));
+    }
+
+    if (rightSettingsTrigger) {
+      rightSettingsTrigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        isPanelPinned = !isPanelPinned;
+        if (isPanelPinned) {
+          showSettingsPanel();
+        } else {
+          scheduleHideSettingsPanel(0);
+        }
+      });
+    }
+
+    if (settingsPanelClose) {
+      settingsPanelClose.addEventListener('click', (e) => {
+        e.stopPropagation();
+        isPanelPinned = false;
+        if (settingsPanel) settingsPanel.classList.remove('visible');
+      });
+    }
+
+    // 點擊面板外側區域時收起
+    document.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement | null;
+      if (isPanelPinned && settingsContainer && target && !settingsContainer.contains(target)) {
+        isPanelPinned = false;
+        if (settingsPanel) settingsPanel.classList.remove('visible');
+      }
+    });
 
     // 3. 主題切換持久化
     const themeButtons = document.querySelectorAll('.theme-btn');
@@ -804,7 +919,7 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
       });
     });
 
-    function applyTheme(theme) {
+    function applyTheme(theme: string) {
       document.body.classList.remove('theme-dark', 'theme-rice-paper', 'theme-eyecare', 'theme-light');
       document.body.classList.add(`theme-${theme}`);
       themeButtons.forEach(b => {
@@ -817,8 +932,8 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     const fontIncrease = document.getElementById('font-increase');
     let currentFontSize = parseFloat(localStorage.getItem('novel_reader_fontsize') || '1.15');
 
-    function applyFontSize(size) {
-      const bodies = document.querySelectorAll('.novel-body');
+    function applyFontSize(size: number) {
+      const bodies = document.querySelectorAll<HTMLElement>('.novel-body');
       bodies.forEach(b => b.style.fontSize = `${size}rem`);
       localStorage.setItem('novel_reader_fontsize', size.toString());
     }
@@ -841,24 +956,10 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
       });
     }
 
-    // 5. 滾動進度條、向上滾動喚醒 Header 與歷史段落記憶
+    // 5. 滾動進度條
     const progressBar = document.getElementById('reading-progress-bar');
     window.addEventListener('scroll', () => {
       const currentScrollY = window.scrollY || document.documentElement.scrollTop;
-      const scrollDiff = currentScrollY - lastScrollY;
-
-      // 向上滾動超過 8px 且不在頂部時喚醒 Header，向下滾動超過 15px 時收起 Header
-      if (scrollDiff < -8) {
-        showHeader();
-        scheduleHideHeader(3000);
-      } else if (scrollDiff > 15 && currentScrollY > 100) {
-        if (!siteHeader?.matches(':hover') && !readerHeader?.matches(':hover') && !isDrawerOpen) {
-          siteHeader?.classList.remove('visible');
-          readerHeader?.classList.remove('visible');
-        }
-      }
-      lastScrollY = currentScrollY;
-
       const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
       if (height > 0 && progressBar) {
         const scrolled = (currentScrollY / height) * 100;
@@ -867,7 +968,7 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     });
 
     // 6. 無縫滾動加載 (Continuous Infinite Scroll)
-    let allChaptersData = null;
+    let allChaptersData: any = null;
     let loadedSlugs = new Set([initialSlug]);
     let isLoadingNext = false;
     let isAllLoaded = false;
@@ -910,7 +1011,7 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
         }
 
         const lastSlug = Array.from(loadedSlugs)[loadedSlugs.size - 1];
-        const lastIndex = data.findIndex(c => c.slug === lastSlug);
+        const lastIndex = data.findIndex((c: any) => c.slug === lastSlug);
 
         if (lastIndex === -1 || lastIndex >= data.length - 1) {
           isAllLoaded = true;
@@ -941,7 +1042,7 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
 
         // Markdown 轉換為優雅段落
         const bodyHtml = nextData.body
-          ? nextData.body.split(/\n\n+/).filter(p => p.trim()).map(p => {
+          ? nextData.body.split(/\n\n+/).filter((p: string) => p.trim()).map((p: string) => {
               const cleanP = p.trim();
               if (cleanP.startsWith('### ')) return `<h3>${cleanP.slice(4)}</h3>`;
               if (cleanP.startsWith('## ')) return `<h2>${cleanP.slice(3)}</h2>`;
@@ -969,12 +1070,12 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
           loadedSlugs.add(nextData.slug);
 
           // 套用當前字體大小
-          const newBody = article.querySelector('.novel-body');
+          const newBody = article.querySelector<HTMLElement>('.novel-body');
           if (newBody) newBody.style.fontSize = `${currentFontSize}rem`;
 
           // 增量觸發專有名詞識別
-          if (window.refreshGlossaryTerms) {
-            window.refreshGlossaryTerms(article);
+          if ((window as any).refreshGlossaryTerms) {
+            (window as any).refreshGlossaryTerms(article);
           }
 
           // 監聽新章節的可視性
@@ -1039,7 +1140,7 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
       });
     }, { threshold: 0.2 });
 
-    function observeChapter(el) {
+    function observeChapter(el: Element) {
       chapterObserver.observe(el);
     }
 
