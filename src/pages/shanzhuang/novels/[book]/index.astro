@@ -9,7 +9,15 @@ export async function getStaticPaths() {
   const allChapters = await getCollection('novel_chapters', (entry: any) => !entry.id.startsWith('_'));
 
   return allBooks.map((book) => {
-    const bookChapters = allChapters.filter((c) => c.data.book === book.slug);
+    const bookId = book.id.replace(/\.[^/.]+$/, '');
+    const cleanSlug = book.slug.replace(/[()（）\s]/g, '');
+    const bookChapters = allChapters.filter((c) => {
+      const b = c.data.book || '';
+      return b === book.slug || 
+             b === bookId || 
+             b === book.data?.title || 
+             b.replace(/[()（）\s]/g, '') === cleanSlug;
+    });
     return {
       params: { book: book.slug },
       props: { book, chapters: bookChapters },
@@ -121,7 +129,7 @@ const statusInfo = statusMap[book.data.status || 'ongoing'] || { text: '連載�
       ) : (
         <div class="empty-toc-card">
           <span class="empty-icon">❖</span>
-          <p class="empty-text">尚無章節發布。您可使用「開啟控制台.bat」快速上傳第一章節！</p>
+          <p class="empty-text">尚無章節發布，新章連載即將展開，敬請期待。</p>
         </div>
       )}
     </section>

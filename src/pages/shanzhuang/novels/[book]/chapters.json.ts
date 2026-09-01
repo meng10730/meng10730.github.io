@@ -5,7 +5,15 @@ export async function getStaticPaths() {
   const allChapters = await getCollection('novel_chapters', (entry: any) => !entry.id.startsWith('_'));
 
   return allBooks.map((book) => {
-    const bookChapters = allChapters.filter((c) => c.data.book === book.slug);
+    const bookId = book.id.replace(/\.[^/.]+$/, '');
+    const cleanSlug = book.slug.replace(/[()（）\s]/g, '');
+    const bookChapters = allChapters.filter((c) => {
+      const b = c.data.book || '';
+      return b === book.slug || 
+             b === bookId || 
+             b === book.data?.title || 
+             b.replace(/[()（）\s]/g, '') === cleanSlug;
+    });
     return {
       params: { book: book.slug },
       props: { book, chapters: bookChapters },

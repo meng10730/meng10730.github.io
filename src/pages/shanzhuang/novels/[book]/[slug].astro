@@ -8,12 +8,21 @@ export async function getStaticPaths() {
   const allBooks = await getCollection('novels', (entry: any) => !entry.id.startsWith('_'));
 
   const bookMap = new Map();
-  allBooks.forEach(b => bookMap.set(b.slug, b));
+  allBooks.forEach(b => {
+    bookMap.set(b.slug, b);
+    bookMap.set(b.id.replace(/\.[^/.]+$/, ''), b);
+    bookMap.set(b.data.title, b);
+  });
 
   return allChapters.map((chapter) => {
-    const bookSlug = chapter.data.book || 'tianxia';
-    const book = bookMap.get(bookSlug) || { data: { title: '小說連載' }, slug: bookSlug };
-    const siblingChapters = allChapters.filter(c => (c.data.book || 'tianxia') === bookSlug);
+    const rawBook = chapter.data.book || 'tianxia';
+    const book = bookMap.get(rawBook) || { data: { title: rawBook }, slug: rawBook };
+    const bookSlug = book.slug || rawBook;
+    const cleanRaw = rawBook.replace(/[()（）\s]/g, '');
+    const siblingChapters = allChapters.filter(c => {
+      const b = c.data.book || 'tianxia';
+      return b === rawBook || b === bookSlug || b === book.data?.title || b.replace(/[()（）\s]/g, '') === cleanRaw;
+    });
 
     return {
       params: { book: bookSlug, slug: chapter.slug },
