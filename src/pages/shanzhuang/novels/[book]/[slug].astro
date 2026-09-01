@@ -7,25 +7,32 @@ export async function getStaticPaths() {
   const allChapters = await getCollection('novel_chapters', (entry: any) => !entry.id.startsWith('_'));
   const allBooks = await getCollection('novels', (entry: any) => !entry.id.startsWith('_'));
 
-  const bookMap = new Map();
-  allBooks.forEach(b => {
-    bookMap.set(b.slug, b);
-    bookMap.set(b.id.replace(/\.[^/.]+$/, ''), b);
-    bookMap.set(b.data.title, b);
-  });
+  const normalizeSlug = (s: string) => (s || '').toLowerCase().replace(/[()（）\s_-]/g, '');
 
   return allChapters.map((chapter) => {
-    const rawBook = chapter.data.book || 'tianxia';
-    const book = bookMap.get(rawBook) || { data: { title: rawBook }, slug: rawBook };
-    const bookSlug = book.slug || rawBook;
-    const cleanRaw = rawBook.replace(/[()（）\s]/g, '');
+    const rawBookSlug = chapter.data.book || 'tianxia';
+    const rawBookNorm = normalizeSlug(rawBookSlug);
+    const matchedBook = allBooks.find(b => 
+      b.slug === rawBookSlug || 
+      b.id === rawBookSlug || 
+      b.data.title === rawBookSlug ||
+      normalizeSlug(b.slug) === rawBookNorm ||
+      normalizeSlug(b.data.title) === rawBookNorm
+    );
+    const actualBookSlug = matchedBook ? matchedBook.slug : rawBookSlug;
+    const book = matchedBook || { data: { title: rawBookSlug }, slug: actualBookSlug };
     const siblingChapters = allChapters.filter(c => {
-      const b = c.data.book || 'tianxia';
-      return b === rawBook || b === bookSlug || b === book.data?.title || b.replace(/[()（）\s]/g, '') === cleanRaw;
+      const cNorm = normalizeSlug(c.data.book || '');
+      return (
+        c.data.book === actualBookSlug ||
+        c.data.book === rawBookSlug ||
+        cNorm === rawBookNorm ||
+        cNorm === normalizeSlug(actualBookSlug)
+      );
     });
 
     return {
-      params: { book: bookSlug, slug: chapter.slug },
+      params: { book: actualBookSlug, slug: chapter.slug },
       props: { chapter, book, allChapters: siblingChapters },
     };
   });

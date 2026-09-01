@@ -8,15 +8,20 @@ export async function getStaticPaths() {
   const allBooks = await getCollection('novels', (entry: any) => !entry.id.startsWith('_'));
   const allChapters = await getCollection('novel_chapters', (entry: any) => !entry.id.startsWith('_'));
 
+  const normalizeSlug = (s: string) => (s || '').toLowerCase().replace(/[()（）\s_-]/g, '');
+
   return allBooks.map((book) => {
-    const bookId = book.id.replace(/\.[^/.]+$/, '');
-    const cleanSlug = book.slug.replace(/[()（）\s]/g, '');
+    const targetNorm = normalizeSlug(book.slug || book.id || book.data.title);
     const bookChapters = allChapters.filter((c) => {
-      const b = c.data.book || '';
-      return b === book.slug || 
-             b === bookId || 
-             b === book.data?.title || 
-             b.replace(/[()（）\s]/g, '') === cleanSlug;
+      const cNorm = normalizeSlug(c.data.book || '');
+      return (
+        c.data.book === book.slug ||
+        c.data.book === book.id ||
+        c.data.book === book.data.title ||
+        cNorm === targetNorm ||
+        cNorm.includes(targetNorm) ||
+        targetNorm.includes(cNorm)
+      );
     });
     return {
       params: { book: book.slug },
@@ -47,6 +52,7 @@ const statusMap: Record<string, { text: string; class: string }> = {
   ongoing: { text: '連載中', class: 'status-ongoing' },
   completed: { text: '已完結', class: 'status-completed' },
   hiatus: { text: '暫停更', class: 'status-hiatus' },
+  draft: { text: '籌備中', class: 'status-hiatus' },
 };
 
 const statusInfo = statusMap[book.data.status || 'ongoing'] || { text: '連載中', class: 'status-ongoing' };
@@ -106,20 +112,22 @@ const statusInfo = statusMap[book.data.status || 'ongoing'] || { text: '連載�
               <a href={`${baseUrl}shanzhuang/novels/${book.slug}/${firstChapter.slug}/`} class="read-btn primary-btn">
                 <span>從頭開始閱讀</span>
               </a>
-              <button type="button" class="read-btn secondary-btn" id="resume-reading-btn" data-book={book.slug} data-first-slug={firstChapter.slug}>
-                <span>繼續閱讀上次進度</span>
-              </button>
+              <a href={`${baseUrl}shanzhuang/novels/${book.slug}/${sortedChapters[sortedChapters.length - 1].slug}/`} class="read-btn secondary-btn">
+                <span>續讀最新小節</span>
+              </a>
             </>
           ) : (
-            <div class="empty-hint">❖ 作者正在閉關著書，連載即將開啟，敬請期待 ❖</div>
+            <div class="novel-empty-tip">
+              <span>❖ 作者正在閉關著書，連載即將開啟，敬請期待 ❖</span>
+            </div>
           )}
         </div>
       </div>
     </div>
 
-    <!-- 五層折疊目錄樹區塊 -->
-    <section class="novel-toc-section mt-10">
-      <div class="section-heading">
+    <!-- 底部章節目錄導航區 -->
+    <section class="novel-toc-section mt-12">
+      <div class="section-header text-center mb-8">
         <h2 class="section-title">❖ 全書卷軸章節目錄 ❖</h2>
         <span class="section-subtitle">點擊各部、卷以展開或收合章節</span>
       </div>
@@ -129,7 +137,7 @@ const statusInfo = statusMap[book.data.status || 'ongoing'] || { text: '連載�
       ) : (
         <div class="empty-toc-card">
           <span class="empty-icon">❖</span>
-          <p class="empty-text">尚無章節發布，新章連載即將展開，敬請期待。</p>
+          <p class="empty-text">暫無章節發布。作者正在撰寫中，敬請期待後續更新。</p>
         </div>
       )}
     </section>

@@ -2979,6 +2979,81 @@ class MainWindow(QMainWindow):
         row_book.addWidget(btn_add_book)
         sel_layout.addLayout(row_book)
 
+        input_qss = "background-color: #22222b; border: 1px solid #3e3e4f; border-radius: 5px; padding: 6px 10px; color: #ffffff; font-size: 13px;"
+
+        # 1.1 當前作品資訊與發布標記設定 (簡介、分類標籤、連載狀態)
+        meta_box = QFrame()
+        meta_box.setStyleSheet("background-color: #16161d; border: 1px solid #2e2e3a; border-radius: 8px; padding: 10px;")
+        meta_layout = QVBoxLayout(meta_box)
+        meta_layout.setSpacing(8)
+
+        meta_row1 = QHBoxLayout()
+        lbl_meta_title = QLabel("書名:")
+        lbl_meta_title.setStyleSheet("color: #a2a2ab; font-weight: bold;")
+        self.novel_meta_title_input = QLineEdit()
+        self.novel_meta_title_input.setMinimumHeight(32)
+        self.novel_meta_title_input.setStyleSheet(input_qss)
+
+        lbl_meta_status = QLabel("狀態標記:")
+        lbl_meta_status.setStyleSheet("color: #a2a2ab; font-weight: bold;")
+        self.novel_meta_status_combo = NoScrollComboBox()
+        self.novel_meta_status_combo.setMinimumHeight(32)
+        self.novel_meta_status_combo.addItem("連載中", "ongoing")
+        self.novel_meta_status_combo.addItem("已完結", "completed")
+        self.novel_meta_status_combo.addItem("暫停更", "hiatus")
+        self.novel_meta_status_combo.addItem("籌備中", "draft")
+
+        lbl_meta_genre = QLabel("標籤分類:")
+        lbl_meta_genre.setStyleSheet("color: #a2a2ab; font-weight: bold;")
+        self.novel_meta_genre_input = QLineEdit()
+        self.novel_meta_genre_input.setMinimumHeight(32)
+        self.novel_meta_genre_input.setStyleSheet(input_qss)
+        self.novel_meta_genre_input.setPlaceholderText("用逗號分隔，如：仙俠, 武俠")
+
+        meta_row1.addWidget(lbl_meta_title)
+        meta_row1.addWidget(self.novel_meta_title_input, 2)
+        meta_row1.addWidget(lbl_meta_status)
+        meta_row1.addWidget(self.novel_meta_status_combo, 1)
+        meta_row1.addWidget(lbl_meta_genre)
+        meta_row1.addWidget(self.novel_meta_genre_input, 2)
+        meta_layout.addLayout(meta_row1)
+
+        meta_row2 = QVBoxLayout()
+        meta_desc_head = QHBoxLayout()
+        lbl_meta_desc = QLabel("作品簡介 (面向讀者顯示的故事簡介與大綱):")
+        lbl_meta_desc.setStyleSheet("color: #a2a2ab; font-weight: bold; font-size: 12px;")
+        btn_save_meta = QPushButton("💾 儲存作品簡介與狀態")
+        btn_save_meta.setFixedSize(190, 30)
+        btn_save_meta.setStyleSheet("""
+            QPushButton {
+                background-color: #2e3846;
+                color: #88c0d0;
+                font-weight: bold;
+                font-size: 12px;
+                border-radius: 4px;
+                border: 1px solid #434c5e;
+            }
+            QPushButton:hover {
+                background-color: #3b4252;
+                color: #eceff4;
+            }
+        """)
+        btn_save_meta.clicked.connect(self.save_current_novel_metadata)
+        meta_desc_head.addWidget(lbl_meta_desc)
+        meta_desc_head.addStretch()
+        meta_desc_head.addWidget(btn_save_meta)
+        meta_row2.addLayout(meta_desc_head)
+
+        self.novel_meta_desc_edit = QPlainTextEdit()
+        self.novel_meta_desc_edit.setMinimumHeight(60)
+        self.novel_meta_desc_edit.setMaximumHeight(85)
+        self.novel_meta_desc_edit.setStyleSheet(input_qss)
+        self.novel_meta_desc_edit.setPlaceholderText("請輸入作品簡介與大綱...")
+        meta_row2.addWidget(self.novel_meta_desc_edit)
+        meta_layout.addLayout(meta_row2)
+
+        sel_layout.addWidget(meta_box)
+
         # 快速帶入歷史章節選單
         row_preset = QHBoxLayout()
         lbl_preset = QLabel("📚 歷史章節:")
@@ -3241,7 +3316,7 @@ class MainWindow(QMainWindow):
         self.novel_hierarchy = {}
         self.novel_history_items = []  # [ { label: str, b_slug, p_num, p_title, v_num, v_title, c_num, c_title, max_s_num } ]
         
-        # 1. 讀取作品列表
+        # 1. 讀取作品列表 (包含簡介、狀態、標籤)
         novels_dir = os.path.join(self.project_dir, "src", "content", "novels")
         if os.path.exists(novels_dir):
             for fname in os.listdir(novels_dir):
@@ -3249,22 +3324,58 @@ class MainWindow(QMainWindow):
                     book_slug = os.path.splitext(fname)[0]
                     fpath = os.path.join(novels_dir, fname)
                     book_title = book_slug
+                    book_desc = ""
+                    book_status = "ongoing"
+                    book_genre = ["仙俠", "武俠"]
                     try:
                         with open(fpath, "r", encoding="utf-8") as f:
                             content = f.read()
-                            for line in content.split("\n"):
-                                if line.startswith("title:"):
-                                    book_title = line.replace("title:", "").strip().strip("\"'")
-                                    break
+                        
+                        import re
+                        m = re.search(r"^---\s*\n([\s\S]*?)\n---", content)
+                        if m:
+                            fm_str = m.group(1)
+                            for line in fm_str.split("\n"):
+                                line_s = line.strip()
+                                if line_s.startswith("title:"):
+                                    book_title = line_s.replace("title:", "").strip().strip("\"'")
+                                elif line_s.startswith("description:"):
+                                    book_desc = line_s.replace("description:", "").strip().strip("\"'")
+                                elif line_s.startswith("status:"):
+                                    book_status = line_s.replace("status:", "").strip().strip("\"'")
+                                elif line_s.startswith("genre:"):
+                                    g_str = line_s.replace("genre:", "").strip()
+                                    try:
+                                        import json
+                                        book_genre = json.loads(g_str.replace("'", '"'))
+                                    except Exception:
+                                        book_genre = [g.strip().strip("\"'") for g in g_str.strip("[]").split(",") if g.strip()]
+                            
+                            # 正文如果還有額外簡介也讀取
+                            body_part = content[m.end():].strip()
+                            if body_part and not book_desc:
+                                book_desc = body_part
                     except Exception:
                         pass
+                    
                     self.novel_hierarchy[book_slug] = {
                         "title": book_title,
+                        "description": book_desc,
+                        "status": book_status,
+                        "genre": book_genre,
+                        "fname": fname,
                         "parts": {}
                     }
         
         if not self.novel_hierarchy:
-            self.novel_hierarchy["tianxia"] = { "title": "天下", "parts": {} }
+            self.novel_hierarchy["tianxia"] = {
+                "title": "天下",
+                "description": "原創長篇小說 天下",
+                "status": "ongoing",
+                "genre": ["仙俠", "武俠"],
+                "fname": "tianxia.md",
+                "parts": {}
+            }
 
         # 2. 讀取所有現有章節
         chapters_dir = os.path.join(self.project_dir, "src", "content", "novel_chapters")
@@ -3308,7 +3419,14 @@ class MainWindow(QMainWindow):
                             if ms_num: s_num = int(ms_num.group(1))
 
                             if b_slug not in self.novel_hierarchy:
-                                self.novel_hierarchy[b_slug] = { "title": b_slug, "parts": {} }
+                                self.novel_hierarchy[b_slug] = {
+                                    "title": b_slug,
+                                    "description": "",
+                                    "status": "ongoing",
+                                    "genre": ["仙俠", "武俠"],
+                                    "fname": f"{b_slug}.md",
+                                    "parts": {}
+                                }
                             
                             parts = self.novel_hierarchy[b_slug]["parts"]
                             if p_num not in parts:
@@ -3334,8 +3452,74 @@ class MainWindow(QMainWindow):
             self.novel_book_combo.addItem(f"{b_info['title']} ({b_slug})", b_slug)
         self.novel_book_combo.blockSignals(False)
 
-        # 4. 刷新歷史章節預設選單
+        # 4. 刷新歷史章節預設選單與當前作品 Metadata
+        self.load_current_novel_metadata()
         self.refresh_novel_history_combo()
+
+    def load_current_novel_metadata(self):
+        b_slug = self.novel_book_combo.currentData() or "tianxia"
+        b_info = self.novel_hierarchy.get(b_slug, {})
+        
+        self.novel_meta_title_input.setText(b_info.get("title", b_slug))
+        self.novel_meta_desc_edit.setPlainText(b_info.get("description", ""))
+        
+        status = b_info.get("status", "ongoing")
+        idx = self.novel_meta_status_combo.findData(status)
+        if idx >= 0:
+            self.novel_meta_status_combo.setCurrentIndex(idx)
+        else:
+            self.novel_meta_status_combo.setCurrentIndex(0)
+            
+        genres = b_info.get("genre", ["仙俠", "武俠"])
+        self.novel_meta_genre_input.setText(", ".join(genres) if isinstance(genres, list) else str(genres))
+
+    def save_current_novel_metadata(self):
+        b_slug = self.novel_book_combo.currentData() or "tianxia"
+        title = self.novel_meta_title_input.text().strip() or b_slug
+        status = self.novel_meta_status_combo.currentData() or "ongoing"
+        desc = self.novel_meta_desc_edit.toPlainText().strip()
+        genre_raw = self.novel_meta_genre_input.text().strip()
+        genres = [g.strip() for g in genre_raw.replace("，", ",").split(",") if g.strip()]
+        if not genres:
+            genres = ["仙俠", "武俠"]
+            
+        novels_dir = os.path.join(self.project_dir, "src", "content", "novels")
+        os.makedirs(novels_dir, exist_ok=True)
+        target_file = os.path.join(novels_dir, f"{b_slug}.md")
+        
+        import json
+        genre_json = json.dumps(genres, ensure_ascii=False)
+        frontmatter_str = f"""---
+title: "{title}"
+description: "{desc}"
+genre: {genre_json}
+status: "{status}"
+pubDate: {datetime.date.today().isoformat()}
+---
+
+{desc}
+"""
+        try:
+            with open(target_file, "w", encoding="utf-8") as f:
+                f.write(frontmatter_str)
+            
+            # 更新本機記憶體快取
+            if b_slug in self.novel_hierarchy:
+                self.novel_hierarchy[b_slug]["title"] = title
+                self.novel_hierarchy[b_slug]["description"] = desc
+                self.novel_hierarchy[b_slug]["status"] = status
+                self.novel_hierarchy[b_slug]["genre"] = genres
+            
+            # 更新下拉選單項目文字
+            cur_idx = self.novel_book_combo.currentIndex()
+            if cur_idx >= 0:
+                self.novel_book_combo.setItemText(cur_idx, f"{title} ({b_slug})")
+                
+            self.log(f"✓ 已成功儲存作品《{title}》簡介、標籤與連載狀態標記！")
+            QMessageBox.information(self, "儲存成功", f"🎉 作品《{title}》之簡介與狀態標記已成功儲存！\n\n點擊發布後即可同步更新至網站。")
+        except Exception as e:
+            QMessageBox.critical(self, "儲存失敗", f"無法寫入作品設定檔: {e}")
+            self.log(f"❌ 儲存作品設定失敗: {e}")
 
     def refresh_novel_history_combo(self):
         b_slug = self.novel_book_combo.currentData() or "tianxia"
@@ -3396,6 +3580,7 @@ class MainWindow(QMainWindow):
         self.update_novel_target_preview()
 
     def on_novel_publisher_book_changed(self):
+        self.load_current_novel_metadata()
         self.refresh_novel_history_combo()
 
     def on_novel_history_selected(self, index):
