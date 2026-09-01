@@ -197,7 +197,7 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
                 </div>
               </header>
 
-              <div class="novel-body markdown-body prose prose-invert">
+              <div class="novel-body prose max-w-none">
                 <SecContent />
               </div>
             </article>
@@ -535,6 +535,32 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     gap: 16px;
     font-size: 0.8rem;
     color: var(--color-ink-light, #8c8c8c);
+  }
+
+  /* 小說正文極致排版核心樣式 (字體行高、首行縮排、段落呼吸感) */
+  .novel-body {
+    font-family: var(--font-serif, 'LXGW WenKai TC', 'Noto Serif TC', 'Songti TC', serif);
+    font-size: 1.18rem;
+    line-height: 2.1;
+    letter-spacing: 0.035em;
+    color: var(--color-ink-text, #2c2c2c);
+    text-align: justify;
+    word-break: break-word;
+  }
+
+  .novel-body :global(p) {
+    margin-top: 0;
+    margin-bottom: 1.6em;
+    text-indent: 2em;
+    line-height: 2.1;
+  }
+
+  .novel-body :global(blockquote) {
+    border-left: 3px solid var(--color-mountain-accent, #c48c3b);
+    padding-left: 16px;
+    margin: 1.5em 0;
+    font-style: italic;
+    opacity: 0.9;
   }
 
   /* 主題模式切換覆寫樣式 */

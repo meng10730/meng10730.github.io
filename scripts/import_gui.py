@@ -3743,6 +3743,18 @@ pubDate: {datetime.date.today().isoformat()}
         os.makedirs(chapters_dir, exist_ok=True)
         target_filepath = os.path.join(chapters_dir, target_filename)
 
+        # 智慧段落排版正規化 (Smart Paragraph Normalization)
+        # 若使用者粘貼為單行換行文本，自動轉化為標準 Markdown 段落（保留空行並為緊鄰的非空行補充空行）
+        raw_lines = [l.rstrip() for l in body.split("\n")]
+        formatted_lines = []
+        for i, l in enumerate(raw_lines):
+            formatted_lines.append(l)
+            if l.strip() != "":
+                if i + 1 < len(raw_lines) and raw_lines[i + 1].strip() != "":
+                    formatted_lines.append("")
+
+        formatted_body = "\n".join(formatted_lines).strip()
+
         frontmatter_str = f"""---
 title: "{s_title}"
 book: "{b_slug}"
@@ -3762,7 +3774,7 @@ order: {order_val}
 pubDate: {datetime.date.today().isoformat()}
 ---
 
-{body}
+{formatted_body}
 """
         try:
             with open(target_filepath, "w", encoding="utf-8") as f:
