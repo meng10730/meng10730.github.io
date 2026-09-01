@@ -52,16 +52,15 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
   ]}
 >
   <div class="novel-reader-wrapper" id="reader-wrapper" data-book={book.slug} data-current-slug={chapter.slug}>
-    <!-- 小說專屬控制橫條 (位於全站導覽列正下方，隨文件流自然排列，絕不遮擋正文) -->
+    <!-- 小說專屬控制橫條 (位於全站導覽列正下方，向下並排兩行，絕不遮擋正文) -->
     <nav class="reader-sub-header" id="reader-sub-header">
-      <div class="sub-header-left">
-        <!-- 目錄按鈕 -->
+      <!-- 第一行：目錄按鈕 + 完整章節路徑 -->
+      <div class="sub-header-top-row">
         <button type="button" class="tool-btn toggle-toc-btn" id="left-toc-trigger" aria-label="切換目錄" title="查看目錄">
           <span class="btn-icon">❖</span>
           <span class="btn-label">目錄</span>
         </button>
 
-        <!-- 章節路徑麵包屑 -->
         <div class="reader-breadcrumb">
           <a href={`${baseUrl}shanzhuang/novels/${book.slug}/`} class="crumb-book">{book.data.title}</a>
           <span class="crumb-sep">/</span>
@@ -73,8 +72,8 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
         </div>
       </div>
 
-      <!-- 右側主題與字級選單 (滑鼠移至右側時平滑滑出) -->
-      <div class="sub-header-right" id="sub-header-right">
+      <!-- 第二行：向下並排的主題與字級選單 -->
+      <div class="sub-header-bottom-row" id="sub-header-bottom-row">
         <div class="theme-switch-group">
           <button type="button" class="theme-btn active" data-theme="rice-paper" title="仿古宣紙 (預設)">宣紙</button>
           <button type="button" class="theme-btn" data-theme="dark" title="深邃夜讀">夜讀</button>
@@ -83,12 +82,12 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
         </div>
 
         <div class="font-size-group">
-          <button type="button" class="tool-btn font-btn" id="font-decrease" title="縮小字體">A-</button>
-          <button type="button" class="tool-btn font-btn" id="font-increase" title="放大字體">A+</button>
+          <button type="button" class="tool-btn font-btn" id="font-decrease" title="縮小字體">字級 A-</button>
+          <button type="button" class="tool-btn font-btn" id="font-increase" title="放大字體">字級 A+</button>
         </div>
 
         <a href={`${baseUrl}shanzhuang/novels/${book.slug}/`} class="tool-btn exit-btn" title="返回作品總覽">
-          <span>✕</span>
+          返回作品
         </a>
       </div>
     </nav>
@@ -181,45 +180,45 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     transition: background-color 0.3s ease, color 0.3s ease;
   }
 
-  /* 小說專屬控制橫條 (位於全站 Header 正下方，隨文件流自然排列，絕不遮擋正文) */
+  /* 小說專屬控制橫條 (位於全站 Header 正下方，向下並排兩行，絕不遮擋正文) */
   .reader-sub-header {
     position: sticky;
     top: 65px; /* 全站 Header 下緣 */
     left: 0;
     width: 100%;
-    height: 48px;
     z-index: 95;
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 24px;
-    background: rgba(253, 252, 247, 0.95);
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 24px 12px;
+    background: rgba(253, 252, 247, 0.96);
     border-bottom: 1px solid var(--color-border, #e6dfcc);
     backdrop-filter: blur(12px);
     box-shadow: 0 2px 10px rgba(44, 37, 32, 0.04);
     transition: background 0.3s ease, border-color 0.3s ease;
   }
 
-  .sub-header-left {
+  /* 第一行：左側目錄按鈕 + 完整章節路徑 */
+  .sub-header-top-row {
     display: flex;
     align-items: center;
-    gap: 14px;
-    min-width: 0;
-    flex: 1;
+    gap: 12px;
+    width: 100%;
   }
 
   .reader-breadcrumb {
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 0.88rem;
+    font-size: 0.9rem;
     color: var(--color-ink-grey, #5c5c5c);
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
     flex: 1;
-    padding-right: 16px;
+  }
+  .reader-breadcrumb::-webkit-scrollbar {
+    display: none;
   }
   .crumb-book {
     color: var(--color-mountain-accent, #c48c3b);
@@ -235,12 +234,14 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     flex-shrink: 0;
   }
 
-  /* 右側控制項：直接並排完整顯示，絕不截斷 */
-  .sub-header-right {
+  /* 第二行：向下並排的主題與字級選單 (放在章節名下方) */
+  .sub-header-bottom-row {
     display: flex;
     align-items: center;
-    gap: 10px;
-    flex-shrink: 0;
+    gap: 12px;
+    width: 100%;
+    flex-wrap: wrap;
+    padding-left: 2px;
   }
 
   /* 工具按鈕（預設宣紙水墨） */
@@ -252,7 +253,7 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     background: var(--color-paper-bg, #faf7ee);
     border: 1px solid var(--color-border, #e6dfcc);
     color: var(--color-ink-text, #2c2c2c);
-    padding: 6px 12px;
+    padding: 5px 12px;
     border-radius: 6px;
     font-size: 0.85rem;
     cursor: pointer;
@@ -267,7 +268,8 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
   }
 
   .exit-btn {
-    padding: 6px 10px;
+    padding: 5px 12px;
+    font-size: 0.82rem;
   }
 
   /* 主題切換群組 */
@@ -282,10 +284,10 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
   .theme-btn {
     background: transparent;
     border: 1px solid transparent;
-    padding: 4px 8px;
+    padding: 4px 10px;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 0.78rem;
+    font-size: 0.8rem;
     font-family: var(--font-serif, 'LXGW WenKai TC', serif);
     color: var(--color-ink-grey, #5c5c5c);
     transition: all 0.2s ease;
@@ -309,8 +311,8 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     gap: 4px;
   }
   .font-btn {
-    padding: 6px 10px;
-    font-size: 0.8rem;
+    padding: 5px 10px;
+    font-size: 0.82rem;
     font-weight: bold;
   }
 
@@ -337,16 +339,16 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     position: relative;
     max-width: 860px;
     margin: 0 auto;
-    padding: 48px 20px 80px;
+    padding: 40px 20px 80px;
   }
 
-  /* 左側五層目錄抽屜 (Drawer - 頂部對齊橫條下方，絕不被全站 Header 遮擋) */
+  /* 左側五層目錄抽屜 (Drawer - 頂部對齊雙行橫條下方，絕不被全站 Header 遮擋) */
   .toc-drawer {
     position: fixed;
-    top: 113px; /* 65px site-header + 48px sub-header */
+    top: 145px; /* 65px site-header + ~80px sub-header */
     left: 0;
     width: 360px;
-    height: calc(100vh - 113px);
+    height: calc(100vh - 145px);
     background: var(--color-paper-light, #fdfcf7);
     border-right: 1px solid var(--color-border, #e6dfcc);
     z-index: 1000;
@@ -393,10 +395,10 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
 
   .drawer-overlay {
     position: fixed;
-    top: 113px;
+    top: 145px;
     left: 0;
     width: 100vw;
-    height: calc(100vh - 113px);
+    height: calc(100vh - 145px);
     background: rgba(44, 37, 32, 0.35);
     z-index: 999;
     backdrop-filter: blur(4px);
