@@ -23,6 +23,18 @@ const baseUrl = import.meta.env.BASE_URL;
 const sortedChapters = [...chapters].sort((a: any, b: any) => (a.data.order || 0) - (b.data.order || 0));
 const firstChapter = sortedChapters[0];
 
+// 計算去重後的實際「章」總數
+const uniqueChaptersSet = new Set(
+  sortedChapters.map((c: any) => {
+    const p = c.data.part?.number || 1;
+    const v = c.data.volume?.number || 1;
+    const ch = c.data.chapter?.number || 1;
+    const chTitle = c.data.chapter?.title || '';
+    return `${p}-${v}-${ch}-${chTitle}`;
+  })
+);
+const totalChaptersCount = uniqueChaptersSet.size;
+
 const statusMap: Record<string, { text: string; class: string }> = {
   ongoing: { text: '連載中', class: 'status-ongoing' },
   completed: { text: '已完結', class: 'status-completed' },
@@ -74,7 +86,7 @@ const statusInfo = statusMap[book.data.status || 'ongoing'] || { text: '連載�
         <p class="novel-desc">{book.data.description || "暫無故事簡介。"}</p>
 
         <div class="novel-stats">
-          <span class="stat-item">❖ 共收錄 <strong>{sortedChapters.length}</strong> 章</span>
+          <span class="stat-item">❖ 共收錄 <strong>{totalChaptersCount}</strong> 章</span>
           {sortedChapters.length > 0 && (
             <span class="stat-item">❖ 最新：<strong>{sortedChapters[sortedChapters.length - 1].data.title}</strong></span>
           )}
