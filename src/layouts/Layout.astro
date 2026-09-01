@@ -18,6 +18,7 @@ interface Props {
   articleModified?: Date | string;
   type?: 'website' | 'article';
   breadcrumbs?: BreadcrumbItem[];
+  hideHeader?: boolean;
 }
 
 const {
@@ -28,6 +29,7 @@ const {
   articleModified,
   type = "website",
   breadcrumbs = [],
+  hideHeader = false,
 } = Astro.props;
 
 const siteUrl = "https://meng10730.github.io";
@@ -141,65 +143,67 @@ const jsonLd = {
     <!-- 全站主排版 -->
     <div class="site-wrapper">
       <!-- 新中式導航列 -->
-      <header class="site-header ink-fade-in">
-        <nav class="nav-container">
-          <div class="nav-logo">
-            <a href={import.meta.env.BASE_URL} class="cursive-title ink-logo" data-astro-prefetch="hover"
-              >晚餐後的書桌</a
-            >
-          </div>
-          <ul class="nav-links">
-            <li>
-              <a href={import.meta.env.BASE_URL} class="ink-link nav-item" data-astro-prefetch="hover"
-                >首頁</a
+      {!hideHeader && (
+        <header class="site-header ink-fade-in">
+          <nav class="nav-container">
+            <div class="nav-logo">
+              <a href={import.meta.env.BASE_URL} class="cursive-title ink-logo" data-astro-prefetch="hover"
+                >晚餐後的書桌</a
               >
-            </li>
-            <li>
-              <a
-                href={`${import.meta.env.BASE_URL}blog/`}
-                class="ink-link nav-item"
-                data-astro-prefetch="hover">文章</a
-              >
-            </li>
-            <li>
-              <a
-                href={`${import.meta.env.BASE_URL}works/`}
-                class="ink-link nav-item"
-                data-astro-prefetch="hover">作品</a
-              >
-            </li>
-            <li>
-              <a
-                href={`${import.meta.env.BASE_URL}shanzhuang/`}
-                class="ink-link nav-item"
-                data-astro-prefetch="hover">後山</a
-              >
-            </li>
-            <li>
-              <a
-                href={`${import.meta.env.BASE_URL}about/`}
-                class="ink-link nav-item"
-                data-astro-prefetch="hover">關於</a
-              >
-            </li>
-            <li>
-              <a
-                href={`${import.meta.env.BASE_URL}keystatic`}
-                class="ink-link nav-item admin-login-btn"
-                id="admin-login-btn"
-                data-astro-reload>登入</a
-              >
-            </li>
-            <li id="admin-logout-item" style="display: none;">
-              <a
-                href="#"
-                class="ink-link nav-item admin-logout-btn"
-                id="admin-logout-btn">登出</a
-              >
-            </li>
-          </ul>
-        </nav>
-      </header>
+            </div>
+            <ul class="nav-links">
+              <li>
+                <a href={import.meta.env.BASE_URL} class="ink-link nav-item" data-astro-prefetch="hover"
+                  >首頁</a
+                >
+              </li>
+              <li>
+                <a
+                  href={`${import.meta.env.BASE_URL}blog/`}
+                  class="ink-link nav-item"
+                  data-astro-prefetch="hover">文章</a
+                >
+              </li>
+              <li>
+                <a
+                  href={`${import.meta.env.BASE_URL}works/`}
+                  class="ink-link nav-item"
+                  data-astro-prefetch="hover">作品</a
+                >
+              </li>
+              <li>
+                <a
+                  href={`${import.meta.env.BASE_URL}shanzhuang/`}
+                  class="ink-link nav-item"
+                  data-astro-prefetch="hover">後山</a
+                >
+              </li>
+              <li>
+                <a
+                  href={`${import.meta.env.BASE_URL}about/`}
+                  class="ink-link nav-item"
+                  data-astro-prefetch="hover">關於</a
+                >
+              </li>
+              <li>
+                <a
+                  href={`${import.meta.env.BASE_URL}keystatic`}
+                  class="ink-link nav-item admin-login-btn"
+                  id="admin-login-btn"
+                  data-astro-reload>登入</a
+                >
+              </li>
+              <li id="admin-logout-item" style="display: none;">
+                <a
+                  href="#"
+                  class="ink-link nav-item admin-logout-btn"
+                  id="admin-logout-btn">登出</a
+                >
+              </li>
+            </ul>
+          </nav>
+        </header>
+      )}
 
       <script is:inline>
         function checkAdminStatus() {

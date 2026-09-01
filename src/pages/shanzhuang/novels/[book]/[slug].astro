@@ -43,9 +43,11 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
   title={`${chapter.data.title} · ${book.data.title} | 晚餐後的書桌`}
   description={`${book.data.title} - ${partTitle} ${volTitle} ${chapTitle} ${secTitle}`}
   type="article"
+  hideHeader={true}
   breadcrumbs={[
     { name: "首頁", url: `${baseUrl}` },
     { name: "山莊藏書閣", url: `${baseUrl}shanzhuang/` },
+    { name: "小說總覽", url: `${baseUrl}shanzhuang/novels/` },
     { name: book.data.title, url: `${baseUrl}shanzhuang/novels/${book.slug}/` },
     { name: chapter.data.title, url: `${baseUrl}shanzhuang/novels/${book.slug}/${chapter.slug}/` }
   ]}
