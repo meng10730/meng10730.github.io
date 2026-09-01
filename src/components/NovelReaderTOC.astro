@@ -107,6 +107,8 @@ sortedChapters.forEach((ch) => {
     sectionTitle: sTitle,
     isCurrent: isCur,
   });
+});
+
 // 計算全書實際的總「章」數
 const totalChaptersCount = tree.reduce(
   (acc, part) => acc + part.volumes.reduce((vAcc, vol) => vAcc + vol.chapters.length, 0),
@@ -148,9 +150,9 @@ const totalChaptersCount = tree.reduce(
                       <summary class="toc-chap-summary">
                         <span class="toc-arrow">▸</span>
                         <span class="toc-chap-title">{chap.title}</span>
-                        {chap.sections.length > 1 && (
+                        {chap.sections.length > 1 ? (
                           <span class="toc-sub-badge" style="margin-left: auto; font-size: 0.72rem; opacity: 0.85;">{chap.sections.length} 節</span>
-                        )}
+                        ) : null}
                       </summary>
 
                       <ul class="toc-section-list">
