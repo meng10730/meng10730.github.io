@@ -565,10 +565,11 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     text-indent: 0 !important;
     text-align: center !important;
     color: var(--color-mountain-accent, #c48c3b) !important;
-    letter-spacing: 0.8em !important;
-    font-size: 1.1rem !important;
-    margin: 2.4em 0 !important;
-    opacity: 0.9;
+    letter-spacing: 0.25em !important;
+    font-size: 1.05rem !important;
+    margin: 2.2em 0 !important;
+    opacity: 0.95;
+    font-weight: 500;
   }
 
   .novel-body :global(blockquote) {
@@ -962,9 +963,9 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
       const text = p.textContent ? p.textContent.trim() : '';
       if (/^[「『“"‘'‹«]/.test(text)) {
         p.classList.add('dialogue-line');
-      } else if (/^([。*·•—\-~～\s❖#]{2,}|[。]{2,})$/.test(text) || text === '。。' || text === '***' || text === '……') {
+      } else if (/^([。*·•—\-~～\s❖#]{2,}|[。]{2,})$/.test(text) || text === '。。' || text === '***' || text === '……' || text.includes('我是分隔線')) {
         p.classList.add('scene-break');
-        p.innerHTML = '❖ ❖ ❖';
+        p.innerHTML = '❖我是分隔線❖';
       }
     });
 
