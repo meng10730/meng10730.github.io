@@ -2996,7 +2996,7 @@ class MainWindow(QMainWindow):
         self.novel_chap_num_input.setFixedSize(55, 34)
         self.novel_chap_num_input.setAlignment(Qt.AlignCenter)
         self.novel_chap_num_input.setStyleSheet(input_qss)
-        self.novel_chap_num_input.textChanged.connect(self.update_novel_target_preview)
+        self.novel_chap_num_input.textChanged.connect(self.on_chapter_changed_auto_recalc_section)
         
         self.novel_chap_title_input = QLineEdit("第一章 孤崖夜雨")
         self.novel_chap_title_input.setMinimumHeight(34)
@@ -3010,6 +3010,36 @@ class MainWindow(QMainWindow):
         row_c.addWidget(QLabel("章   名稱:"))
         row_c.addWidget(self.novel_chap_title_input, 1)
         hier_layout.addLayout(row_c)
+
+        # 節 (Section) - 支援手動任意修改節數與標題
+        row_s = QHBoxLayout()
+        lbl_s_num = QLabel("❖ 節 (Section):")
+        lbl_s_num.setFixedWidth(120)
+        lbl_s_num.setStyleSheet("color: #e5a93b; font-weight: bold; font-size: 13px;")
+        self.novel_sec_num_input = QLineEdit("1")
+        self.novel_sec_num_input.setFixedSize(55, 34)
+        self.novel_sec_num_input.setAlignment(Qt.AlignCenter)
+        self.novel_sec_num_input.setStyleSheet(input_qss)
+        self.novel_sec_num_input.textChanged.connect(self.on_section_num_text_changed)
+        
+        self.novel_sec_title_input = QLineEdit("第一節")
+        self.novel_sec_title_input.setMinimumHeight(34)
+        self.novel_sec_title_input.setStyleSheet(input_qss)
+        self.novel_sec_title_input.setPlaceholderText("請輸入節標題 (如：第一節)")
+        self.novel_sec_title_input.textChanged.connect(self.update_novel_target_preview)
+
+        btn_recalc_sec = QPushButton("⚡ 重算推薦下一節")
+        btn_recalc_sec.setFixedSize(130, 34)
+        btn_recalc_sec.setStyleSheet("background-color: #2e3440; color: #88c0d0; font-size: 11px; font-weight: bold;")
+        btn_recalc_sec.clicked.connect(self.recalculate_next_section_for_current_chap)
+        
+        row_s.addWidget(lbl_s_num)
+        row_s.addWidget(QLabel("第"))
+        row_s.addWidget(self.novel_sec_num_input)
+        row_s.addWidget(QLabel("節   標題:"))
+        row_s.addWidget(self.novel_sec_title_input, 1)
+        row_s.addWidget(btn_recalc_sec)
+        hier_layout.addLayout(row_s)
 
         sel_layout.addWidget(hier_box)
 
@@ -3285,7 +3315,19 @@ class MainWindow(QMainWindow):
             self.novel_vol_title_input.setText(latest["v_title"])
             self.novel_chap_num_input.setText(str(latest["c_num"]))
             self.novel_chap_title_input.setText(latest["c_title"])
-            self.current_novel_next_sec_num = latest["max_s"] + 1
+            next_sec = latest["max_s"] + 1
+            self.novel_sec_num_input.setText(str(next_sec))
+            self.novel_sec_title_input.setText(f"第{to_chinese_num(next_sec)}節")
+        else:
+            # 全新作品或無章節紀錄：預設全部從第 1 開始
+            self.novel_part_num_input.setText("1")
+            self.novel_part_title_input.setText("第一部")
+            self.novel_vol_num_input.setText("1")
+            self.novel_vol_title_input.setText("第一卷")
+            self.novel_chap_num_input.setText("1")
+            self.novel_chap_title_input.setText("第一章")
+            self.novel_sec_num_input.setText("1")
+            self.novel_sec_title_input.setText("第一節")
 
         self.update_novel_target_preview()
 
@@ -3303,7 +3345,37 @@ class MainWindow(QMainWindow):
         self.novel_vol_title_input.setText(data["v_title"])
         self.novel_chap_num_input.setText(str(data["c_num"]))
         self.novel_chap_title_input.setText(data["c_title"])
-        self.current_novel_next_sec_num = data["max_s"] + 1
+        next_sec = data["max_s"] + 1
+        self.novel_sec_num_input.setText(str(next_sec))
+        self.novel_sec_title_input.setText(f"第{to_chinese_num(next_sec)}節")
+        self.update_novel_target_preview()
+
+    def on_chapter_changed_auto_recalc_section(self):
+        self.recalculate_next_section_for_current_chap()
+
+    def recalculate_next_section_for_current_chap(self):
+        b_slug = self.novel_book_combo.currentData() or "tianxia"
+        try:
+            p_num = int(self.novel_part_num_input.text().strip() or "1")
+            v_num = int(self.novel_vol_num_input.text().strip() or "1")
+            c_num = int(self.novel_chap_num_input.text().strip() or "1")
+        except ValueError:
+            p_num, v_num, c_num = 1, 1, 1
+
+        b_info = self.novel_hierarchy.get(b_slug, {"parts": {}})
+        chaps = b_info.get("parts", {}).get(p_num, {}).get("volumes", {}).get(v_num, {}).get("chapters", {}).get(c_num, {})
+        secs = chaps.get("sections", []) if isinstance(chaps, dict) else []
+        next_s = max(secs) + 1 if secs else 1
+        self.novel_sec_num_input.setText(str(next_s))
+        self.novel_sec_title_input.setText(f"第{to_chinese_num(next_s)}節")
+        self.update_novel_target_preview()
+
+    def on_section_num_text_changed(self):
+        try:
+            s_num = int(self.novel_sec_num_input.text().strip() or "1")
+            self.novel_sec_title_input.setText(f"第{to_chinese_num(s_num)}節")
+        except ValueError:
+            pass
         self.update_novel_target_preview()
 
     def update_novel_target_preview(self):
@@ -3320,21 +3392,16 @@ class MainWindow(QMainWindow):
             c_num = int(self.novel_chap_num_input.text().strip() or "1")
         except ValueError:
             c_num = 1
+        try:
+            s_num = int(self.novel_sec_num_input.text().strip() or "1")
+        except ValueError:
+            s_num = 1
 
         p_title = self.novel_part_title_input.text().strip() or f"第{to_chinese_num(p_num)}部"
         v_title = self.novel_vol_title_input.text().strip() or f"第{to_chinese_num(v_num)}卷"
         c_title = self.novel_chap_title_input.text().strip() or f"第{to_chinese_num(c_num)}章"
+        s_title = self.novel_sec_title_input.text().strip() or f"第{to_chinese_num(s_num)}節"
 
-        # 尋找當前章已有多少節
-        b_info = self.novel_hierarchy.get(b_slug, {"parts": {}})
-        chaps = b_info.get("parts", {}).get(p_num, {}).get("volumes", {}).get(v_num, {}).get("chapters", {}).get(c_num, {})
-        secs = chaps.get("sections", []) if isinstance(chaps, dict) else []
-        
-        if not hasattr(self, "current_novel_next_sec_num") or self.current_novel_next_sec_num <= (max(secs) if secs else 0):
-            self.current_novel_next_sec_num = max(secs) + 1 if secs else 1
-
-        s_num = self.current_novel_next_sec_num
-        s_title = f"第{to_chinese_num(s_num)}節"
         target_filename = f"{b_slug}-vol{v_num:02d}-c{c_num:02d}-s{s_num:02d}.md"
 
         self.novel_target_sec_info.setText(
@@ -3410,12 +3477,15 @@ class MainWindow(QMainWindow):
             c_num = int(self.novel_chap_num_input.text().strip() or "1")
         except ValueError:
             c_num = 1
+        try:
+            s_num = int(self.novel_sec_num_input.text().strip() or "1")
+        except ValueError:
+            s_num = 1
 
         p_title = self.novel_part_title_input.text().strip() or f"第{to_chinese_num(p_num)}部"
         v_title = self.novel_vol_title_input.text().strip() or f"第{to_chinese_num(v_num)}卷"
         c_title = self.novel_chap_title_input.text().strip() or f"第{to_chinese_num(c_num)}章"
-        s_num = getattr(self, "current_novel_next_sec_num", 1)
-        s_title = f"第{to_chinese_num(s_num)}節"
+        s_title = self.novel_sec_title_input.text().strip() or f"第{to_chinese_num(s_num)}節"
 
         order_val = p_num * 1000000 + v_num * 10000 + c_num * 100 + s_num
         target_filename = f"{b_slug}-vol{v_num:02d}-c{c_num:02d}-s{s_num:02d}.md"
@@ -3462,8 +3532,10 @@ pubDate: {datetime.date.today().isoformat()}
             if s_num not in sec_list:
                 sec_list.append(s_num)
 
-            # 遞增至下一節，清空正文並自動對焦！
-            self.current_novel_next_sec_num = s_num + 1
+            # 儲存成功：自動將節數加 1，清空正文並對焦！
+            next_s = s_num + 1
+            self.novel_sec_num_input.setText(str(next_s))
+            self.novel_sec_title_input.setText(f"第{to_chinese_num(next_s)}節")
             self.novel_content_edit.clear()
             self.update_novel_target_preview()
             self.novel_content_edit.setFocus()
