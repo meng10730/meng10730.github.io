@@ -565,7 +565,7 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     text-indent: 0 !important;
     text-align: center !important;
     color: var(--color-mountain-accent, #c48c3b) !important;
-    letter-spacing: 0.25em !important;
+    letter-spacing: 0.15em !important;
     font-size: 1.05rem !important;
     margin: 2.2em 0 !important;
     opacity: 0.95;
@@ -965,7 +965,7 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
         p.classList.add('dialogue-line');
       } else if (/^([。*·•—\-~～\s❖#]{2,}|[。]{2,})$/.test(text) || text === '。。' || text === '***' || text === '……' || text.includes('我是分隔線')) {
         p.classList.add('scene-break');
-        p.innerHTML = '❖我是分隔線❖';
+        p.innerHTML = '❖-----我是分隔線-----❖';
       }
     });
 
