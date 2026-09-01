@@ -198,7 +198,6 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     backdrop-filter: blur(12px);
     box-shadow: 0 2px 10px rgba(44, 37, 32, 0.04);
     transition: background 0.3s ease, border-color 0.3s ease;
-    overflow: hidden;
   }
 
   .sub-header-left {
@@ -213,41 +212,35 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 0.85rem;
+    font-size: 0.88rem;
     color: var(--color-ink-grey, #5c5c5c);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 60vw;
+    min-width: 0;
+    flex: 1;
+    padding-right: 16px;
   }
   .crumb-book {
     color: var(--color-mountain-accent, #c48c3b);
     font-weight: bold;
     text-decoration: none;
+    flex-shrink: 0;
   }
   .crumb-book:hover {
     text-decoration: underline;
   }
   .crumb-sep {
     color: var(--color-border, #e6dfcc);
+    flex-shrink: 0;
   }
 
-  /* 右側控制項：平時往右收起，滑鼠移至右側時才向左滑出展開 */
+  /* 右側控制項：直接並排完整顯示，絕不截斷 */
   .sub-header-right {
     display: flex;
     align-items: center;
     gap: 10px;
     flex-shrink: 0;
-    transform: translateX(calc(100% - 46px));
-    opacity: 0.6;
-    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
-    padding-left: 12px;
-  }
-
-  .sub-header-right:hover,
-  .reader-sub-header:hover .sub-header-right {
-    transform: translateX(0);
-    opacity: 1;
   }
 
   /* 工具按鈕（預設宣紙水墨） */
@@ -347,17 +340,17 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     padding: 48px 20px 80px;
   }
 
-  /* 左側五層目錄抽屜 (Drawer) */
+  /* 左側五層目錄抽屜 (Drawer - 頂部對齊橫條下方，絕不被全站 Header 遮擋) */
   .toc-drawer {
     position: fixed;
-    top: 0;
+    top: 113px; /* 65px site-header + 48px sub-header */
     left: 0;
     width: 360px;
-    height: 100vh;
+    height: calc(100vh - 113px);
     background: var(--color-paper-light, #fdfcf7);
     border-right: 1px solid var(--color-border, #e6dfcc);
     z-index: 1000;
-    box-shadow: 4px 0 24px rgba(44, 37, 32, 0.12);
+    box-shadow: 4px 4px 24px rgba(44, 37, 32, 0.15);
     display: flex;
     flex-direction: column;
     transform: translateX(0);
@@ -371,7 +364,7 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px 20px;
+    padding: 14px 20px;
     border-bottom: 1px solid var(--color-border, #e6dfcc);
     background: var(--color-paper-dark, #f3edd8);
   }
@@ -400,11 +393,11 @@ const secTitle = chapter.data.section?.title || chapter.data.title;
 
   .drawer-overlay {
     position: fixed;
-    top: 0;
+    top: 113px;
     left: 0;
     width: 100vw;
-    height: 100vh;
-    background: rgba(44, 37, 32, 0.4);
+    height: calc(100vh - 113px);
+    background: rgba(44, 37, 32, 0.35);
     z-index: 999;
     backdrop-filter: blur(4px);
     transition: opacity 0.3s ease;
