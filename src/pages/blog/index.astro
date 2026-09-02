@@ -31,18 +31,18 @@ const formatDate = (date: Date) => {
 };
 ---
 
-<Layout title="觀其文 · 文章專欄 | 晚餐後的書桌" description="吃墨水的晚餐之文章專欄「觀其文」，分為技術筆記、日常心得、思考練習與閱讀心得四大專欄。">
+<Layout title="觀其文 · 文章專欄 | 晚餐後的書桌" description="晚餐飯後根據每天學到、想到的東西趕在忘記以前記錄下來，分為技術筆記、日常心得、思考練習與閱讀心得四個專欄。">
   <div class="blog-portal-container">
     
     <!-- 頁面書法標題 -->
     <header class="blog-header ink-fade-in">
       <h1 class="cursive-title page-title">觀其文</h1>
-      <p class="blog-desc">利用零碎時間寫下的字跡，分為四大專欄，請選擇您想閱讀的方向。</p>
+      <p class="blog-desc">你想要看哪一類的貼文呢。</p>
       <div class="mountain-line"></div>
     </header>
 
     <!-- 四大分類引導卡片 (Portal Cards) -->
-    <section class="category-grid ink-fade-in" style="animation-delay: 0.15s;" aria-label="文章專欄分類">
+    <section class="category-grid ink-fade-in" style="animation-delay: 0.15s;" aria-label="文章分類">
       {categoryStats.map((cat, index) => (
         <a 
           href={`${import.meta.env.BASE_URL}blog/category/${cat.id}/`} 
@@ -66,7 +66,7 @@ const formatDate = (date: Date) => {
               {cat.badgeText}
             </div>
             <div class="cat-count-badge">
-              {cat.count > 0 ? `${cat.count} 篇墨痕` : '暫無存墨'}
+              {cat.count > 0 ? `${cat.count} 篇貼文` : '暫無存墨'}
             </div>
           </div>
 
@@ -75,7 +75,6 @@ const formatDate = (date: Date) => {
               <span class="cat-icon">{cat.icon}</span>
               <h2 class="cat-title">{cat.name}</h2>
             </div>
-            <p class="cat-description">{cat.description}</p>
           </div>
 
           <div class="cat-card-footer">
@@ -97,7 +96,7 @@ const formatDate = (date: Date) => {
     <section class="all-posts-section ink-fade-in" style="animation-delay: 0.3s;">
       <div class="section-divider">
         <span class="divider-line"></span>
-        <h2 class="section-subtitle cursive-title">時序墨痕 · 全部文章</h2>
+        <h2 class="section-subtitle cursive-title">全部文章</h2>
         <span class="divider-line"></span>
       </div>
 
@@ -105,7 +104,7 @@ const formatDate = (date: Date) => {
       <div class="posts-timeline">
         {allPosts.length === 0 ? (
           <div class="paper-card no-posts">
-            <p>後山尚無存書，容日後添置。</p>
+            <p>晚餐偷懶啦~~ 趕緊催一下晚餐吧!!</p>
           </div>
         ) : (
           <div class="timeline-wrapper">
@@ -361,11 +360,14 @@ const formatDate = (date: Date) => {
     letter-spacing: 0.05em;
   }
 
+  .cat-card-body {
+    margin: 1.2rem 0 1.5rem 0;
+  }
+
   .cat-title-row {
     display: flex;
     align-items: center;
     gap: 0.6rem;
-    margin-bottom: 0.6rem;
   }
 
   .cat-icon {
@@ -374,17 +376,10 @@ const formatDate = (date: Date) => {
 
   .cat-title {
     font-family: var(--font-serif);
-    font-size: 1.5rem;
+    font-size: 1.6rem;
     font-weight: 700;
     color: var(--color-ink-black);
     margin: 0;
-  }
-
-  .cat-description {
-    font-size: 0.95rem;
-    color: var(--color-ink-text);
-    line-height: 1.6;
-    margin-bottom: 1.5rem;
   }
 
   .cat-card-footer {

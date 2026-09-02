@@ -18,7 +18,7 @@ export const BLOG_CATEGORIES: Record<string, BlogCategoryInfo> = {
     badgeText: '技',
     color: '#2d5f5a', // 青墨色
     accentColor: 'rgba(45, 95, 90, 0.12)',
-    description: '程式開發、前端架構探索與工程實踐的淬鍊。',
+    description: '既然轉不了系就在這個系的基礎上到處學有的沒的吧',
   },
   daily: {
     id: 'daily',
@@ -28,7 +28,7 @@ export const BLOG_CATEGORIES: Record<string, BlogCategoryInfo> = {
     badgeText: '日',
     color: '#8c6239', // 赭茶色
     accentColor: 'rgba(140, 98, 57, 0.12)',
-    description: '柴米油鹽、浮生一日與生活細碎感悟的隨筆。',
+    description: '單純紀錄生活中的事情，絕對不會有區區人的部分(吧?)',
   },
   thinking: {
     id: 'thinking',
@@ -38,7 +38,7 @@ export const BLOG_CATEGORIES: Record<string, BlogCategoryInfo> = {
     badgeText: '思',
     color: '#4a5568', // 墨青灰
     accentColor: 'rgba(74, 85, 104, 0.12)',
-    description: '邏輯推演、心智模型與自我思辨的深度整理。',
+    description: '想到就寫想到就寫，就只是個思考練習而已',
   },
   reading: {
     id: 'reading',
@@ -48,7 +48,7 @@ export const BLOG_CATEGORIES: Record<string, BlogCategoryInfo> = {
     badgeText: '讀',
     color: '#9b2c2c', // 硃砂深紅
     accentColor: 'rgba(155, 44, 44, 0.12)',
-    description: '開卷有得、典籍翻閱與書海對話的文字印記。',
+    description: '被圖書館阿姨激到啦，怎麼說我看書都沒有看進去啦!?',
   },
 };
 
