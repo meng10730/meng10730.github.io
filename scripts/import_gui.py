@@ -1345,6 +1345,8 @@ class MainWindow(QMainWindow):
         # 狀態控制變數
         self.is_tab2_loading = False
         self.is_tab2_dirty = False
+        self.tab2_body_edit_dirty = False
+        self.tab2_editor_collapsed = True
         self.tab2_current_filepath = None
         self.tab2_current_font_size = 15
         
@@ -1375,9 +1377,28 @@ class MainWindow(QMainWindow):
         
         refresh_btn = QPushButton("🔄")
         refresh_btn.setFixedWidth(28)
+        refresh_btn.setToolTip("重新整理清單")
         refresh_btn.clicked.connect(self.refresh_tab2_file_list)
         col_select_layout.addWidget(refresh_btn)
         list_layout.addLayout(col_select_layout)
+
+        # ✨ 新建文章按鈕 (高亮主題色)
+        self.tab2_btn_new_article = QPushButton("✨ 新建部落格文章")
+        self.tab2_btn_new_article.setFixedHeight(28)
+        self.tab2_btn_new_article.setStyleSheet("""
+            QPushButton {
+                background-color: #2d5f5a;
+                color: #ffffff;
+                font-weight: bold;
+                border-radius: 4px;
+                border: 1px solid #3d7a74;
+            }
+            QPushButton:hover {
+                background-color: #38756f;
+            }
+        """)
+        self.tab2_btn_new_article.clicked.connect(self.create_new_tab2_article)
+        list_layout.addWidget(self.tab2_btn_new_article)
         
         self.tab2_search_input = QLineEdit()
         self.tab2_search_input.setPlaceholderText("🔍 搜尋檔案...")
@@ -1407,10 +1428,26 @@ class MainWindow(QMainWindow):
         lbl_prop_title.setStyleSheet("color: #e5a93b; font-weight: bold; font-size: 12px;")
         prop_header.addWidget(lbl_prop_title)
         prop_header.addStretch()
+
+        # 📝 在 IDE 中開啟按鈕
+        btn_open_ide = QPushButton("📝 在 IDE 開啟")
+        btn_open_ide.setFixedHeight(24)
+        btn_open_ide.setToolTip("使用 Antigravity IDE (VS Code) 開啟目前檔案進行撰寫")
+        btn_open_ide.setStyleSheet("font-size: 11px; padding: 2px 8px; background-color: #2d5f5a; color: #ffffff; font-weight: bold; border-radius: 3px;")
+        btn_open_ide.clicked.connect(self.open_current_in_ide)
+        prop_header.addWidget(btn_open_ide)
+
+        # 👁️ 收折/展開內文編輯區按鈕
+        self.tab2_btn_toggle_editor = QPushButton("👁️ 展開內文")
+        self.tab2_btn_toggle_editor.setFixedHeight(24)
+        self.tab2_btn_toggle_editor.setToolTip("收折或展開右側正文編輯區（建議主力在 IDE 撰寫，控制台僅修改屬性）")
+        self.tab2_btn_toggle_editor.setStyleSheet("font-size: 11px; padding: 2px 6px; background-color: #2b2b38; border-radius: 3px;")
+        self.tab2_btn_toggle_editor.clicked.connect(self.toggle_tab2_editor_panel)
+        prop_header.addWidget(self.tab2_btn_toggle_editor)
         
         btn_collapse_prop = QPushButton("◀ 收折屬性")
         btn_collapse_prop.setFixedHeight(24)
-        btn_collapse_prop.setStyleSheet("font-size: 11px; padding: 2px 6px; background-color: #2b2b38;")
+        btn_collapse_prop.setStyleSheet("font-size: 11px; padding: 2px 6px; background-color: #2b2b38; border-radius: 3px;")
         btn_collapse_prop.clicked.connect(self.toggle_tab2_prop_panel)
         prop_header.addWidget(btn_collapse_prop)
         prop_main_layout.addLayout(prop_header)
@@ -1523,11 +1560,12 @@ class MainWindow(QMainWindow):
         
         editor_panel_layout.addLayout(tab2_bottom_bar)
         
-        self.tab2_editor_panel.setMinimumWidth(380)
+        self.tab2_editor_panel.setMinimumWidth(0)
         self.tab2_splitter.addWidget(self.tab2_editor_panel)
         
-        # 預設三欄分割權重 (200px : 260px : 740px)
-        self.tab2_splitter.setSizes([200, 260, 740])
+        # 預設折疊右側編輯區，將視野聚焦在檔案列表與屬性面板
+        self.tab2_editor_panel.hide()
+        self.tab2_splitter.setSizes([260, 680, 0])
         tab2_layout.addWidget(self.tab2_splitter)
         
         # 初始化載入首個分區之檔案清單
@@ -1542,6 +1580,191 @@ class MainWindow(QMainWindow):
         else:
             self.tab2_prop_panel.show()
             self.tab2_btn_expand_prop.hide()
+
+    def toggle_tab2_editor_panel(self):
+        """收折或展開右側正文編輯大稿紙"""
+        if self.tab2_editor_panel.isHidden():
+            self.tab2_editor_panel.show()
+            self.tab2_editor_collapsed = False
+            self.tab2_btn_toggle_editor.setText("👁️ 收折內文")
+            self.tab2_splitter.setSizes([200, 260, 740])
+        else:
+            self.tab2_editor_panel.hide()
+            self.tab2_editor_collapsed = True
+            self.tab2_btn_toggle_editor.setText("👁️ 展開內文")
+            self.tab2_splitter.setSizes([260, 680, 0])
+
+    def open_current_in_ide(self):
+        """使用 Antigravity IDE (VS Code) 開啟當前選中文章進行編輯"""
+        filepath = self.tab2_current_filepath
+        if not filepath:
+            items = self.tab2_file_list_widget.selectedItems()
+            if items:
+                filepath = items[0].data(Qt.UserRole)
+        
+        if not filepath or not os.path.exists(filepath):
+            QMessageBox.warning(self, "未選擇文章", "請先從左側列表中選取欲在 IDE 中撰寫的文章！")
+            return
+        
+        try:
+            # 優先使用 code 指令呼叫 Antigravity IDE
+            subprocess.Popen(["code", filepath], shell=True)
+            self.log(f"🚀 已在 Antigravity IDE 中開啟: {os.path.basename(filepath)}")
+        except Exception:
+            try:
+                os.startfile(filepath)
+                self.log(f"🚀 已使用系統預設文字編輯器開啟: {os.path.basename(filepath)}")
+            except Exception as e:
+                QMessageBox.critical(self, "開啟失敗", f"無法呼叫編輯器開啟檔案:\n{e}")
+
+    def create_new_tab2_article(self):
+        """彈出對話框新建部落格文章並自動於 IDE 中開啟"""
+        dlg = QDialog(self)
+        dlg.setWindowTitle("✨ 建立新部落格文章")
+        dlg.setFixedWidth(440)
+        dlg.setStyleSheet(QSS_STYLE)
+        
+        d_layout = QVBoxLayout(dlg)
+        d_layout.setSpacing(12)
+        d_layout.setContentsMargins(16, 16, 16, 16)
+        
+        # 標題
+        d_layout.addWidget(QLabel("文章標題 (必填):"))
+        inp_title = QLineEdit()
+        inp_title.setPlaceholderText("例: 我的第一篇技術實踐筆記")
+        d_layout.addWidget(inp_title)
+        
+        # 分類
+        d_layout.addWidget(QLabel("文章專欄分類:"))
+        combo_cat = QComboBox()
+        combo_cat.addItem("💻 技術筆記 (tech)", "tech")
+        combo_cat.addItem("🍵 日常心得 (daily)", "daily")
+        combo_cat.addItem("♟️ 思考練習 (thinking)", "thinking")
+        combo_cat.addItem("📖 閱讀心得 (reading)", "reading")
+        d_layout.addWidget(combo_cat)
+        
+        # 主題 (topic)
+        d_layout.addWidget(QLabel("探討主題 (選填):"))
+        inp_topic = QLineEdit()
+        inp_topic.setPlaceholderText("例: 前端性能優化、生活感悟、閱讀筆記")
+        d_layout.addWidget(inp_topic)
+        
+        # 簡介 (description)
+        d_layout.addWidget(QLabel("文章簡介/摘要 (選填):"))
+        inp_desc = QLineEdit()
+        inp_desc.setPlaceholderText("簡述這篇文章的核心亮點...")
+        d_layout.addWidget(inp_desc)
+        
+        # 標籤 (tags)
+        d_layout.addWidget(QLabel("標籤 (以逗號分隔，選填):"))
+        inp_tags = QLineEdit()
+        inp_tags.setPlaceholderText("例: Astro, TypeScript, 開發心得")
+        d_layout.addWidget(inp_tags)
+        
+        btn_box = QHBoxLayout()
+        btn_box.addStretch()
+        btn_cancel = QPushButton("取消")
+        btn_cancel.clicked.connect(dlg.reject)
+        btn_box.addWidget(btn_cancel)
+        
+        btn_confirm = QPushButton("✨ 建立並在 IDE 開啟")
+        btn_confirm.setObjectName("primaryButton")
+        btn_confirm.setFixedHeight(30)
+        btn_box.addWidget(btn_confirm)
+        d_layout.addLayout(btn_box)
+        
+        def on_confirm():
+            title_text = inp_title.text().strip()
+            if not title_text:
+                QMessageBox.warning(dlg, "請輸入標題", "文章標題不可為空白！")
+                return
+            
+            # 使用 gui-helper.js 拼音轉換 slug
+            slug = ""
+            try:
+                res = subprocess.run(
+                    ["node", "scripts/gui-helper.js", "--slugify", title_text],
+                    cwd=self.project_dir,
+                    capture_output=True,
+                    text=True,
+                    check=True
+                )
+                slug = res.stdout.strip()
+            except Exception:
+                pass
+            
+            if not slug or len(slug) < 2:
+                import time
+                slug = f"post-{int(time.time())}"
+            
+            blog_dir = os.path.join(self.project_dir, "src", "content", "blog")
+            os.makedirs(blog_dir, exist_ok=True)
+            
+            # 防碰撞檔名
+            base_slug = slug
+            target_path = os.path.join(blog_dir, f"{slug}.md")
+            counter = 1
+            while os.path.exists(target_path):
+                slug = f"{base_slug}-{counter}"
+                target_path = os.path.join(blog_dir, f"{slug}.md")
+                counter += 1
+            
+            today_str = datetime.date.today().isoformat()
+            selected_cat = combo_cat.currentData()
+            topic_text = inp_topic.text().strip()
+            desc_text = inp_desc.text().strip()
+            tags_raw = inp_tags.text().strip()
+            tags_list = [f'"{t.strip()}"' for t in tags_raw.split(",") if t.strip()]
+            tags_yaml = f"[{', '.join(tags_list)}]" if tags_list else "[]"
+            
+            # 建立規範標準 Frontmatter
+            fm_lines = [
+                "---",
+                f'title: "{title_text}"',
+                f'description: "{desc_text}"',
+                f'category: "{selected_cat}"',
+            ]
+            if topic_text:
+                fm_lines.append(f'topic: "{topic_text}"')
+            fm_lines.extend([
+                f'pubDate: "{today_str}"',
+                f'tags: {tags_yaml}',
+                "---",
+                "",
+                "在此處撰寫你的文章正文...",
+                ""
+            ])
+            
+            try:
+                with open(target_path, "w", encoding="utf-8") as f:
+                    f.write("\n".join(fm_lines))
+                
+                self.log(f"✨ 成功新建文章: {os.path.basename(target_path)}")
+                dlg.accept()
+                
+                # 自動將分區切換至部落格文章 (blog)
+                idx = self.tab2_col_combo.findData("blog")
+                if idx >= 0 and self.tab2_col_combo.currentIndex() != idx:
+                    self.tab2_col_combo.setCurrentIndex(idx)
+                else:
+                    self.refresh_tab2_file_list()
+                
+                # 選中新文章
+                for i in range(self.tab2_file_list_widget.count()):
+                    item = self.tab2_file_list_widget.item(i)
+                    if item.data(Qt.UserRole) == target_path:
+                        self.tab2_file_list_widget.setCurrentItem(item)
+                        break
+                
+                # 自動在 Antigravity IDE 中開啟
+                self.tab2_current_filepath = target_path
+                self.open_current_in_ide()
+                
+            except Exception as err:
+                QMessageBox.critical(dlg, "建立失敗", f"建立文章時發生錯誤:\n{err}")
+        
+        btn_confirm.clicked.connect(on_confirm)
+        dlg.exec()
 
     def change_tab2_font_size(self, delta):
         new_size = max(12, min(28, self.tab2_current_font_size + delta))
@@ -1704,6 +1927,7 @@ class MainWindow(QMainWindow):
         self.tab2_body_edit.setPlainText(body)
         self.is_tab2_loading = False
         self.is_tab2_dirty = False
+        self.tab2_body_edit_dirty = False
         
         self.tab2_save_status_lbl.setText("● 已同步最新內容")
         self.tab2_save_status_lbl.setStyleSheet("color: #6edb8f; font-size: 11px; margin-left: 10px; margin-right: 8px;")
@@ -1720,6 +1944,7 @@ class MainWindow(QMainWindow):
     def on_tab2_text_changed(self):
         if self.is_tab2_loading:
             return
+        self.tab2_body_edit_dirty = True
         self.mark_tab2_dirty()
         self.update_tab2_statistics()
 
@@ -1771,8 +1996,15 @@ class MainWindow(QMainWindow):
                 if hasattr(widget, "text"):
                     fm_data[fname] = widget.text().strip()
         
-        body_text = getattr(self, "tab2_body_edit", None)
-        body_content = body_text.toPlainText() if body_text else ""
+        # 正文防覆寫保護機制：
+        # 若右側編輯區處於折疊狀態，或者使用者並未在控制台中手動編輯正文 (not self.tab2_body_edit_dirty)，
+        # 則重新從磁碟讀取最新正文，僅替換 Frontmatter 屬性，絕不覆寫使用者在 Antigravity IDE 寫好的正文！
+        if getattr(self, "tab2_editor_collapsed", True) or not getattr(self, "tab2_body_edit_dirty", False):
+            _, disk_body = self.parse_frontmatter(filepath)
+            body_content = disk_body
+        else:
+            body_text = getattr(self, "tab2_body_edit", None)
+            body_content = body_text.toPlainText() if body_text else ""
         
         lines = ["---"]
         for k, v in fm_data.items():
@@ -1799,9 +2031,10 @@ class MainWindow(QMainWindow):
             with open(filepath, "w", encoding="utf-8") as f:
                 f.write(full_markdown)
             now_time = datetime.datetime.now().strftime("%H:%M:%S")
-            self.log(f"✓ [{now_time}] 成功儲存修訂文章至網站: {os.path.basename(filepath)}")
+            self.log(f"✓ [{now_time}] 成功儲存修訂屬性至網站: {os.path.basename(filepath)}")
             
             self.is_tab2_dirty = False
+            self.tab2_body_edit_dirty = False
             self.tab2_autosave_timer.stop()
             self.tab2_save_status_lbl.setText(f"✓ 已儲存 ({now_time})")
             self.tab2_save_status_lbl.setStyleSheet("color: #6edb8f; font-size: 11px; margin-left: 10px; margin-right: 8px;")
