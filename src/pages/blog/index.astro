@@ -2,13 +2,26 @@
 import { getCollection } from 'astro:content';
 import Layout from '../../layouts/Layout.astro';
 import ShimmerBadge from '../../components/ui/ShimmerBadge.astro';
+import { BLOG_CATEGORY_LIST, getCategoryInfo } from '../../utils/blogCategories';
 
 // 獲取所有部落格文章並按發布日期排序 (降序)
-const posts = (await getCollection('blog')).sort(
+const allPosts = (await getCollection('blog')).sort(
   (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
 );
 
-// 格式化日期為中文古典格式或乾淨的年月日
+// 計算各分類的文章數量與最新文章
+const categoryStats = BLOG_CATEGORY_LIST.map((category) => {
+  const postsInCategory = allPosts.filter(
+    (post) => (post.data.category || 'daily') === category.id
+  );
+  return {
+    ...category,
+    count: postsInCategory.length,
+    latestPost: postsInCategory.length > 0 ? postsInCategory[0] : null,
+  };
+});
+
+// 格式化日期
 const formatDate = (date: Date) => {
   return date.toLocaleDateString('zh-Hant', {
     year: 'numeric',
@@ -18,76 +31,154 @@ const formatDate = (date: Date) => {
 };
 ---
 
-<Layout title="觀其文 · 文章列表 | 晚餐後的書桌" description="吃墨水的晚餐之文章專欄「觀其文」，紀錄書籍讀後感、日常見聞與技術心得。">
-  <div class="blog-container">
+<Layout title="觀其文 · 文章專欄 | 晚餐後的書桌" description="吃墨水的晚餐之文章專欄「觀其文」，分為技術筆記、日常心得、思考練習與閱讀心得四大專欄。">
+  <div class="blog-portal-container">
     
     <!-- 頁面書法標題 -->
     <header class="blog-header ink-fade-in">
       <h1 class="cursive-title page-title">觀其文</h1>
-      <p class="blog-desc">這是晚餐利用零碎時間寫的文章，紀錄書籍與日常見聞。</p>
+      <p class="blog-desc">利用零碎時間寫下的字跡，分為四大專欄，請選擇您想閱讀的方向。</p>
       <div class="mountain-line"></div>
     </header>
 
-    <!-- 時間軸文章列表 -->
-    <div class="posts-timeline ink-fade-in" style="animation-delay: 0.2s;">
-      {posts.length === 0 ? (
-        <div class="paper-card no-posts">
-          <p>後山尚無存書，容日後添置。</p>
-        </div>
-      ) : (
-        <div class="timeline-wrapper">
-          <!-- 時間軸的垂直貫穿水墨線 -->
-          <div class="timeline-line"></div>
-          
-          {posts.map((post, index) => (
-            <article class="timeline-item" style={`animation-delay: ${0.1 * index}s;`}>
-              <!-- 時間軸的小墨點錨點 -->
-              <div class="timeline-dot"></div>
-              
-              <!-- 文章發布時間 -->
-              <div class="post-date">
-                <time datetime={post.data.pubDate.toISOString()}>
-                  {formatDate(post.data.pubDate)}
-                </time>
-              </div>
+    <!-- 四大分類引導卡片 (Portal Cards) -->
+    <section class="category-grid ink-fade-in" style="animation-delay: 0.15s;" aria-label="文章專欄分類">
+      {categoryStats.map((cat, index) => (
+        <a 
+          href={`${import.meta.env.BASE_URL}blog/category/${cat.id}/`} 
+          class="category-portal-card paper-card"
+          data-category-desc={cat.description}
+          style={`--cat-color: ${cat.color}; --cat-accent: ${cat.accentColor}; animation-delay: ${0.1 * index}s;`}
+          data-astro-prefetch="hover"
+        >
+          <!-- 懸停時彈出的古風水墨對話氣泡 (Typewriter Tooltip) -->
+          <div class="ink-dialog-bubble" aria-hidden="true">
+            <div class="bubble-arrow"></div>
+            <div class="bubble-inner">
+              <span class="bubble-badge-icon">{cat.icon}</span>
+              <span class="bubble-typing-text"></span>
+              <span class="ink-cursor"></span>
+            </div>
+          </div>
 
-              <!-- 文章卡片內容 -->
-              <div class="post-card-wrapper">
-                <a href={`${import.meta.env.BASE_URL}blog/${post.slug}/`} class="post-link-card" data-astro-prefetch="hover">
-                  <div class="paper-card post-card">
-                    <h2 class="post-title">{post.data.title}</h2>
-                    <p class="post-description">{post.data.description}</p>
-                    
-                    <div class="post-meta">
-                      <!-- 標籤 -->
-                      {post.data.tags && post.data.tags.length > 0 && (
-                        <div class="post-tags">
-                          {post.data.tags.map((tag) => (
-                            <ShimmerBadge text={`# ${tag}`} variant="default" />
-                          ))}
-                        </div>
-                      )}
-                      
-                      <!-- 閱讀更多 -->
-                      <span class="read-more-link ink-link">閱全文 →</span>
-                    </div>
-                  </div>
-                </a>
+          <div class="cat-card-top">
+            <div class="cat-seal" style={`background-color: ${cat.color};`}>
+              {cat.badgeText}
+            </div>
+            <div class="cat-count-badge">
+              {cat.count > 0 ? `${cat.count} 篇墨痕` : '暫無存墨'}
+            </div>
+          </div>
+
+          <div class="cat-card-body">
+            <div class="cat-title-row">
+              <span class="cat-icon">{cat.icon}</span>
+              <h2 class="cat-title">{cat.name}</h2>
+            </div>
+            <p class="cat-description">{cat.description}</p>
+          </div>
+
+          <div class="cat-card-footer">
+            {cat.latestPost ? (
+              <div class="cat-latest-preview">
+                <span class="preview-label">最新：</span>
+                <span class="preview-title">{cat.latestPost.data.title}</span>
               </div>
-            </article>
-          ))}
-        </div>
-      )}
-    </div>
+            ) : (
+              <span class="cat-empty-hint">靜待啟筆...</span>
+            )}
+            <span class="cat-enter-link">進入專欄 →</span>
+          </div>
+        </a>
+      ))}
+    </section>
+
+    <!-- 全覽專區分割標題 -->
+    <section class="all-posts-section ink-fade-in" style="animation-delay: 0.3s;">
+      <div class="section-divider">
+        <span class="divider-line"></span>
+        <h2 class="section-subtitle cursive-title">時序墨痕 · 全部文章</h2>
+        <span class="divider-line"></span>
+      </div>
+
+      <!-- 時間軸文章列表 -->
+      <div class="posts-timeline">
+        {allPosts.length === 0 ? (
+          <div class="paper-card no-posts">
+            <p>後山尚無存書，容日後添置。</p>
+          </div>
+        ) : (
+          <div class="timeline-wrapper">
+            <!-- 時間軸的垂直貫穿水墨線 -->
+            <div class="timeline-line"></div>
+            
+            {allPosts.map((post, index) => {
+              const catInfo = getCategoryInfo(post.data.category);
+              return (
+                <article class="timeline-item" style={`animation-delay: ${0.08 * index}s;`}>
+                  <!-- 時間軸的小墨點錨點 -->
+                  <div class="timeline-dot" style={`--dot-color: ${catInfo.color};`}></div>
+                  
+                  <!-- 文章發布時間 -->
+                  <div class="post-date">
+                    <time datetime={post.data.pubDate.toISOString()}>
+                      {formatDate(post.data.pubDate)}
+                    </time>
+                  </div>
+
+                  <!-- 文章卡片內容 -->
+                  <div class="post-card-wrapper">
+                    <a href={`${import.meta.env.BASE_URL}blog/${post.slug}/`} class="post-link-card" data-astro-prefetch="hover">
+                      <div class="paper-card post-card" style={`--card-cat-color: ${catInfo.color};`}>
+                        
+                        <!-- 分類與主題標記 -->
+                        <div class="post-top-meta">
+                          <span class="category-pill" style={`background-color: ${catInfo.color};`}>
+                            {catInfo.name}
+                          </span>
+                          {post.data.topic && (
+                            <span class="topic-label">
+                              <span class="topic-dot"></span>
+                              {post.data.topic}
+                            </span>
+                          )}
+                        </div>
+
+                        <h3 class="post-title">{post.data.title}</h3>
+                        <p class="post-description">{post.data.description}</p>
+                        
+                        <div class="post-meta">
+                          <!-- 標籤 -->
+                          {post.data.tags && post.data.tags.length > 0 && (
+                            <div class="post-tags">
+                              {post.data.tags.map((tag) => (
+                                <ShimmerBadge text={`# ${tag}`} variant="default" />
+                              ))}
+                            </div>
+                          )}
+                          
+                          <!-- 閱讀更多 -->
+                          <span class="read-more-link ink-link">閱全文 →</span>
+                        </div>
+                      </div>
+                    </a>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </section>
 
   </div>
 </Layout>
 
 <style>
-  .blog-container {
+  .blog-portal-container {
     display: flex;
     flex-direction: column;
-    gap: 3rem;
+    gap: 3.5rem;
   }
 
   .blog-header {
@@ -104,7 +195,268 @@ const formatDate = (date: Date) => {
     font-family: var(--font-serif);
     font-size: 1.15rem;
     color: var(--color-ink-grey);
-    letter-spacing: 0.1em;
+    letter-spacing: 0.08em;
+  }
+
+  /* 四大分類卡片網格 */
+  .category-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2.2rem 1.8rem;
+    margin-top: 1.2rem;
+  }
+
+  .category-portal-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 1.8rem;
+    border-radius: 12px;
+    border-left: 4px solid var(--cat-color, var(--color-border));
+    text-decoration: none;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    overflow: visible; /* 允許上方浮動氣泡顯示 */
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(245, 240, 227, 0.6) 100%);
+  }
+
+  .category-portal-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 80px;
+    height: 80px;
+    border-radius: 0 12px 0 0;
+    background: radial-gradient(circle, var(--cat-accent) 0%, transparent 70%);
+    pointer-events: none;
+    transition: all 0.4s ease;
+  }
+
+  .category-portal-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+    border-left-width: 6px;
+  }
+
+  .category-portal-card:hover::before {
+    width: 140px;
+    height: 140px;
+  }
+
+  /* 懸停水墨對話氣泡 Tooltip */
+  .ink-dialog-bubble {
+    position: absolute;
+    bottom: calc(100% + 14px);
+    left: 50%;
+    transform: translateX(-50%) translateY(8px);
+    width: 90%;
+    max-width: 360px;
+    min-height: 52px;
+    padding: 0.75rem 1rem;
+    background: var(--color-paper-bg, #fdfbf7);
+    border: 1.5px solid var(--cat-color, var(--color-ink-black));
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.04);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    z-index: 50;
+    transition: opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1), 
+                transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), 
+                visibility 0.28s;
+  }
+
+  .category-portal-card:hover .ink-dialog-bubble {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* 氣泡向下小尖角 */
+  .bubble-arrow {
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%) rotate(45deg);
+    width: 10px;
+    height: 10px;
+    background: var(--color-paper-bg, #fdfbf7);
+    border-right: 1.5px solid var(--cat-color, var(--color-ink-black));
+    border-bottom: 1.5px solid var(--cat-color, var(--color-ink-black));
+  }
+
+  .bubble-inner {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-family: var(--font-serif);
+    font-size: 0.88rem;
+    line-height: 1.55;
+    color: var(--color-ink-black);
+    text-align: left;
+  }
+
+  .bubble-badge-icon {
+    font-size: 1rem;
+    line-height: 1.3;
+    flex-shrink: 0;
+  }
+
+  .bubble-typing-text {
+    flex: 1;
+    color: var(--color-ink-text);
+    font-weight: 500;
+  }
+
+  /* 水墨打字光標 */
+  .ink-cursor {
+    display: inline-block;
+    width: 2px;
+    height: 1.1em;
+    background-color: var(--cat-color, var(--color-ink-black));
+    vertical-align: -2px;
+    margin-left: 2px;
+    animation: inkCursorBlink 0.75s infinite ease-in-out;
+  }
+
+  @keyframes inkCursorBlink {
+    0%, 100% {
+      opacity: 1;
+      transform: scaleY(1);
+    }
+    50% {
+      opacity: 0.1;
+      transform: scaleY(0.7);
+    }
+  }
+
+  .cat-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.2rem;
+  }
+
+  .cat-seal {
+    width: 38px;
+    height: 38px;
+    border-radius: 6px;
+    color: #ffffff;
+    font-family: var(--font-cursive);
+    font-size: 1.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  }
+
+  .cat-count-badge {
+    font-family: var(--font-serif);
+    font-size: 0.85rem;
+    color: var(--color-ink-grey);
+    background: rgba(0, 0, 0, 0.04);
+    padding: 0.25rem 0.7rem;
+    border-radius: 12px;
+    letter-spacing: 0.05em;
+  }
+
+  .cat-title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.6rem;
+  }
+
+  .cat-icon {
+    font-size: 1.4rem;
+  }
+
+  .cat-title {
+    font-family: var(--font-serif);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-ink-black);
+    margin: 0;
+  }
+
+  .cat-description {
+    font-size: 0.95rem;
+    color: var(--color-ink-text);
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+  }
+
+  .cat-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px dashed rgba(200, 190, 170, 0.5);
+    padding-top: 1rem;
+    font-family: var(--font-serif);
+    font-size: 0.9rem;
+  }
+
+  .cat-latest-preview {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    max-width: 65%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-ink-grey);
+  }
+
+  .preview-label {
+    font-size: 0.8rem;
+    opacity: 0.8;
+  }
+
+  .preview-title {
+    font-size: 0.85rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-ink-text);
+  }
+
+  .cat-empty-hint {
+    color: var(--color-ink-grey);
+    font-size: 0.85rem;
+    font-style: italic;
+  }
+
+  .cat-enter-link {
+    font-weight: 600;
+    color: var(--cat-color, var(--color-ink-black));
+    transition: transform 0.2s ease;
+  }
+
+  .category-portal-card:hover .cat-enter-link {
+    transform: translateX(4px);
+  }
+
+  /* 全覽專區分割標題 */
+  .section-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+  }
+
+  .divider-line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--color-border), transparent);
+  }
+
+  .section-subtitle {
+    font-size: 2.2rem;
+    color: var(--color-ink-black);
+    margin: 0;
+    white-space: nowrap;
   }
 
   /* 時間軸架構 */
@@ -117,10 +469,9 @@ const formatDate = (date: Date) => {
     position: relative;
   }
 
-  /* 時間軸中心垂直線 */
   .timeline-line {
     position: absolute;
-    left: 200px; /* 電腦端對齊日期與卡片中間 */
+    left: 200px;
     top: 10px;
     bottom: 10px;
     width: 2px;
@@ -140,15 +491,14 @@ const formatDate = (date: Date) => {
     align-items: flex-start;
   }
 
-  /* 時間軸墨滴點 */
   .timeline-dot {
     position: absolute;
-    left: 197px; /* 居中對齊垂直線 */
+    left: 197px;
     top: 12px;
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: var(--color-ink-black);
+    background: var(--dot-color, var(--color-ink-black));
     border: 2px solid var(--color-paper-bg);
     box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
     z-index: 5;
@@ -156,12 +506,10 @@ const formatDate = (date: Date) => {
   }
 
   .timeline-item:hover .timeline-dot {
-    background: var(--color-mountain-cyan);
-    transform: scale(1.3);
-    box-shadow: 0 0 12px rgba(45, 95, 90, 0.4);
+    transform: scale(1.4);
+    box-shadow: 0 0 12px rgba(0, 0, 0, 0.3);
   }
 
-  /* 左側日期區 */
   .post-date {
     width: 170px;
     text-align: right;
@@ -172,23 +520,58 @@ const formatDate = (date: Date) => {
     letter-spacing: 0.05em;
   }
 
-  /* 右側卡片區 */
   .post-card-wrapper {
     flex: 1;
-    margin-left: 55px; /* 與日期、線隔開 */
+    margin-left: 55px;
   }
 
   .post-link-card {
     display: block;
+    text-decoration: none;
   }
 
   .post-card {
     padding: 1.8rem 2rem;
-    border-left: 2.5px solid var(--color-border);
+    border-left: 3px solid var(--card-cat-color, var(--color-border));
+    transition: all 0.3s ease;
   }
 
   .post-card:hover {
-    border-left-color: var(--color-mountain-cyan);
+    transform: translateX(4px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+  }
+
+  .post-top-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-bottom: 0.8rem;
+  }
+
+  .category-pill {
+    font-family: var(--font-serif);
+    font-size: 0.75rem;
+    color: #ffffff;
+    padding: 0.15rem 0.6rem;
+    border-radius: 4px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+  }
+
+  .topic-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-family: var(--font-serif);
+    font-size: 0.85rem;
+    color: var(--color-ink-grey);
+  }
+
+  .topic-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background-color: var(--color-ink-grey);
   }
 
   .post-title {
@@ -198,10 +581,6 @@ const formatDate = (date: Date) => {
     color: var(--color-ink-black);
     margin-bottom: 0.8rem;
     transition: var(--transition-fast);
-  }
-
-  .post-link-card:hover .post-title {
-    color: var(--color-mountain-cyan);
   }
 
   .post-description {
@@ -225,11 +604,202 @@ const formatDate = (date: Date) => {
   .post-tags {
     display: flex;
     gap: 0.8rem;
+    flex-wrap: wrap;
   }
 
-  .post-tag {
+  .read-more-link {
+    font-family: var(--font-serif);
+    font-size: 0.85rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-ink-text);
+  }
+
+  .cat-empty-hint {
+    color: var(--color-ink-grey);
+    font-size: 0.85rem;
+    font-style: italic;
+  }
+
+  .cat-enter-link {
+    font-weight: 600;
+    color: var(--cat-color, var(--color-ink-black));
+    transition: transform 0.2s ease;
+  }
+
+  .category-portal-card:hover .cat-enter-link {
+    transform: translateX(4px);
+  }
+
+  /* 全覽專區分割標題 */
+  .section-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+  }
+
+  .divider-line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--color-border), transparent);
+  }
+
+  .section-subtitle {
+    font-size: 2.2rem;
+    color: var(--color-ink-black);
+    margin: 0;
+    white-space: nowrap;
+  }
+
+  /* 時間軸架構 */
+  .posts-timeline {
+    position: relative;
+    padding: 1rem 0;
+  }
+
+  .timeline-wrapper {
+    position: relative;
+  }
+
+  .timeline-line {
+    position: absolute;
+    left: 200px;
+    top: 10px;
+    bottom: 10px;
+    width: 2px;
+    background: linear-gradient(
+      to bottom,
+      var(--color-ink-light) 0%,
+      var(--color-border) 50%,
+      transparent 100%
+    );
+    opacity: 0.5;
+  }
+
+  .timeline-item {
+    position: relative;
+    display: flex;
+    margin-bottom: 3.5rem;
+    align-items: flex-start;
+  }
+
+  .timeline-dot {
+    position: absolute;
+    left: 197px;
+    top: 12px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--dot-color, var(--color-ink-black));
+    border: 2px solid var(--color-paper-bg);
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
+    z-index: 5;
+    transition: var(--transition-fast);
+  }
+
+  .timeline-item:hover .timeline-dot {
+    transform: scale(1.4);
+    box-shadow: 0 0 12px rgba(0, 0, 0, 0.3);
+  }
+
+  .post-date {
+    width: 170px;
+    text-align: right;
+    padding-top: 5px;
+    font-family: var(--font-serif);
+    font-size: 0.95rem;
+    color: var(--color-ink-grey);
+    letter-spacing: 0.05em;
+  }
+
+  .post-card-wrapper {
+    flex: 1;
+    margin-left: 55px;
+  }
+
+  .post-link-card {
+    display: block;
+    text-decoration: none;
+  }
+
+  .post-card {
+    padding: 1.8rem 2rem;
+    border-left: 3px solid var(--card-cat-color, var(--color-border));
+    transition: all 0.3s ease;
+  }
+
+  .post-card:hover {
+    transform: translateX(4px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+  }
+
+  .post-top-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-bottom: 0.8rem;
+  }
+
+  .category-pill {
+    font-family: var(--font-serif);
+    font-size: 0.75rem;
+    color: #ffffff;
+    padding: 0.15rem 0.6rem;
+    border-radius: 4px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+  }
+
+  .topic-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-family: var(--font-serif);
     font-size: 0.85rem;
     color: var(--color-ink-grey);
+  }
+
+  .topic-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background-color: var(--color-ink-grey);
+  }
+
+  .post-title {
+    font-family: var(--font-serif);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-ink-black);
+    margin-bottom: 0.8rem;
+    transition: var(--transition-fast);
+  }
+
+  .post-description {
+    font-size: 1rem;
+    line-height: 1.7;
+    color: var(--color-ink-text);
+    margin-bottom: 1.5rem;
+    text-align: justify;
+  }
+
+  .post-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    border-top: 1px dashed rgba(230, 223, 204, 0.6);
+    padding-top: 1rem;
+  }
+
+  .post-tags {
+    display: flex;
+    gap: 0.8rem;
+    flex-wrap: wrap;
   }
 
   .read-more-link {
@@ -239,10 +809,6 @@ const formatDate = (date: Date) => {
     color: var(--color-ink-black);
   }
 
-  .post-link-card:hover .read-more-link {
-    color: var(--color-mountain-cyan);
-  }
-
   .no-posts {
     text-align: center;
     padding: 3rem;
@@ -250,10 +816,15 @@ const formatDate = (date: Date) => {
     color: var(--color-ink-grey);
   }
 
-  /* 行動端時間軸自適應優化 */
+  /* 行動端適配 */
   @media (max-width: 768px) {
+    .category-grid {
+      grid-template-columns: 1fr;
+      gap: 1.2rem;
+    }
+
     .timeline-line {
-      left: 15px; /* 時間軸靠左 */
+      left: 15px;
     }
 
     .timeline-dot {
@@ -286,5 +857,70 @@ const formatDate = (date: Date) => {
     .page-title {
       font-size: 2.8rem;
     }
+
+    .section-subtitle {
+      font-size: 1.8rem;
+    }
   }
 </style>
+
+<script>
+  // 初始化水墨打字機對話框動畫
+  function initTypewriterBubbles() {
+    const cards = document.querySelectorAll<HTMLElement>('.category-portal-card');
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    cards.forEach((card) => {
+      const fullText = card.getAttribute('data-category-desc') || '';
+      const textContainer = card.querySelector<HTMLElement>('.bubble-typing-text');
+      const cursor = card.querySelector<HTMLElement>('.ink-cursor');
+      if (!textContainer || !fullText) return;
+
+      let timerId: number | null = null;
+      let currentIndex = 0;
+
+      const stopTyping = () => {
+        if (timerId !== null) {
+          window.clearTimeout(timerId);
+          timerId = null;
+        }
+      };
+
+      const startTyping = () => {
+        stopTyping();
+        currentIndex = 0;
+        textContainer.textContent = '';
+        if (cursor) cursor.style.display = 'inline-block';
+
+        if (prefersReducedMotion) {
+          textContainer.textContent = fullText;
+          return;
+        }
+
+        const typeChar = () => {
+          if (currentIndex < fullText.length) {
+            textContainer.textContent += fullText.charAt(currentIndex);
+            currentIndex++;
+            // 筆墨落字節奏：每字約 25~35 毫秒
+            timerId = window.setTimeout(typeChar, 28);
+          }
+        };
+
+        // 稍微延遲 80ms 等氣泡淡入後開始落墨
+        timerId = window.setTimeout(typeChar, 80);
+      };
+
+      // 監聽滑鼠移入與移出事件
+      card.addEventListener('mouseenter', startTyping);
+      card.addEventListener('mouseleave', () => {
+        stopTyping();
+        // 移出後清空文字以備下次重新打字
+        textContainer.textContent = '';
+      });
+    });
+  }
+
+  // 支援一般載入與 Astro 頁面切換 (View Transitions / Prefetch)
+  document.addEventListener('DOMContentLoaded', initTypewriterBubbles);
+  document.addEventListener('astro:page-load', initTypewriterBubbles);
+</script>

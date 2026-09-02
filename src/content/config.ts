@@ -6,6 +6,8 @@ const blog = defineCollection({
   schema: z.object({
     title: z.string(),
     description: z.string(),
+    category: z.enum(["tech", "daily", "thinking", "reading"]).default("daily"),
+    topic: z.string().optional(), // 文章核心主題或主要內容簡述
     pubDate: z.coerce.date(),
     tags: z.array(z.string()).default([]),
   }),

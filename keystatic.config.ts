@@ -194,6 +194,21 @@ export default config({
           },
         }),
         description: fields.text({ label: "簡介", multiline: true }),
+        category: fields.select({
+          label: "文章分類",
+          description: "選擇文章所屬的主要分類專欄",
+          options: [
+            { label: "技術筆記", value: "tech" },
+            { label: "日常心得", value: "daily" },
+            { label: "思考練習", value: "thinking" },
+            { label: "閱讀心得", value: "reading" },
+          ],
+          defaultValue: "daily",
+        }),
+        topic: fields.text({
+          label: "文章主要主題",
+          description: "簡短一句話說明本文探討的核心主題或關鍵領域（例如：Astro 靜態渲染、心理學筆記）",
+        }),
         pubDate: fields.date({ label: "發布日期" }),
         tags: fields.array(fields.text({ label: "標籤" }), {
           label: "標籤",

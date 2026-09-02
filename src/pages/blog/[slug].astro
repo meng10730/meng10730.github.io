@@ -2,6 +2,7 @@
 import { getCollection } from 'astro:content';
 import Layout from '../../layouts/Layout.astro';
 import BookmarkPagination from '../../components/ui/BookmarkPagination.astro';
+import { getCategoryInfo } from '../../utils/blogCategories';
 
 // 定義靜態路由路徑
 export async function getStaticPaths() {
@@ -21,6 +22,9 @@ export async function getStaticPaths() {
 const { post, prevPost, nextPost } = Astro.props;
 const { Content } = await post.render();
 
+// 獲取分類資訊
+const categoryInfo = getCategoryInfo(post.data.category);
+
 // 格式化日期
 const formatDate = (date: Date) => {
   return date.toLocaleDateString('zh-Hant', {
@@ -32,13 +36,14 @@ const formatDate = (date: Date) => {
 
 const breadcrumbs = [
   { name: "首頁", url: "/" },
-  { name: "觀其文", url: "/blog" },
-  { name: post.data.title, url: `/blog/${post.slug}` }
+  { name: "觀其文", url: `${import.meta.env.BASE_URL}blog/` },
+  { name: categoryInfo.name, url: `${import.meta.env.BASE_URL}blog/category/${categoryInfo.id}/` },
+  { name: post.data.title, url: `${import.meta.env.BASE_URL}blog/${post.slug}/` }
 ];
 ---
 
 <Layout 
-  title={`${post.data.title} · 觀其文 | 晚餐後的書桌`} 
+  title={`${post.data.title} · ${categoryInfo.name} | 晚餐後的書桌`} 
   description={post.data.description}
   type="article"
   articleDate={post.data.pubDate}
@@ -46,10 +51,14 @@ const breadcrumbs = [
 >
   <article class="post-detail-container">
     
-    <!-- 返回列表按鈕 -->
+    <!-- 返回列表按鈕 (支援返回該分類或專欄總覽) -->
     <div class="back-link-wrapper ink-fade-in">
-      <a href="/blog" class="ink-link back-link">
-        ← 返回觀其文
+      <a href={`${import.meta.env.BASE_URL}blog/category/${categoryInfo.id}/`} class="ink-link back-link">
+        ← 返回「{categoryInfo.name}」列表
+      </a>
+      <span class="nav-separator">|</span>
+      <a href={`${import.meta.env.BASE_URL}blog/`} class="ink-link sub-back-link">
+        專欄總覽
       </a>
     </div>
 
@@ -58,6 +67,23 @@ const breadcrumbs = [
       
       <!-- 文章標題資訊 -->
       <header class="post-detail-header">
+        
+        <!-- 分類膠囊徽章與主題標註 -->
+        <div class="post-header-badges">
+          <a 
+            href={`${import.meta.env.BASE_URL}blog/category/${categoryInfo.id}/`}
+            class="category-badge-link"
+            style={`background-color: ${categoryInfo.color};`}
+          >
+            {categoryInfo.icon} {categoryInfo.name}
+          </a>
+          {post.data.topic && (
+            <span class="topic-pill">
+              <strong>主題：</strong>{post.data.topic}
+            </span>
+          )}
+        </div>
+
         <h1 class="post-detail-title">{post.data.title}</h1>
         
         <div class="post-detail-meta">
@@ -88,8 +114,8 @@ const breadcrumbs = [
         prevTitle={prevPost ? `前篇：${prevPost.data.title}` : '首篇'}
         nextUrl={nextPost ? `${import.meta.env.BASE_URL}blog/${nextPost.slug}/` : undefined}
         nextTitle={nextPost ? `續篇：${nextPost.data.title}` : '終卷'}
-        catalogUrl={`${import.meta.env.BASE_URL}blog/`}
-        catalogTitle="回觀其文"
+        catalogUrl={`${import.meta.env.BASE_URL}blog/category/${categoryInfo.id}/`}
+        catalogTitle={`回${categoryInfo.name}`}
       />
     </div>
 
@@ -126,6 +152,9 @@ const breadcrumbs = [
   }
 
   .back-link-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
     padding-bottom: 0.5rem;
   }
 
@@ -134,10 +163,29 @@ const breadcrumbs = [
     font-weight: 600;
     color: var(--color-ink-grey);
     font-size: 0.95rem;
+    text-decoration: none;
+    transition: var(--transition-fast);
   }
 
   .back-link:hover {
     color: var(--color-mountain-cyan);
+  }
+
+  .nav-separator {
+    color: var(--color-border);
+    font-size: 0.85rem;
+  }
+
+  .sub-back-link {
+    font-family: var(--font-serif);
+    color: var(--color-ink-light);
+    font-size: 0.85rem;
+    text-decoration: none;
+    transition: var(--transition-fast);
+  }
+
+  .sub-back-link:hover {
+    color: var(--color-ink-black);
   }
 
   /* 宣紙文章卡片 */
@@ -149,6 +197,50 @@ const breadcrumbs = [
   .post-detail-header {
     text-align: center;
     margin-bottom: 2.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .post-header-badges {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .category-badge-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    color: #ffffff;
+    font-family: var(--font-serif);
+    font-size: 0.82rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  .category-badge-link:hover {
+    transform: scale(1.04);
+    opacity: 0.92;
+  }
+
+  .topic-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.65rem;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.04);
+    color: var(--color-ink-grey);
+    font-family: var(--font-serif);
+    font-size: 0.82rem;
+    border: 1px solid var(--color-border);
   }
 
   .post-detail-title {

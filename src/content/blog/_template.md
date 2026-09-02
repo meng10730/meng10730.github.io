@@ -1,6 +1,8 @@
 ---
 title: "文章標題"
 description: "一句話描述這篇文章的主旨，顯示於文章列表預覽。"
+category: "daily"
+topic: "文章探討核心主題"
 pubDate: "2026-06-23"
 tags: ["標籤一", "標籤二"]
 ---

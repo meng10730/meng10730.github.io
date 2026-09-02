@@ -1,0 +1,480 @@
+---
+import { getCollection } from 'astro:content';
+import Layout from '../../../layouts/Layout.astro';
+import ShimmerBadge from '../../../components/ui/ShimmerBadge.astro';
+import { BLOG_CATEGORIES, BLOG_CATEGORY_LIST, getCategoryInfo } from '../../../utils/blogCategories';
+
+export async function getStaticPaths() {
+  const allPosts = await getCollection('blog');
+  
+  return BLOG_CATEGORY_LIST.map((category) => {
+    const categoryPosts = allPosts
+      .filter((post) => (post.data.category || 'daily') === category.id)
+      .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+
+    return {
+      params: { category: category.id },
+      props: {
+        currentCategory: category,
+        posts: categoryPosts,
+        totalPostCount: allPosts.length,
+      },
+    };
+  });
+}
+
+const { currentCategory, posts } = Astro.props;
+
+// 格式化日期
+const formatDate = (date: Date) => {
+  return date.toLocaleDateString('zh-Hant', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+};
+
+const breadcrumbs = [
+  { name: '首頁', url: '/' },
+  { name: '觀其文', url: '/blog' },
+  { name: currentCategory.name, url: `/blog/category/${currentCategory.id}` },
+];
+---
+
+<Layout
+  title={`${currentCategory.name} · 觀其文 | 晚餐後的書桌`}
+  description={`觀其文專欄之「${currentCategory.name}」分類：${currentCategory.description}`}
+  breadcrumbs={breadcrumbs}
+>
+  <div class="blog-category-container">
+    
+    <!-- 返回分類入口按鈕 -->
+    <div class="nav-top-bar ink-fade-in">
+      <a href={`${import.meta.env.BASE_URL}blog/`} class="ink-link back-link">
+        ← 返回文章分類總覽
+      </a>
+    </div>
+
+    <!-- 頁面標題與分類導覽標籤 -->
+    <header class="category-header ink-fade-in" style="animation-delay: 0.1s;">
+      <div class="category-badge-seal" style={`background-color: ${currentCategory.color};`}>
+        {currentCategory.badgeText}
+      </div>
+      <h1 class="cursive-title page-title">{currentCategory.name}</h1>
+      <p class="category-desc">{currentCategory.description}</p>
+      
+      <!-- 分類快速切換 Tab -->
+      <nav class="category-tabs" aria-label="文章專欄切換">
+        <a 
+          href={`${import.meta.env.BASE_URL}blog/`}
+          class="cat-tab"
+        >
+          全覽總覽
+        </a>
+        {BLOG_CATEGORY_LIST.map((cat) => (
+          <a
+            href={`${import.meta.env.BASE_URL}blog/category/${cat.id}/`}
+            class={`cat-tab ${cat.id === currentCategory.id ? 'active' : ''}`}
+            style={cat.id === currentCategory.id ? `--active-color: ${cat.color};` : ''}
+          >
+            <span class="cat-tab-icon">{cat.icon}</span>
+            <span>{cat.name}</span>
+          </a>
+        ))}
+      </nav>
+
+      <div class="mountain-line"></div>
+    </header>
+
+    <!-- 時間軸文章列表 -->
+    <div class="posts-timeline ink-fade-in" style="animation-delay: 0.2s;">
+      {posts.length === 0 ? (
+        <div class="paper-card no-posts">
+          <div class="empty-icon">{currentCategory.icon}</div>
+          <h3 class="empty-title">此卷暫無存墨</h3>
+          <p class="empty-desc">本分類目前尚未收錄文章，敬請期待後續更新。</p>
+          <a href={`${import.meta.env.BASE_URL}blog/`} class="ink-button empty-btn">
+            探索其他分類
+          </a>
+        </div>
+      ) : (
+        <div class="timeline-wrapper">
+          <!-- 時間軸垂直線 -->
+          <div class="timeline-line"></div>
+          
+          {posts.map((post, index) => (
+            <article class="timeline-item" style={`animation-delay: ${0.08 * index}s;`}>
+              <!-- 時間軸墨滴錨點 -->
+              <div class="timeline-dot" style={`--dot-color: ${currentCategory.color};`}></div>
+              
+              <!-- 文章發布時間 -->
+              <div class="post-date">
+                <time datetime={post.data.pubDate.toISOString()}>
+                  {formatDate(post.data.pubDate)}
+                </time>
+              </div>
+
+              <!-- 文章卡片內容 -->
+              <div class="post-card-wrapper">
+                <a href={`${import.meta.env.BASE_URL}blog/${post.slug}/`} class="post-link-card" data-astro-prefetch="hover">
+                  <div class="paper-card post-card">
+                    
+                    <!-- 主題標註 (Topic) -->
+                    {post.data.topic && (
+                      <div class="post-topic-tag">
+                        <span class="topic-indicator" style={`background-color: ${currentCategory.color};`}></span>
+                        <span class="topic-text">{post.data.topic}</span>
+                      </div>
+                    )}
+
+                    <h2 class="post-title">{post.data.title}</h2>
+                    <p class="post-description">{post.data.description}</p>
+                    
+                    <div class="post-meta">
+                      <!-- 標籤 -->
+                      {post.data.tags && post.data.tags.length > 0 && (
+                        <div class="post-tags">
+                          {post.data.tags.map((tag) => (
+                            <ShimmerBadge text={`# ${tag}`} variant="default" />
+                          ))}
+                        </div>
+                      )}
+                      
+                      <!-- 閱讀更多 -->
+                      <span class="read-more-link ink-link">閱全文 →</span>
+                    </div>
+                  </div>
+                </a>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </div>
+
+  </div>
+</Layout>
+
+<style>
+  .blog-category-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+  }
+
+  .nav-top-bar {
+    display: flex;
+    justify-content: flex-start;
+  }
+
+  .back-link {
+    font-family: var(--font-serif);
+    font-size: 0.95rem;
+    color: var(--color-ink-grey);
+    transition: var(--transition-fast);
+  }
+
+  .back-link:hover {
+    color: var(--color-mountain-cyan);
+  }
+
+  .category-header {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .category-badge-seal {
+    width: 44px;
+    height: 44px;
+    border-radius: 6px;
+    color: #fff;
+    font-family: var(--font-cursive);
+    font-size: 1.6rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.8rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    border: 1.5px solid rgba(255, 255, 255, 0.3);
+  }
+
+  .page-title {
+    font-size: 3.5rem;
+    color: var(--color-ink-black);
+    margin-bottom: 0.5rem;
+  }
+
+  .category-desc {
+    font-family: var(--font-serif);
+    font-size: 1.15rem;
+    color: var(--color-ink-grey);
+    letter-spacing: 0.08em;
+    max-width: 600px;
+    margin-bottom: 2rem;
+  }
+
+  /* 分類切換 Tab 列 */
+  .category-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .cat-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1.1rem;
+    font-family: var(--font-serif);
+    font-size: 0.95rem;
+    color: var(--color-ink-text);
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid var(--color-border);
+    border-radius: 20px;
+    text-decoration: none;
+    transition: all 0.25s ease;
+    backdrop-filter: blur(4px);
+  }
+
+  .cat-tab:hover {
+    border-color: var(--color-ink-black);
+    color: var(--color-ink-black);
+    transform: translateY(-1px);
+  }
+
+  .cat-tab.active {
+    background: var(--active-color, var(--color-ink-black));
+    color: #ffffff;
+    border-color: transparent;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+    font-weight: 600;
+  }
+
+  .cat-tab-icon {
+    font-size: 1rem;
+  }
+
+  /* 時間軸架構 */
+  .posts-timeline {
+    position: relative;
+    padding: 1rem 0;
+  }
+
+  .timeline-wrapper {
+    position: relative;
+  }
+
+  .timeline-line {
+    position: absolute;
+    left: 200px;
+    top: 10px;
+    bottom: 10px;
+    width: 2px;
+    background: linear-gradient(
+      to bottom,
+      var(--color-ink-light) 0%,
+      var(--color-border) 50%,
+      transparent 100%
+    );
+    opacity: 0.5;
+  }
+
+  .timeline-item {
+    position: relative;
+    display: flex;
+    margin-bottom: 3rem;
+    align-items: flex-start;
+  }
+
+  .timeline-dot {
+    position: absolute;
+    left: 197px;
+    top: 12px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--dot-color, var(--color-ink-black));
+    border: 2px solid var(--color-paper-bg);
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
+    z-index: 5;
+    transition: var(--transition-fast);
+  }
+
+  .timeline-item:hover .timeline-dot {
+    transform: scale(1.4);
+    box-shadow: 0 0 12px rgba(0, 0, 0, 0.3);
+  }
+
+  .post-date {
+    width: 170px;
+    text-align: right;
+    padding-top: 5px;
+    font-family: var(--font-serif);
+    font-size: 0.95rem;
+    color: var(--color-ink-grey);
+    letter-spacing: 0.05em;
+  }
+
+  .post-card-wrapper {
+    flex: 1;
+    margin-left: 55px;
+  }
+
+  .post-link-card {
+    display: block;
+    text-decoration: none;
+  }
+
+  .post-card {
+    padding: 1.8rem 2rem;
+    border-left: 3px solid var(--color-border);
+    transition: all 0.3s ease;
+  }
+
+  .post-card:hover {
+    border-left-color: var(--color-mountain-cyan);
+    transform: translateX(4px);
+  }
+
+  .post-topic-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 0.6rem;
+    font-family: var(--font-serif);
+    font-size: 0.85rem;
+    color: var(--color-ink-grey);
+    letter-spacing: 0.05em;
+  }
+
+  .topic-indicator {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  .post-title {
+    font-family: var(--font-serif);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-ink-black);
+    margin-bottom: 0.8rem;
+    transition: var(--transition-fast);
+  }
+
+  .post-link-card:hover .post-title {
+    color: var(--color-mountain-cyan);
+  }
+
+  .post-description {
+    font-size: 1rem;
+    line-height: 1.7;
+    color: var(--color-ink-text);
+    margin-bottom: 1.3rem;
+    text-align: justify;
+  }
+
+  .post-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    border-top: 1px dashed rgba(230, 223, 204, 0.6);
+    padding-top: 1rem;
+  }
+
+  .post-tags {
+    display: flex;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+  }
+
+  .read-more-link {
+    font-family: var(--font-serif);
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-ink-black);
+  }
+
+  .post-link-card:hover .read-more-link {
+    color: var(--color-mountain-cyan);
+  }
+
+  /* 空狀態 Empty State */
+  .no-posts {
+    text-align: center;
+    padding: 3.5rem 2rem;
+    font-family: var(--font-serif);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .empty-icon {
+    font-size: 2.8rem;
+    opacity: 0.8;
+  }
+
+  .empty-title {
+    font-size: 1.4rem;
+    color: var(--color-ink-black);
+    margin: 0;
+  }
+
+  .empty-desc {
+    color: var(--color-ink-grey);
+    font-size: 1rem;
+    margin: 0;
+  }
+
+  .empty-btn {
+    margin-top: 0.8rem;
+    font-size: 0.95rem;
+    padding: 0.5rem 1.4rem;
+  }
+
+  /* 行動端自適應 */
+  @media (max-width: 768px) {
+    .timeline-line {
+      left: 15px;
+    }
+
+    .timeline-dot {
+      left: 12px;
+      top: 8px;
+    }
+
+    .timeline-item {
+      flex-direction: column;
+      gap: 0.5rem;
+      padding-left: 35px;
+    }
+
+    .post-date {
+      width: 100%;
+      text-align: left;
+      font-size: 0.85rem;
+      padding-bottom: 0.2rem;
+    }
+
+    .post-card-wrapper {
+      width: 100%;
+      margin-left: 0;
+    }
+
+    .post-card {
+      padding: 1.2rem 1.5rem;
+    }
+
+    .page-title {
+      font-size: 2.8rem;
+    }
+  }
+</style>
