@@ -609,204 +609,13 @@ const formatDate = (date: Date) => {
 
   .read-more-link {
     font-family: var(--font-serif);
-    font-size: 0.85rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    color: var(--color-ink-text);
-  }
-
-  .cat-empty-hint {
-    color: var(--color-ink-grey);
-    font-size: 0.85rem;
-    font-style: italic;
-  }
-
-  .cat-enter-link {
-    font-weight: 600;
-    color: var(--cat-color, var(--color-ink-black));
-    transition: transform 0.2s ease;
-  }
-
-  .category-portal-card:hover .cat-enter-link {
-    transform: translateX(4px);
-  }
-
-  /* 全覽專區分割標題 */
-  .section-divider {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 1.5rem;
-    margin-bottom: 2.5rem;
-  }
-
-  .divider-line {
-    flex: 1;
-    height: 1px;
-    background: linear-gradient(to right, transparent, var(--color-border), transparent);
-  }
-
-  .section-subtitle {
-    font-size: 2.2rem;
-    color: var(--color-ink-black);
-    margin: 0;
-    white-space: nowrap;
-  }
-
-  /* 時間軸架構 */
-  .posts-timeline {
-    position: relative;
-    padding: 1rem 0;
-  }
-
-  .timeline-wrapper {
-    position: relative;
-  }
-
-  .timeline-line {
-    position: absolute;
-    left: 200px;
-    top: 10px;
-    bottom: 10px;
-    width: 2px;
-    background: linear-gradient(
-      to bottom,
-      var(--color-ink-light) 0%,
-      var(--color-border) 50%,
-      transparent 100%
-    );
-    opacity: 0.5;
-  }
-
-  .timeline-item {
-    position: relative;
-    display: flex;
-    margin-bottom: 3.5rem;
-    align-items: flex-start;
-  }
-
-  .timeline-dot {
-    position: absolute;
-    left: 197px;
-    top: 12px;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--dot-color, var(--color-ink-black));
-    border: 2px solid var(--color-paper-bg);
-    box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
-    z-index: 5;
-    transition: var(--transition-fast);
-  }
-
-  .timeline-item:hover .timeline-dot {
-    transform: scale(1.4);
-    box-shadow: 0 0 12px rgba(0, 0, 0, 0.3);
-  }
-
-  .post-date {
-    width: 170px;
-    text-align: right;
-    padding-top: 5px;
-    font-family: var(--font-serif);
-    font-size: 0.95rem;
-    color: var(--color-ink-grey);
-    letter-spacing: 0.05em;
-  }
-
-  .post-card-wrapper {
-    flex: 1;
-    margin-left: 55px;
-  }
-
-  .post-link-card {
-    display: block;
-    text-decoration: none;
-  }
-
-  .post-card {
-    padding: 1.8rem 2rem;
-    border-left: 3px solid var(--card-cat-color, var(--color-border));
-    transition: all 0.3s ease;
-  }
-
-  .post-card:hover {
-    transform: translateX(4px);
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
-  }
-
-  .post-top-meta {
-    display: flex;
-    align-items: center;
-    gap: 0.8rem;
-    margin-bottom: 0.8rem;
-  }
-
-  .category-pill {
-    font-family: var(--font-serif);
-    font-size: 0.75rem;
-    color: #ffffff;
-    padding: 0.15rem 0.6rem;
-    border-radius: 4px;
-    font-weight: 500;
-    letter-spacing: 0.05em;
-  }
-
-  .topic-label {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    font-family: var(--font-serif);
-    font-size: 0.85rem;
-    color: var(--color-ink-grey);
-  }
-
-  .topic-dot {
-    width: 4px;
-    height: 4px;
-    border-radius: 50%;
-    background-color: var(--color-ink-grey);
-  }
-
-  .post-title {
-    font-family: var(--font-serif);
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--color-ink-black);
-    margin-bottom: 0.8rem;
-    transition: var(--transition-fast);
-  }
-
-  .post-description {
-    font-size: 1rem;
-    line-height: 1.7;
-    color: var(--color-ink-text);
-    margin-bottom: 1.5rem;
-    text-align: justify;
-  }
-
-  .post-meta {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 1rem;
-    border-top: 1px dashed rgba(230, 223, 204, 0.6);
-    padding-top: 1rem;
-  }
-
-  .post-tags {
-    display: flex;
-    gap: 0.8rem;
-    flex-wrap: wrap;
-  }
-
-  .read-more-link {
-    font-family: var(--font-serif);
     font-size: 0.9rem;
     font-weight: 600;
     color: var(--color-ink-black);
+  }
+
+  .post-link-card:hover .read-more-link {
+    color: var(--color-mountain-cyan);
   }
 
   .no-posts {
@@ -865,12 +674,16 @@ const formatDate = (date: Date) => {
 </style>
 
 <script>
-  // 初始化水墨打字機對話框動畫
+  // 初始化水墨打字機對話框動畫（防重複綁定與絕對防疊字設計）
   function initTypewriterBubbles() {
     const cards = document.querySelectorAll<HTMLElement>('.category-portal-card');
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     cards.forEach((card) => {
+      // 防止事件監聽器重複綁定
+      if (card.dataset.typewriterBound === 'true') return;
+      card.dataset.typewriterBound = 'true';
+
       const fullText = card.getAttribute('data-category-desc') || '';
       const textContainer = card.querySelector<HTMLElement>('.bubble-typing-text');
       const cursor = card.querySelector<HTMLElement>('.ink-cursor');
@@ -898,29 +711,34 @@ const formatDate = (date: Date) => {
         }
 
         const typeChar = () => {
-          if (currentIndex < fullText.length) {
-            textContainer.textContent += fullText.charAt(currentIndex);
+          if (currentIndex <= fullText.length) {
+            // 使用 slice 絕對索引取字，物理上絕不發生重複疊字（如柴柴米米）
+            textContainer.textContent = fullText.slice(0, currentIndex);
             currentIndex++;
-            // 筆墨落字節奏：每字約 25~35 毫秒
-            timerId = window.setTimeout(typeChar, 28);
+            if (currentIndex <= fullText.length) {
+              timerId = window.setTimeout(typeChar, 25);
+            }
           }
         };
 
-        // 稍微延遲 80ms 等氣泡淡入後開始落墨
-        timerId = window.setTimeout(typeChar, 80);
+        // 延遲 60ms 等氣泡淡入後開始自然落墨
+        timerId = window.setTimeout(typeChar, 60);
       };
 
-      // 監聽滑鼠移入與移出事件
+      // 監聽滑鼠進入與離開
       card.addEventListener('mouseenter', startTyping);
       card.addEventListener('mouseleave', () => {
         stopTyping();
-        // 移出後清空文字以備下次重新打字
         textContainer.textContent = '';
       });
     });
   }
 
-  // 支援一般載入與 Astro 頁面切換 (View Transitions / Prefetch)
-  document.addEventListener('DOMContentLoaded', initTypewriterBubbles);
+  // 僅使用單一入口確保生命週期純淨
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initTypewriterBubbles, { once: true });
+  } else {
+    initTypewriterBubbles();
+  }
   document.addEventListener('astro:page-load', initTypewriterBubbles);
 </script>
