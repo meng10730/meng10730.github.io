@@ -28,23 +28,25 @@ test.describe('部落格專欄卡片互動、逃跑動效、防黑化與賦歸 E
     const bubbleText = techCard.locator('.bubble-typing-text');
     const badgeIcon = techCard.locator('.bubble-badge-icon');
 
-    // 2. 逐步懸停並驗證狀態
+    // 2. 逐步推進懸停次數至第 10 次
     for (let count = 1; count <= 10; count++) {
       await techCard.hover();
-      await page.waitForTimeout(300);
-      const text = await bubbleText.textContent();
-      console.log(`[Test] Hover #${count} Text:`, text?.slice(0, 20));
+      if (count === 1) {
+        await expect(bubbleText).not.toHaveText('', { timeout: 3000 });
+      } else {
+        await page.waitForTimeout(100);
+      }
       if (count < 10) {
         await page.mouse.move(0, 0);
-        await page.waitForTimeout(150);
+        await page.waitForTimeout(80);
       }
     }
 
     // 第 10 次後等待打字機完成並觸發逃跑動效
     await page.waitForTimeout(1500);
 
-    // 斷言卡片已逃跑隱藏，而隱形佔位層已啟用
-    await expect(techCard).toBeHidden({ timeout: 10000 });
+    // 斷言卡片已逃跑隱藏，而隱形佔位層已啟用 (等待 5 秒微電影逃跑動效播畢)
+    await expect(techCard).toBeHidden({ timeout: 15000 });
     await expect(techNote).toBeAttached();
 
     // 5. 驗證方案 C：平日為純淨隱形佔位，Hover 時才浮現互動元素
