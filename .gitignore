@@ -37,6 +37,7 @@ logs/
 
 # 排除 AI Agent Skills 自訂技能
 .agents/skills/
+test-results/
 
 # 排除 AI 學習日誌
 .learnings/

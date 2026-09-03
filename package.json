@@ -9,6 +9,7 @@
     "dev": "astro dev",
     "build": "node build.js",
     "preview": "astro preview",
+    "test:e2e": "playwright test",
     "astro": "astro"
   },
   "dependencies": {
@@ -27,5 +28,8 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "typescript": "^5.9.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1"
   }
 }

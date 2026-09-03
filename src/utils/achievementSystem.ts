@@ -1,6 +1,4 @@
-// ============================================================================
-// 部落格成就系統與 Steam 風格通知佇列控制器 (Achievement & Toast Controller)
-// ============================================================================
+import { gsap } from 'gsap';
 import { BLOG_ACHIEVEMENTS, type AchievementItem } from '../data/blogDialogues';
 
 // 成就解鎖監聽回調型別
@@ -168,12 +166,8 @@ class AchievementManager {
 
     container.appendChild(toast);
 
-    // 取得全域 gsap 實例
-    const gsap = (window as unknown as { gsap?: { to: Function; fromTo: Function } }).gsap;
-
-    if (gsap) {
-      // 使用 GSAP 進行平滑彈性滑入與滑出
-      gsap.fromTo(
+    // 使用 GSAP 進行平滑彈性滑入與滑出
+    gsap.fromTo(
         toast,
         { x: 120, opacity: 0, scale: 0.9 },
         {
@@ -199,19 +193,6 @@ class AchievementManager {
           },
         }
       );
-    } else {
-      // 若無 GSAP 則使用基本 CSS Transition
-      toast.style.opacity = '1';
-      toast.style.transform = 'translateX(0)';
-      window.setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateX(60px)';
-        window.setTimeout(() => {
-          toast.remove();
-          onComplete();
-        }, 400);
-      }, 3500);
-    }
   }
 
   public onUnlock(callback: AchievementCallback) {

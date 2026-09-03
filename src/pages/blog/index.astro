@@ -1002,6 +1002,7 @@ const formatDate = (date: Date) => {
 
       // 執行 Uiverse.io 旗艦級專屬逃跑/消失動畫
       const triggerEscapeAnimation = () => {
+        console.log('[triggerEscapeAnimation] starting for', catId);
         const state = cardStates[catId];
         state.isEscaped = true;
 
@@ -1021,8 +1022,8 @@ const formatDate = (date: Date) => {
           // 1. 技術筆記：【CRT 終端機斷電光線塌陷】(橫向雜訊切片 -> 壓成高亮水平細線 -> 收縮為光點消散)
           const tl = gsap.timeline({
             onComplete: () => {
+              console.log('[triggerEscapeAnimation] completed for', catId);
               card.style.display = 'none';
-              gsap.set(card, { clearProps: 'all' });
               if (note) note.style.display = 'flex';
             },
           });
@@ -1033,8 +1034,8 @@ const formatDate = (date: Date) => {
           // 2. 日常心得：【果凍軟爛形變與被窩沉沒】(Q 彈形變 -> 軟綿綿沉入地底被窩)
           const tl = gsap.timeline({
             onComplete: () => {
+              console.log('[triggerEscapeAnimation] completed for', catId);
               card.style.display = 'none';
-              gsap.set(card, { clearProps: 'all' });
               if (note) note.style.display = 'flex';
             },
           });
@@ -1045,8 +1046,8 @@ const formatDate = (date: Date) => {
           // 3. 思考練習：【二次元卡通物理步態出走】(左右邁步起伏搖擺 -> 大步流星跨出右側邊界)
           const tl = gsap.timeline({
             onComplete: () => {
+              console.log('[triggerEscapeAnimation] completed for', catId);
               card.style.display = 'none';
-              gsap.set(card, { clearProps: 'all' });
               if (note) note.style.display = 'flex';
             },
           });
@@ -1061,8 +1062,8 @@ const formatDate = (date: Date) => {
           // 4. 閱讀心得：【3D 硬殼典籍拍合與書籤抽離】(以書脊為軸 3D 拍合 -> 書籤高速向上抽離)
           const tl = gsap.timeline({
             onComplete: () => {
+              console.log('[triggerEscapeAnimation] completed for', catId);
               card.style.display = 'none';
-              gsap.set(card, { clearProps: 'all' });
               if (note) note.style.display = 'flex';
             },
           });
@@ -1085,6 +1086,7 @@ const formatDate = (date: Date) => {
 
         state.hoverCount++;
         const count = state.hoverCount;
+        console.log('[Blog Card]', catId, 'hoverCount:', count);
 
         // 決定當前階段的文字
         let currentRawQuote = '';
