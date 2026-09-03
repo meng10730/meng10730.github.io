@@ -1169,12 +1169,13 @@ const formatDate = (date: Date) => {
           textContainer.textContent = '';
           if (cursor) cursor.style.display = 'inline-block';
 
+          const charArray = Array.from(formattedQuote);
           let charIdx = 0;
           const typeChar = () => {
-            if (charIdx <= formattedQuote.length) {
-              textContainer.textContent = formattedQuote.slice(0, charIdx);
+            if (charIdx <= charArray.length) {
+              textContainer.textContent = charArray.slice(0, charIdx).join('');
               charIdx++;
-              if (charIdx <= formattedQuote.length) {
+              if (charIdx <= charArray.length) {
                 typingTimer = window.setTimeout(typeChar, count >= 7 ? 18 : 25);
               } else if (count >= 10) {
                 // 逃跑台詞打完後，短暫停留 600ms 觸發逃跑動畫
@@ -1235,12 +1236,13 @@ const formatDate = (date: Date) => {
             if (cursor) cursor.style.display = 'inline-block';
 
             const returnFormatted = formatDialogueBreak(dialogueData.returnQuote);
+            const returnCharArray = Array.from(returnFormatted);
             let charIdx = 0;
             const typeReturnChar = () => {
-              if (charIdx <= returnFormatted.length) {
-                textContainer.textContent = returnFormatted.slice(0, charIdx);
+              if (charIdx <= returnCharArray.length) {
+                textContainer.textContent = returnCharArray.slice(0, charIdx).join('');
                 charIdx++;
-                if (charIdx <= returnFormatted.length) {
+                if (charIdx <= returnCharArray.length) {
                   typingTimer = window.setTimeout(typeReturnChar, 22);
                 }
               }

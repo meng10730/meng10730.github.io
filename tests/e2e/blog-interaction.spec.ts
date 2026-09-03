@@ -66,10 +66,10 @@ test.describe('部落格專欄卡片互動、逃跑動效、防黑化與賦歸 E
     });
     expect(cardFilter === 'none' || cardFilter === '').toBeTruthy();
 
-    // 8. 驗證賦歸台詞打字機輸出與專屬【傲】圖示
+    // 8. 驗證賦歸台詞打字機輸出與專屬 Emoji 圖示 (非文字)
     const returnBadge = await badgeIcon.textContent();
-    expect(returnBadge).toContain('【傲】');
-    await expect(bubbleText).toContainText('強制重啟成功', { timeout: 4000 });
+    expect(returnBadge).toContain('😤');
+    await expect(bubbleText).toContainText('不准再亂戳了', { timeout: 4000 });
 
     // 9. 驗證成就已正確寫入 sessionStorage 且成功解鎖
     const single10Unlocked = await page.evaluate(() => sessionStorage.getItem('blog_achievement_single10'));

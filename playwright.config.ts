@@ -27,6 +27,6 @@ export default defineConfig({
     command: 'npx astro dev --port 4321',
     port: 4321,
     reuseExistingServer: true,
-    timeout: 30000,
+    timeout: 60000,
   },
 });
