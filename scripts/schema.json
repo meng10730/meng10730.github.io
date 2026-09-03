@@ -12,6 +12,34 @@
         "label": "簡介",
         "multiline": true
       },
+      "category": {
+        "type": "select",
+        "label": "文章分類",
+        "multiline": false,
+        "options": [
+          {
+            "label": "技術筆記",
+            "value": "tech"
+          },
+          {
+            "label": "日常心得",
+            "value": "daily"
+          },
+          {
+            "label": "思考練習",
+            "value": "thinking"
+          },
+          {
+            "label": "閱讀心得",
+            "value": "reading"
+          }
+        ]
+      },
+      "topic": {
+        "type": "text",
+        "label": "文章主要主題",
+        "multiline": false
+      },
       "pubDate": {
         "type": "date",
         "label": "發布日期",
@@ -77,53 +105,38 @@
     "label": "小說章節連載 (novel_chapters，例如：五層部/卷/章/節正文)",
     "fields": {
       "title": {
-        "type": "slug",
-        "label": "小節標題 (如：破廟殘燈)",
+        "type": "text",
+        "label": "節名稱 (如：第一節 破廟殘燈)",
         "multiline": false
       },
       "book": {
         "type": "text",
-        "label": "所屬小說 Slug (如：tianxia)",
+        "label": "所屬小說 Slug (如：tianxia 或 長生劫(暫名))",
         "multiline": false
       },
-      "partNumber": {
-        "type": "integer",
+      "part": {
+        "type": "object",
         "label": "部序號 (數字，如 1 代表第一部)",
         "multiline": false
       },
-      "partTitle": {
-        "type": "text",
-        "label": "部名稱 (如：第一部 天命初顯)",
-        "multiline": false
-      },
-      "volumeNumber": {
-        "type": "integer",
-        "label": "卷序號 (數字，如 1 代表第一卷)",
-        "multiline": false
-      },
-      "volumeTitle": {
-        "type": "text",
-        "label": "卷名稱 (如：第一卷 風起青萍)",
-        "multiline": false
-      },
-      "chapterNumber": {
-        "type": "integer",
-        "label": "章序號 (數字，如 1 代表第一章)",
-        "multiline": false
-      },
-      "chapterTitle": {
-        "type": "text",
-        "label": "章名稱 (如：第一章 孤崖夜雨)",
-        "multiline": false
-      },
-      "sectionNumber": {
+      "number": {
         "type": "integer",
         "label": "節序號 (數字，如 1 代表第一節)",
         "multiline": false
       },
-      "sectionTitle": {
-        "type": "text",
-        "label": "節名稱 (如：第一節 破廟殘燈)",
+      "volume": {
+        "type": "object",
+        "label": "卷序號 (數字，如 1 代表第一卷)",
+        "multiline": false
+      },
+      "chapter": {
+        "type": "object",
+        "label": "章序號 (數字，如 1 代表第一章)",
+        "multiline": false
+      },
+      "section": {
+        "type": "object",
+        "label": "節序號 (數字，如 1 代表第一節)",
         "multiline": false
       },
       "order": {

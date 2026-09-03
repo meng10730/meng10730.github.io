@@ -3,6 +3,7 @@ import { getCollection } from 'astro:content';
 import Layout from '../../layouts/Layout.astro';
 import ShimmerBadge from '../../components/ui/ShimmerBadge.astro';
 import { BLOG_CATEGORY_LIST, getCategoryInfo } from '../../utils/blogCategories';
+import { BLOG_DIALOGUES } from '../../data/blogDialogues';
 
 // 獲取所有部落格文章並按發布日期排序 (降序)
 const allPosts = (await getCollection('blog')).sort(
@@ -43,53 +44,85 @@ const formatDate = (date: Date) => {
 
     <!-- 四大分類引導卡片 (Portal Cards) -->
     <section class="category-grid ink-fade-in" style="animation-delay: 0.15s;" aria-label="文章分類">
-      {categoryStats.map((cat, index) => (
-        <a 
-          href={`${import.meta.env.BASE_URL}blog/category/${cat.id}/`} 
-          class="category-portal-card paper-card"
-          data-category-desc={cat.description}
-          style={`--cat-color: ${cat.color}; --cat-accent: ${cat.accentColor}; animation-delay: ${0.1 * index}s;`}
-          data-astro-prefetch="hover"
-        >
-          <!-- 懸停時彈出的古風水墨對話氣泡 (Typewriter Tooltip) -->
-          <div class="ink-dialog-bubble" aria-hidden="true">
-            <div class="bubble-arrow"></div>
-            <div class="bubble-inner">
-              <span class="bubble-badge-icon">{cat.icon}</span>
-              <span class="bubble-typing-text"></span>
-              <span class="ink-cursor"></span>
-            </div>
-          </div>
-
-          <div class="cat-card-top">
-            <div class="cat-seal" style={`background-color: ${cat.color};`}>
-              {cat.badgeText}
-            </div>
-            <div class="cat-count-badge">
-              {cat.count > 0 ? `${cat.count} 篇貼文` : '暫無存墨'}
-            </div>
-          </div>
-
-          <div class="cat-card-body">
-            <div class="cat-title-row">
-              <span class="cat-icon">{cat.icon}</span>
-              <h2 class="cat-title">{cat.name}</h2>
-            </div>
-          </div>
-
-          <div class="cat-card-footer">
-            {cat.latestPost ? (
-              <div class="cat-latest-preview">
-                <span class="preview-label">最新：</span>
-                <span class="preview-title">{cat.latestPost.data.title}</span>
+      {categoryStats.map((cat, index) => {
+        const catDialogue = BLOG_DIALOGUES[cat.id as keyof typeof BLOG_DIALOGUES];
+        return (
+          <div class="category-card-wrapper" data-wrapper-cat-id={cat.id}>
+            <!-- 專欄主體卡片 -->
+            <a 
+              href={`${import.meta.env.BASE_URL}blog/category/${cat.id}/`} 
+              class="category-portal-card paper-card"
+              data-cat-id={cat.id}
+              data-category-desc={cat.description}
+              style={`--cat-color: ${cat.color}; --cat-accent: ${cat.accentColor}; animation-delay: ${0.1 * index}s;`}
+              data-astro-prefetch="hover"
+            >
+              <!-- 懸停時彈出的古風水墨對話氣泡 (Typewriter Tooltip) -->
+              <div class="ink-dialog-bubble" aria-hidden="true">
+                <div class="bubble-arrow"></div>
+                <div class="bubble-inner">
+                  <span class="bubble-badge-icon">{cat.icon}</span>
+                  <span class="bubble-typing-text"></span>
+                  <span class="ink-cursor"></span>
+                </div>
               </div>
-            ) : (
-              <span class="cat-empty-hint">靜待啟筆...</span>
-            )}
-            <span class="cat-enter-link">進入專欄 →</span>
+
+              <div class="cat-card-top">
+                <div class="cat-seal" style={`background-color: ${cat.color};`}>
+                  {cat.badgeText}
+                </div>
+                <div class="cat-count-badge">
+                  {cat.count > 0 ? `${cat.count} 篇貼文` : '暫無存墨'}
+                </div>
+              </div>
+
+              <div class="cat-card-body">
+                <div class="cat-title-row">
+                  <span class="cat-icon">{cat.icon}</span>
+                  <h2 class="cat-title">{cat.name}</h2>
+                </div>
+              </div>
+
+              <div class="cat-card-footer">
+                {cat.latestPost ? (
+                  <div class="cat-latest-preview">
+                    <span class="preview-label">最新：</span>
+                    <span class="preview-title">{cat.latestPost.data.title}</span>
+                  </div>
+                ) : (
+                  <span class="cat-empty-hint">靜待啟筆...</span>
+                )}
+                <span class="cat-enter-link">進入專欄 →</span>
+              </div>
+            </a>
+
+            <!-- 卡片逃跑後原地留下的水墨便條紙 (Sticky Note) -->
+            <div class="category-note-card paper-card" data-note-cat-id={cat.id} style={`--note-cat-color: ${cat.color}; display: none;`}>
+              <div class="note-pin">📌</div>
+              <div class="note-header">
+                <span class="note-seal">{cat.badgeText}</span>
+                <span class="note-status-badge">管理員出走中</span>
+              </div>
+              <p class="note-msg">{catDialogue?.noteMessage || '【暫停營業】管理員已離家出走。'}</p>
+              <div class="note-actions">
+                <button type="button" class="btn-coax-back" data-coax-id={cat.id} title="向專欄管理員真誠道歉">
+                  <span class="coax-icon">🌸</span> 誠懇哄回來
+                </button>
+                {catDialogue?.easterEggLink && (
+                  <a 
+                    href={catDialogue.easterEggLink.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    class="note-easter-link"
+                  >
+                    {catDialogue.easterEggLink.text}
+                  </a>
+                )}
+              </div>
+            </div>
           </div>
-        </a>
-      ))}
+        );
+      })}
     </section>
 
     <!-- 全覽專區分割標題 -->
@@ -205,18 +238,143 @@ const formatDate = (date: Date) => {
     margin-top: 1.2rem;
   }
 
+  .category-card-wrapper {
+    position: relative;
+    min-height: 230px;
+    border-radius: 12px;
+    overflow: visible;
+  }
+
   .category-portal-card {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    height: 100%;
+    min-height: 230px;
     padding: 1.8rem;
     border-radius: 12px;
     border-left: 4px solid var(--cat-color, var(--color-border));
     text-decoration: none;
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-left-width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     position: relative;
     overflow: visible; /* 允許上方浮動氣泡顯示 */
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(245, 240, 227, 0.6) 100%);
+    box-sizing: border-box;
+  }
+
+  /* 逃跑後原地留下的小紙條 (Sticky Note) */
+  .category-note-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    min-height: 230px;
+    padding: 1.8rem;
+    border-radius: 12px;
+    border: 2px dashed var(--note-cat-color, #c4a482);
+    background: linear-gradient(135deg, #fdfbf7 0%, #f4eee1 100%);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+    position: relative;
+    box-sizing: border-box;
+  }
+
+  .note-pin {
+    position: absolute;
+    top: -10px;
+    right: 18px;
+    font-size: 1.4rem;
+    transform: rotate(15deg);
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
+  }
+
+  .note-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.8rem;
+  }
+
+  .note-seal {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    background: var(--note-cat-color, #8c6239);
+    color: #fff;
+    font-family: var(--font-cursive);
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.8;
+  }
+
+  .note-status-badge {
+    font-family: var(--font-serif);
+    font-size: 0.8rem;
+    color: #9b2c2c;
+    background: rgba(155, 44, 44, 0.08);
+    border: 1px solid rgba(155, 44, 44, 0.2);
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    letter-spacing: 0.05em;
+  }
+
+  .note-msg {
+    font-family: var(--font-serif);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: var(--color-ink-grey, #555);
+    margin: 0.6rem 0 1.2rem 0;
+    font-style: italic;
+  }
+
+  .note-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+    padding-top: 0.8rem;
+    border-top: 1px dashed rgba(0, 0, 0, 0.1);
+  }
+
+  .btn-coax-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: #fff;
+    border: 1.5px solid var(--note-cat-color, #8c6239);
+    color: var(--note-cat-color, #8c6239);
+    padding: 0.4rem 0.9rem;
+    border-radius: 20px;
+    font-family: var(--font-serif);
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    transition: all 0.2s ease;
+  }
+
+  .btn-coax-back:hover {
+    background: var(--note-cat-color, #8c6239);
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+  }
+
+  .note-easter-link {
+    font-family: var(--font-serif);
+    font-size: 0.82rem;
+    color: var(--color-ink-grey, #666);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    opacity: 0.85;
+    transition: all 0.2s ease;
+  }
+
+  .note-easter-link:hover {
+    color: #9b2c2c;
+    opacity: 1;
   }
 
   .category-portal-card::before {
@@ -620,6 +778,97 @@ const formatDate = (date: Date) => {
     color: var(--color-ink-grey);
   }
 
+  /* Steam 風格水墨黑金成就 Toast 通知 */
+  :global(.steam-toast-container) {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    z-index: 9999;
+    pointer-events: none;
+  }
+
+  :global(.steam-toast-card) {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 18px;
+    background: linear-gradient(135deg, rgba(28, 25, 23, 0.96) 0%, rgba(44, 39, 36, 0.94) 100%);
+    border: 1.5px solid rgba(212, 163, 89, 0.6);
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35), 0 0 15px rgba(212, 163, 89, 0.2);
+    color: #fdfbf7;
+    min-width: 280px;
+    max-width: 360px;
+    position: relative;
+    overflow: hidden;
+    pointer-events: auto;
+    backdrop-filter: blur(10px);
+  }
+
+  :global(.steam-toast-shimmer) {
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+    transform: skewX(-20deg);
+    animation: steamShimmer 2.5s infinite;
+  }
+
+  @keyframes steamShimmer {
+    0% { left: -100%; }
+    100% { left: 200%; }
+  }
+
+  :global(.steam-toast-left) {
+    flex-shrink: 0;
+  }
+
+  :global(.steam-toast-badge) {
+    width: 42px;
+    height: 42px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #d4a359 0%, #b8860b 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  :global(.steam-toast-content) {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  :global(.steam-toast-tag) {
+    font-family: var(--font-serif);
+    font-size: 0.72rem;
+    color: #d4a359;
+    letter-spacing: 0.1em;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  :global(.steam-toast-title) {
+    font-family: var(--font-serif);
+    font-size: 0.96rem;
+    font-weight: 700;
+    color: #ffffff;
+  }
+
+  :global(.steam-toast-desc) {
+    font-family: var(--font-serif);
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.75);
+    line-height: 1.35;
+  }
+
   /* 行動端適配 */
   @media (max-width: 768px) {
     .category-grid {
@@ -665,75 +914,317 @@ const formatDate = (date: Date) => {
     .section-subtitle {
       font-size: 1.8rem;
     }
+
+    :global(.steam-toast-container) {
+      top: 20px;
+      bottom: auto;
+      right: 16px;
+      left: 16px;
+    }
+
+    :global(.steam-toast-card) {
+      max-width: 100%;
+    }
   }
 </style>
 
 <script>
-  // 初始化水墨打字機對話框動畫（防重複綁定與絕對防疊字設計）
-  function initTypewriterBubbles() {
-    const cards = document.querySelectorAll<HTMLElement>('.category-portal-card');
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  import { gsap } from 'gsap';
+  import { BLOG_DIALOGUES } from '../../data/blogDialogues';
+  import { achievementManager } from '../../utils/achievementSystem';
 
-    cards.forEach((card) => {
-      // 防止事件監聽器重複綁定
-      if (card.dataset.typewriterBound === 'true') return;
-      card.dataset.typewriterBound = 'true';
+  // 斷句格式化器（優先依標點符號換行，避頭尾法則防孤字）
+  function formatDialogueBreak(text: string, maxLineLen = 15): string {
+    if (!text) return '';
+    // 如果文本中已包含手動換行符 \n，直接採用
+    if (text.includes('\n')) return text;
 
-      const fullText = card.getAttribute('data-category-desc') || '';
+    const punctuations = ['，', '、', '。', '！', '？', '；', '：', '…', '—'];
+    let result = '';
+    let currentLine = '';
+
+    for (let i = 0; i < text.length; i++) {
+      const char = text[i];
+      currentLine += char;
+
+      // 當遇到標點符號，且目前行字數達到一定長度（大於等於 8 字）
+      if (punctuations.includes(char) && currentLine.length >= 8 && i < text.length - 3) {
+        result += currentLine + '\n';
+        currentLine = '';
+      } else if (currentLine.length >= maxLineLen && i < text.length - 2) {
+        // 超長防破版強制斷行
+        result += currentLine + '\n';
+        currentLine = '';
+      }
+    }
+
+    result += currentLine;
+    return result;
+  }
+
+  // 隨機抽選不連續重複的台詞
+  function getRandomQuote(quotes: string[], lastQuote?: string): string {
+    if (!quotes || quotes.length === 0) return '';
+    if (quotes.length === 1) return quotes[0];
+    const pool = quotes.filter((q) => q !== lastQuote);
+    const randomIndex = Math.floor(Math.random() * pool.length);
+    return pool[randomIndex] || quotes[0];
+  }
+
+  // 初始化四大專欄卡片互動系統
+  function initBlogCardInteractions() {
+    const wrappers = document.querySelectorAll<HTMLElement>('.category-card-wrapper');
+    if (wrappers.length === 0) return;
+
+    // 儲存各專欄當前即時狀態
+    const cardStates: Record<string, {
+      hoverCount: number;
+      resetTimer: number | null;
+      lastQuote: string;
+      isEscaped: boolean;
+      originalIcon: string;
+    }> = {};
+
+    wrappers.forEach((wrapper) => {
+      const card = wrapper.querySelector<HTMLElement>('.category-portal-card');
+      const note = wrapper.querySelector<HTMLElement>('.category-note-card');
+      const coaxBtn = wrapper.querySelector<HTMLElement>('.btn-coax-back');
+      const catId = card?.getAttribute('data-cat-id') as keyof typeof BLOG_DIALOGUES;
+
+      if (!card || !catId || card.dataset.interactiveBound === 'true') return;
+      card.dataset.interactiveBound = 'true';
+
+      const dialogueData = BLOG_DIALOGUES[catId];
       const textContainer = card.querySelector<HTMLElement>('.bubble-typing-text');
+      const iconContainer = card.querySelector<HTMLElement>('.bubble-badge-icon');
       const cursor = card.querySelector<HTMLElement>('.ink-cursor');
-      if (!textContainer || !fullText) return;
+      const enterLink = card.querySelector<HTMLElement>('.cat-enter-link');
+      const originalIcon = iconContainer?.textContent || '';
 
-      let timerId: number | null = null;
-      let currentIndex = 0;
+      cardStates[catId] = {
+        hoverCount: 0,
+        resetTimer: null,
+        lastQuote: '',
+        isEscaped: false,
+        originalIcon: originalIcon,
+      };
+
+      let typingTimer: number | null = null;
 
       const stopTyping = () => {
-        if (timerId !== null) {
-          window.clearTimeout(timerId);
-          timerId = null;
+        if (typingTimer !== null) {
+          window.clearTimeout(typingTimer);
+          typingTimer = null;
         }
       };
 
-      const startTyping = () => {
-        stopTyping();
-        currentIndex = 0;
-        textContainer.textContent = '';
-        if (cursor) cursor.style.display = 'inline-block';
+      // 執行專屬逃跑/消失動畫
+      const triggerEscapeAnimation = () => {
+        const state = cardStates[catId];
+        state.isEscaped = true;
 
-        if (prefersReducedMotion) {
-          textContainer.textContent = fullText;
-          return;
+        // 判定成就
+        achievementManager.unlock('single10');
+        
+        // 檢查是否達成四專欄大滿貫
+        const allEscaped = Object.keys(BLOG_DIALOGUES).every((id) => {
+          return cardStates[id]?.hoverCount >= 10 || cardStates[id]?.isEscaped;
+        });
+        if (allEscaped) {
+          achievementManager.unlock('all10');
         }
 
-        const typeChar = () => {
-          if (currentIndex <= fullText.length) {
-            // 使用 slice 絕對索引取字，物理上絕不發生重複疊字（如柴柴米米）
-            textContainer.textContent = fullText.slice(0, currentIndex);
-            currentIndex++;
-            if (currentIndex <= fullText.length) {
-              timerId = window.setTimeout(typeChar, 25);
-            }
+        // 依不同風格執行專屬 GSAP 逃跑動效
+        if (catId === 'tech') {
+          // 1. 技術筆記：404 故障閃爍與代碼崩解瓦解
+          const tl = gsap.timeline({
+            onComplete: () => {
+              card.style.display = 'none';
+              if (note) {
+                note.style.display = 'flex';
+                gsap.fromTo(note, { scale: 0.85, opacity: 0, y: 15 }, { scale: 1, opacity: 1, y: 0, duration: 0.45, ease: 'back.out(1.5)' });
+              }
+            },
+          });
+          tl.to(card, { x: 5, duration: 0.05, repeat: 5, yoyo: true })
+            .to(card, { opacity: 0.3, filter: 'invert(1) hue-rotate(90deg)', duration: 0.15 })
+            .to(card, { opacity: 0, y: 30, scale: 0.9, duration: 0.35, ease: 'power2.in' });
+        } else if (catId === 'daily') {
+          // 2. 日常心得：瞌睡呼嚕，縮成棉被沉入地底
+          gsap.to(card, {
+            y: 40,
+            scaleY: 0.8,
+            scaleX: 0.9,
+            opacity: 0,
+            duration: 0.7,
+            ease: 'power2.inOut',
+            onComplete: () => {
+              card.style.display = 'none';
+              if (note) {
+                note.style.display = 'flex';
+                gsap.fromTo(note, { scale: 0.85, opacity: 0, y: 15 }, { scale: 1, opacity: 1, y: 0, duration: 0.45, ease: 'back.out(1.5)' });
+              }
+            },
+          });
+        } else if (catId === 'thinking') {
+          // 3. 思考練習：推眼鏡邁步，步伐起伏走出右側畫面邊界
+          const tl = gsap.timeline({
+            onComplete: () => {
+              card.style.display = 'none';
+              if (note) {
+                note.style.display = 'flex';
+                gsap.fromTo(note, { scale: 0.85, opacity: 0, y: 15 }, { scale: 1, opacity: 1, y: 0, duration: 0.45, ease: 'back.out(1.5)' });
+              }
+            },
+          });
+          tl.to(card, { y: -8, duration: 0.15, ease: 'power1.out' })
+            .to(card, { y: 0, x: 60, duration: 0.2, ease: 'power1.in' })
+            .to(card, { y: -8, duration: 0.15, ease: 'power1.out' })
+            .to(card, { y: 0, x: 220, opacity: 0, duration: 0.25, ease: 'power1.in' });
+        } else if (catId === 'reading') {
+          // 4. 閱讀心得：啪一聲闔上書本，像抽走書籤一樣滑出視窗
+          const tl = gsap.timeline({
+            onComplete: () => {
+              card.style.display = 'none';
+              if (note) {
+                note.style.display = 'flex';
+                gsap.fromTo(note, { scale: 0.85, opacity: 0, y: 15 }, { scale: 1, opacity: 1, y: 0, duration: 0.45, ease: 'back.out(1.5)' });
+              }
+            },
+          });
+          tl.to(card, { scale: 0.95, rotateX: 25, duration: 0.18, ease: 'power2.in' })
+            .to(card, { x: -180, opacity: 0, rotateZ: -10, duration: 0.4, ease: 'power3.in' });
+        }
+      };
+
+      // 滑鼠進入事件
+      card.addEventListener('mouseenter', () => {
+        const state = cardStates[catId];
+        if (state.isEscaped) return;
+
+        // 清除 10 秒計時器
+        if (state.resetTimer !== null) {
+          window.clearTimeout(state.resetTimer);
+          state.resetTimer = null;
+        }
+
+        state.hoverCount++;
+        const count = state.hoverCount;
+
+        // 決定當前階段的文字
+        let currentRawQuote = '';
+        if (count <= 3) {
+          // 階段 1：正常隨機簡介
+          currentRawQuote = getRandomQuote(dialogueData.normal, state.lastQuote);
+          if (iconContainer) iconContainer.textContent = originalIcon;
+          if (enterLink) enterLink.textContent = '進入專欄 →';
+        } else if (count <= 6) {
+          // 階段 2：微惱吐槽
+          currentRawQuote = getRandomQuote(dialogueData.tease, state.lastQuote);
+          if (iconContainer) iconContainer.textContent = originalIcon;
+          if (enterLink) enterLink.textContent = '進入專欄 →';
+        } else if (count <= 9) {
+          // 階段 3：極度傲嬌
+          currentRawQuote = getRandomQuote(dialogueData.tsundere, state.lastQuote);
+          if (iconContainer) iconContainer.textContent = dialogueData.angryIcon;
+          if (enterLink) enterLink.textContent = dialogueData.enterActionText;
+
+          // 觸發傲嬌專屬微動效
+          if (catId === 'tech') {
+            gsap.fromTo(card, { x: -3 }, { x: 3, duration: 0.08, repeat: 4, yoyo: true, ease: 'none' });
+          } else if (catId === 'daily') {
+            gsap.to(card, { y: 4, opacity: 0.9, duration: 0.3 });
+          } else if (catId === 'thinking') {
+            gsap.fromTo(card, { rotate: -1 }, { rotate: 1, duration: 0.1, repeat: 3, yoyo: true });
+          } else if (catId === 'reading') {
+            gsap.fromTo(card, { scale: 0.98 }, { scale: 1.01, duration: 0.15, repeat: 1, yoyo: true });
           }
-        };
+        } else {
+          // 階段 4 (>=10)：最後逃跑遺言
+          currentRawQuote = dialogueData.escapeQuote;
+          if (iconContainer) iconContainer.textContent = dialogueData.angryIcon;
+        }
 
-        // 延遲 60ms 等氣泡淡入後開始自然落墨
-        timerId = window.setTimeout(typeChar, 60);
-      };
+        state.lastQuote = currentRawQuote;
+        const formattedQuote = formatDialogueBreak(currentRawQuote);
 
-      // 監聽滑鼠進入與離開
-      card.addEventListener('mouseenter', startTyping);
+        // 啟動打字機動畫
+        stopTyping();
+        if (textContainer) {
+          textContainer.textContent = '';
+          if (cursor) cursor.style.display = 'inline-block';
+
+          let charIdx = 0;
+          const typeChar = () => {
+            if (charIdx <= formattedQuote.length) {
+              textContainer.textContent = formattedQuote.slice(0, charIdx);
+              charIdx++;
+              if (charIdx <= formattedQuote.length) {
+                typingTimer = window.setTimeout(typeChar, count >= 7 ? 18 : 25);
+              } else if (count >= 10) {
+                // 逃跑台詞打完後，短暫停留 600ms 觸發逃跑動畫
+                window.setTimeout(triggerEscapeAnimation, 600);
+              }
+            }
+          };
+          typingTimer = window.setTimeout(typeChar, 60);
+        }
+      });
+
+      // 滑鼠離開事件 (啟動 10 秒計數冷卻重置)
       card.addEventListener('mouseleave', () => {
         stopTyping();
-        textContainer.textContent = '';
+        const state = cardStates[catId];
+        if (state.isEscaped) return;
+
+        // 重置打字框
+        if (textContainer) textContainer.textContent = '';
+        if (enterLink && state.hoverCount < 7) enterLink.textContent = '進入專欄 →';
+
+        // 10 秒後若未達到 10 次，將情緒階梯重置為 0
+        state.resetTimer = window.setTimeout(() => {
+          state.hoverCount = 0;
+          if (iconContainer) iconContainer.textContent = originalIcon;
+          if (enterLink) enterLink.textContent = '進入專欄 →';
+        }, 10000);
       });
+
+      // 點擊「🌸 誠懇哄回來」按鈕
+      if (coaxBtn) {
+        coaxBtn.addEventListener('click', () => {
+          const state = cardStates[catId];
+          state.isEscaped = false;
+          state.hoverCount = 0;
+          if (iconContainer) iconContainer.textContent = originalIcon;
+          if (enterLink) enterLink.textContent = '進入專欄 →';
+
+          // 便條紙收起，卡片彈性歸位
+          if (note) {
+            gsap.to(note, {
+              scale: 0.8,
+              opacity: 0,
+              duration: 0.25,
+              onComplete: () => {
+                note.style.display = 'none';
+                card.style.display = 'flex';
+                gsap.fromTo(
+                  card,
+                  { scale: 0.8, opacity: 0, x: 0, y: 0, rotate: 0, rotateX: 0, rotateZ: 0 },
+                  { scale: 1, opacity: 1, duration: 0.5, ease: 'back.out(1.5)' }
+                );
+              },
+            });
+          }
+        });
+      }
     });
   }
 
   // 僅使用單一入口確保生命週期純淨
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initTypewriterBubbles, { once: true });
+    document.addEventListener('DOMContentLoaded', initBlogCardInteractions, { once: true });
   } else {
-    initTypewriterBubbles();
+    initBlogCardInteractions();
   }
-  document.addEventListener('astro:page-load', initTypewriterBubbles);
+  document.addEventListener('astro:page-load', initBlogCardInteractions);
 </script>
