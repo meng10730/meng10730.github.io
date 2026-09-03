@@ -36,6 +36,12 @@ export interface CategoryDialogue {
 
   // 8. 專屬情緒圖示 (極度傲嬌時替換原本圖示)
   angryIcon: string;
+
+  // 9. 哄回來時的專屬賦歸台詞 (在氣泡短暫展示)
+  returnQuote: string;
+
+  // 10. 賦歸時的專屬圖示
+  returnIcon: string;
 }
 
 // ============================================================================
@@ -88,6 +94,8 @@ export const BLOG_DIALOGUES: Record<'tech' | 'daily' | 'thinking' | 'reading', C
     },
     enterActionText: '哼，看懂了再說！ →',
     angryIcon: '【怒】',
+    returnQuote: '……強制重啟成功。這次給我好好看文章，不准再亂戳了！',
+    returnIcon: '【傲】',
   },
 
   // --------------------------------------------------------------------------
@@ -103,7 +111,7 @@ export const BLOG_DIALOGUES: Record<'tech' | 'daily' | 'thinking' | 'reading', C
     tease: [
       '哈啊……好睏喔，可以不要一直戳我嗎……',
       '你很閒的話，不如幫我把枕頭拍鬆一點……',
-      '我要去睡午發了，你隨便看看就好啦，不要叫我……',
+      '我要去睡午覺了，你隨便看看就好啦，不要叫我……',
       '眼皮好重……游標晃來晃去好像催眠鐘擺喔……',
     ],
     tsundere: [
@@ -120,6 +128,8 @@ export const BLOG_DIALOGUES: Record<'tech' | 'daily' | 'thinking' | 'reading', C
     },
     enterActionText: '好啦好啦隨便你看... →',
     angryIcon: '【困】',
+    returnQuote: '哈啊……（揉眼睛被拉出被窩）……好啦，不睡了就是了。',
+    returnIcon: '【醒】',
   },
 
   // --------------------------------------------------------------------------
@@ -152,6 +162,8 @@ export const BLOG_DIALOGUES: Record<'tech' | 'daily' | 'thinking' | 'reading', C
     },
     enterActionText: '哼，這可沒那麼容易想通！ →',
     angryIcon: '【亂】',
+    returnQuote: '哼……看在你態度誠懇的份上，本思考體就破例回席。',
+    returnIcon: '【歸】',
   },
 
   // --------------------------------------------------------------------------
@@ -184,5 +196,7 @@ export const BLOG_DIALOGUES: Record<'tech' | 'daily' | 'thinking' | 'reading', C
     },
     enterActionText: '就、就借你瞄一眼喔！ →',
     angryIcon: '【合】',
+    returnQuote: '就、就借你翻翻看嘛……先說好，要是敢摺到書角我就立刻沒收！',
+    returnIcon: '【翻】',
   },
 };

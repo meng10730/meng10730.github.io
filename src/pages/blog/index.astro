@@ -961,6 +961,8 @@ const formatDate = (date: Date) => {
       lastQuote: string;
       isEscaped: boolean;
       originalIcon: string;
+      isReturning: boolean;
+      returnLockTimer: number | null;
     }> = {};
 
     wrappers.forEach((wrapper) => {
@@ -985,6 +987,8 @@ const formatDate = (date: Date) => {
         lastQuote: '',
         isEscaped: false,
         originalIcon: originalIcon,
+        isReturning: false,
+        returnLockTimer: null,
       };
 
       let typingTimer: number | null = null;
@@ -996,7 +1000,7 @@ const formatDate = (date: Date) => {
         }
       };
 
-      // 執行專屬逃跑/消失動畫
+      // 執行 Uiverse.io 旗艦級專屬逃跑/消失動畫
       const triggerEscapeAnimation = () => {
         const state = cardStates[catId];
         state.isEscaped = true;
@@ -1012,69 +1016,66 @@ const formatDate = (date: Date) => {
           achievementManager.unlock('all10');
         }
 
-        // 依不同風格執行專屬 GSAP 逃跑動效
+        // 依不同風格執行專屬 GSAP 旗艦動效
         if (catId === 'tech') {
-          // 1. 技術筆記：404 故障閃爍與代碼崩解瓦解
+          // 1. 技術筆記：【CRT 終端機斷電光線塌陷】(橫向雜訊切片 -> 壓成高亮水平細線 -> 收縮為光點消散)
           const tl = gsap.timeline({
             onComplete: () => {
               card.style.display = 'none';
-              if (note) {
-                note.style.display = 'flex';
-              }
+              gsap.set(card, { clearProps: 'all' });
+              if (note) note.style.display = 'flex';
             },
           });
-          tl.to(card, { x: 5, duration: 0.05, repeat: 5, yoyo: true })
-            .to(card, { opacity: 0.3, filter: 'invert(1) hue-rotate(90deg)', duration: 0.15 })
-            .to(card, { opacity: 0, y: 30, scale: 0.9, duration: 0.35, ease: 'power2.in' });
+          tl.to(card, { x: 8, duration: 0.05, repeat: 3, yoyo: true })
+            .to(card, { scaleY: 0.005, scaleX: 1.05, filter: 'brightness(2)', duration: 0.18, ease: 'power2.in' })
+            .to(card, { scaleX: 0, opacity: 0, duration: 0.12, ease: 'power3.in' });
         } else if (catId === 'daily') {
-          // 2. 日常心得：瞌睡呼嚕，縮成棉被沉入地底
-          gsap.to(card, {
-            y: 40,
-            scaleY: 0.8,
-            scaleX: 0.9,
-            opacity: 0,
-            duration: 0.7,
-            ease: 'power2.inOut',
+          // 2. 日常心得：【果凍軟爛形變與被窩沉沒】(Q 彈形變 -> 軟綿綿沉入地底被窩)
+          const tl = gsap.timeline({
             onComplete: () => {
               card.style.display = 'none';
-              if (note) {
-                note.style.display = 'flex';
-              }
+              gsap.set(card, { clearProps: 'all' });
+              if (note) note.style.display = 'flex';
             },
           });
+          tl.to(card, { scaleX: 1.15, scaleY: 0.85, duration: 0.15, ease: 'power1.out' })
+            .to(card, { scaleX: 0.9, scaleY: 1.1, y: -10, duration: 0.15, ease: 'power1.out' })
+            .to(card, { scaleX: 0.75, scaleY: 0.75, y: 70, opacity: 0, duration: 0.45, ease: 'power2.in' });
         } else if (catId === 'thinking') {
-          // 3. 思考練習：推眼鏡邁步，步伐起伏走出右側畫面邊界
+          // 3. 思考練習：【二次元卡通物理步態出走】(左右邁步起伏搖擺 -> 大步流星跨出右側邊界)
           const tl = gsap.timeline({
             onComplete: () => {
               card.style.display = 'none';
-              if (note) {
-                note.style.display = 'flex';
-              }
+              gsap.set(card, { clearProps: 'all' });
+              if (note) note.style.display = 'flex';
             },
           });
-          tl.to(card, { y: -8, duration: 0.15, ease: 'power1.out' })
-            .to(card, { y: 0, x: 60, duration: 0.2, ease: 'power1.in' })
-            .to(card, { y: -8, duration: 0.15, ease: 'power1.out' })
-            .to(card, { y: 0, x: 220, opacity: 0, duration: 0.25, ease: 'power1.in' });
+          tl.to(card, { x: -15, scale: 0.98, duration: 0.15, ease: 'power1.out' })
+            .to(card, { x: 35, y: -12, rotate: -6, duration: 0.15, ease: 'power1.out' })
+            .to(card, { y: 0, rotate: 0, duration: 0.1, ease: 'power1.in' })
+            .to(card, { x: 95, y: -12, rotate: 6, duration: 0.15, ease: 'power1.out' })
+            .to(card, { y: 0, rotate: 0, duration: 0.1, ease: 'power1.in' })
+            .to(card, { x: 160, y: -10, rotate: -5, duration: 0.12, ease: 'power1.out' })
+            .to(card, { x: '140%', opacity: 0, rotate: 4, duration: 0.25, ease: 'power2.in' });
         } else if (catId === 'reading') {
-          // 4. 閱讀心得：啪一聲闔上書本，像抽走書籤一樣滑出視窗
+          // 4. 閱讀心得：【3D 硬殼典籍拍合與書籤抽離】(以書脊為軸 3D 拍合 -> 書籤高速向上抽離)
           const tl = gsap.timeline({
             onComplete: () => {
               card.style.display = 'none';
-              if (note) {
-                note.style.display = 'flex';
-              }
+              gsap.set(card, { clearProps: 'all' });
+              if (note) note.style.display = 'flex';
             },
           });
-          tl.to(card, { scale: 0.95, rotateX: 25, duration: 0.18, ease: 'power2.in' })
-            .to(card, { x: -180, opacity: 0, rotateZ: -10, duration: 0.4, ease: 'power3.in' });
+          gsap.set(card, { transformOrigin: 'left center' });
+          tl.to(card, { rotateY: -90, scaleX: 0.15, opacity: 0.8, duration: 0.28, ease: 'power3.in' })
+            .to(card, { y: -160, x: -40, opacity: 0, duration: 0.3, ease: 'power2.in' });
         }
       };
 
       // 滑鼠進入事件
       card.addEventListener('mouseenter', () => {
         const state = cardStates[catId];
-        if (state.isEscaped) return;
+        if (state.isEscaped || state.isReturning) return;
 
         // 清除 10 秒計時器
         if (state.resetTimer !== null) {
@@ -1149,7 +1150,7 @@ const formatDate = (date: Date) => {
       card.addEventListener('mouseleave', () => {
         stopTyping();
         const state = cardStates[catId];
-        if (state.isEscaped) return;
+        if (state.isEscaped || state.isReturning) return;
 
         // 重置打字框
         if (textContainer) textContainer.textContent = '';
@@ -1163,32 +1164,59 @@ const formatDate = (date: Date) => {
         }, 10000);
       });
 
-      // 點擊「🌸 誠懇哄回來」按鈕
+      // 點擊「哄回來」按鈕 (物理級清除殘留 + 賦歸台詞鎖定展示)
       if (coaxBtn) {
         coaxBtn.addEventListener('click', () => {
           const state = cardStates[catId];
+          if (state.isReturning) return;
+          state.isReturning = true;
           state.isEscaped = false;
           state.hoverCount = 0;
-          if (iconContainer) iconContainer.textContent = originalIcon;
+
+          // 物理級清除所有 GSAP 殘留屬性 (徹底根除黑化與變形)
+          gsap.set(card, { clearProps: 'all' });
+          if (note) note.style.display = 'none';
+          card.style.display = 'flex';
+
+          // 彈性活力蹦回原位
+          gsap.fromTo(
+            card,
+            { scale: 0.75, opacity: 0, y: 15 },
+            { scale: 1, opacity: 1, y: 0, duration: 0.55, ease: 'back.out(1.7)' }
+          );
+
+          // 在氣泡中短暫鎖定展示專屬「賦歸台詞」
+          if (iconContainer) iconContainer.textContent = dialogueData.returnIcon;
           if (enterLink) enterLink.textContent = '進入專欄 →';
 
-          // 便條紙收起，卡片彈性歸位
-          if (note) {
-            gsap.to(note, {
-              scale: 0.8,
-              opacity: 0,
-              duration: 0.25,
-              onComplete: () => {
-                note.style.display = 'none';
-                card.style.display = 'flex';
-                gsap.fromTo(
-                  card,
-                  { scale: 0.8, opacity: 0, x: 0, y: 0, rotate: 0, rotateX: 0, rotateZ: 0 },
-                  { scale: 1, opacity: 1, duration: 0.5, ease: 'back.out(1.5)' }
-                );
-              },
-            });
+          stopTyping();
+          if (textContainer) {
+            textContainer.textContent = '';
+            if (cursor) cursor.style.display = 'inline-block';
+
+            const returnFormatted = formatDialogueBreak(dialogueData.returnQuote);
+            let charIdx = 0;
+            const typeReturnChar = () => {
+              if (charIdx <= returnFormatted.length) {
+                textContainer.textContent = returnFormatted.slice(0, charIdx);
+                charIdx++;
+                if (charIdx <= returnFormatted.length) {
+                  typingTimer = window.setTimeout(typeReturnChar, 22);
+                }
+              }
+            };
+            typingTimer = window.setTimeout(typeReturnChar, 50);
           }
+
+          // 鎖定展示 2.8 秒，結束後平滑解除鎖定
+          if (state.returnLockTimer !== null) {
+            window.clearTimeout(state.returnLockTimer);
+          }
+          state.returnLockTimer = window.setTimeout(() => {
+            state.isReturning = false;
+            state.returnLockTimer = null;
+            if (iconContainer) iconContainer.textContent = originalIcon;
+          }, 2800);
         });
       }
     });
