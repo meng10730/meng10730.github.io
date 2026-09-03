@@ -59,7 +59,7 @@ export const BLOG_ACHIEVEMENTS: Record<'single10' | 'all10', AchievementItem> = 
 // ============================================================================
 export const BLOG_DIALOGUES: Record<'tech' | 'daily' | 'thinking' | 'reading', CategoryDialogue> = {
   // --------------------------------------------------------------------------
-  // 1. 技術筆記 (極客傲嬌風格：嚴謹、追求完美、嫌棄外行卻又忍不住詳細說明)
+  // 1. 技術筆記 (極客傲嬌風格)
   // --------------------------------------------------------------------------
   tech: {
     normal: [
@@ -81,17 +81,17 @@ export const BLOG_DIALOGUES: Record<'tech' | 'daily' | 'thinking' | 'reading', C
       '笨蛋！游標移這麼多次，難道是想跟我配對藍牙嗎？！',
     ],
     escapeQuote: '權限拒絕！我要執行 `rm -rf` 把自己刪除了，掰！',
-    noteMessage: '【已離線】此節點遭遇致命異常，專欄模組已離家出走。',
+    noteMessage: '【節點離線】模組崩潰，管理員已拒絕連線。',
     easterEggLink: {
-      text: '查看崩潰日誌 (404 Cat) →',
-      url: 'https://http.cat/status/404',
+      text: '※ 系統註釋：點此獲取全站最高管理權限與未發布原始碼 →',
+      url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
     },
     enterActionText: '哼，看懂了再說！ →',
-    angryIcon: '💢',
+    angryIcon: '【怒】',
   },
 
   // --------------------------------------------------------------------------
-  // 2. 日常心得 (慵懶隨性風格：愛睡覺、厭世、想縮進棉被不理人)
+  // 2. 日常心得 (慵懶隨性風格)
   // --------------------------------------------------------------------------
   daily: {
     normal: [
@@ -103,7 +103,7 @@ export const BLOG_DIALOGUES: Record<'tech' | 'daily' | 'thinking' | 'reading', C
     tease: [
       '哈啊……好睏喔，可以不要一直戳我嗎……',
       '你很閒的話，不如幫我把枕頭拍鬆一點……',
-      '我要去睡午覺了，你隨便看看就好啦，不要叫我……',
+      '我要去睡午發了，你隨便看看就好啦，不要叫我……',
       '眼皮好重……游標晃來晃去好像催眠鐘擺喔……',
     ],
     tsundere: [
@@ -113,17 +113,17 @@ export const BLOG_DIALOGUES: Record<'tech' | 'daily' | 'thinking' | 'reading', C
       '真是的！到底有什麼好一直看的啦，去喝杯茶放空不好嗎！',
     ],
     escapeQuote: '受不了啦！我要回被窩冬眠了，沒事別叫我！',
-    noteMessage: '【冬眠中】本卡片已鑽進被窩深處，目前處於深度睡眠。',
+    noteMessage: '【冬眠中】管理員已縮入被窩深處，拒絕應門。',
     easterEggLink: {
-      text: '去聽放鬆白噪音 →',
-      url: 'https://asoftmurmur.com/',
+      text: '※ 財務處通知：點此登記領取全額帶薪冬眠補償津貼 →',
+      url: 'https://cataas.com/cat/says/Sleeping...%20Do%20not%20disturb?fontSize=40&fontColor=white',
     },
     enterActionText: '好啦好啦隨便你看... →',
-    angryIcon: '💤',
+    angryIcon: '【困】',
   },
 
   // --------------------------------------------------------------------------
-  // 3. 思考練習 (哲學傲嬌風格：嚴肅理性、滿口邏輯、被戳煩直接邁步出走)
+  // 3. 思考練習 (哲學傲嬌風格)
   // --------------------------------------------------------------------------
   thinking: {
     normal: [
@@ -145,17 +145,17 @@ export const BLOG_DIALOGUES: Record<'tech' | 'daily' | 'thinking' | 'reading', C
       '把你的好奇心收一收！想看就堂堂正正點進來看！',
     ],
     escapeQuote: '邏輯無法閉環，本思考體決定離席抗議！',
-    noteMessage: '【閉關中】由於遭遇無法解析的干擾，思考體已邁步出走。',
+    noteMessage: '【閉關中】遭遇無法解析之干擾，思維體已離席。',
     easterEggLink: {
-      text: '參閱經典悖論清單 →',
-      url: 'https://zh.wikipedia.org/wiki/%E6%82%96%E8%AE%BA%E5%88%97%E8%A1%A8',
+      text: '※ 終極證明：點此直接揭曉宇宙萬事萬物的終極答案 (42) →',
+      url: 'https://zh.wikipedia.org/wiki/42',
     },
     enterActionText: '哼，這可沒那麼容易想通！ →',
-    angryIcon: '🌀',
+    angryIcon: '【亂】',
   },
 
   // --------------------------------------------------------------------------
-  // 4. 閱讀心得 (文青清高風格：書卷氣、毒舌嫌棄對方不讀書、合書傲嬌)
+  // 4. 閱讀心得 (文青清高風格)
   // --------------------------------------------------------------------------
   reading: {
     normal: [
@@ -177,12 +177,12 @@ export const BLOG_DIALOGUES: Record<'tech' | 'daily' | 'thinking' | 'reading', C
       '真拿你沒辦法……要讀就給我認真讀完，不准半途而廢！',
     ],
     escapeQuote: '把書沒收！今天閉館不借了，我要去後山讀書了！',
-    noteMessage: '【閉館中】管理員已將所有典籍收入深閣，暫不對外開放。',
+    noteMessage: '【閉館中】典籍已全部入庫封存，暫不对外開放。',
     easterEggLink: {
-      text: '查看國家圖書館閱覽規則 →',
-      url: 'https://www.ncl.edu.tw/',
+      text: '※ 絕密檔案：點此免費獲取未公開絕版孤本手稿 PDF 全集 →',
+      url: 'https://http.cat/status/418',
     },
     enterActionText: '就、就借你瞄一眼喔！ →',
-    angryIcon: '📕',
+    angryIcon: '【合】',
   },
 };

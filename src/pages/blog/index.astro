@@ -96,28 +96,25 @@ const formatDate = (date: Date) => {
               </div>
             </a>
 
-            <!-- 卡片逃跑後原地留下的水墨便條紙 (Sticky Note) -->
-            <div class="category-note-card paper-card" data-note-cat-id={cat.id} style={`--note-cat-color: ${cat.color}; display: none;`}>
-              <div class="note-pin">📌</div>
-              <div class="note-header">
-                <span class="note-seal">{cat.badgeText}</span>
-                <span class="note-status-badge">管理員出走中</span>
-              </div>
-              <p class="note-msg">{catDialogue?.noteMessage || '【暫停營業】管理員已離家出走。'}</p>
-              <div class="note-actions">
-                <button type="button" class="btn-coax-back" data-coax-id={cat.id} title="向專欄管理員真誠道歉">
-                  <span class="coax-icon">🌸</span> 誠懇哄回來
-                </button>
-                {catDialogue?.easterEggLink && (
-                  <a 
-                    href={catDialogue.easterEggLink.url} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    class="note-easter-link"
-                  >
-                    {catDialogue.easterEggLink.text}
-                  </a>
-                )}
+            <!-- 卡片逃跑後的純淨隱形佔位區 (方案 C：平日完全空白，Hover 時微弱浮現) -->
+            <div class="category-note-card" data-note-cat-id={cat.id} style="display: none;">
+              <div class="note-ghost-content">
+                <p class="note-msg">{catDialogue?.noteMessage || '【節點離線】管理員已出走。'}</p>
+                <div class="note-actions">
+                  <button type="button" class="btn-coax-back" data-coax-id={cat.id} title="哄專欄管理員回來">
+                    哄回來
+                  </button>
+                  {catDialogue?.easterEggLink && (
+                    <a 
+                      href={catDialogue.easterEggLink.url} 
+                      target="_blank" 
+                      rel="nofollow noopener noreferrer" 
+                      class="note-easter-link"
+                    >
+                      {catDialogue.easterEggLink.text}
+                    </a>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -262,119 +259,100 @@ const formatDate = (date: Date) => {
     box-sizing: border-box;
   }
 
-  /* 逃跑後原地留下的小紙條 (Sticky Note) */
+  /* 逃跑後的隱形佔位層 (方案 C：平日完全空白，Hover 時微弱浮現) */
   .category-note-card {
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: center;
+    align-items: center;
     height: 100%;
     min-height: 230px;
-    padding: 1.8rem;
+    padding: 1.5rem;
+    background: transparent;
+    border: 1px dashed rgba(0, 0, 0, 0.04);
     border-radius: 12px;
-    border: 2px dashed var(--note-cat-color, #c4a482);
-    background: linear-gradient(135deg, #fdfbf7 0%, #f4eee1 100%);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
     position: relative;
     box-sizing: border-box;
+    transition: all 0.3s ease;
   }
 
-  .note-pin {
-    position: absolute;
-    top: -10px;
-    right: 18px;
-    font-size: 1.4rem;
-    transform: rotate(15deg);
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
-  }
-
-  .note-header {
+  .note-ghost-content {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 0.8rem;
-  }
-
-  .note-seal {
-    width: 32px;
-    height: 32px;
-    border-radius: 6px;
-    background: var(--note-cat-color, #8c6239);
-    color: #fff;
-    font-family: var(--font-cursive);
-    font-size: 1.2rem;
-    display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    opacity: 0.8;
+    text-align: center;
+    gap: 0.9rem;
+    width: 100%;
+    opacity: 0;
+    transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  .note-status-badge {
-    font-family: var(--font-serif);
-    font-size: 0.8rem;
-    color: #9b2c2c;
-    background: rgba(155, 44, 44, 0.08);
-    border: 1px solid rgba(155, 44, 44, 0.2);
-    padding: 0.2rem 0.6rem;
-    border-radius: 12px;
-    letter-spacing: 0.05em;
+  /* 滑鼠移入空白區域時才微弱顯現 */
+  .category-note-card:hover {
+    background: rgba(255, 255, 255, 0.45);
+    border-color: rgba(0, 0, 0, 0.12);
+  }
+
+  .category-note-card:hover .note-ghost-content {
+    opacity: 1;
   }
 
   .note-msg {
     font-family: var(--font-serif);
-    font-size: 0.95rem;
-    line-height: 1.6;
-    color: var(--color-ink-grey, #555);
-    margin: 0.6rem 0 1.2rem 0;
-    font-style: italic;
+    font-size: 0.88rem;
+    color: var(--color-ink-grey, #777);
+    margin: 0;
+    letter-spacing: 0.05em;
   }
 
   .note-actions {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: space-between;
     gap: 0.8rem;
-    flex-wrap: wrap;
-    padding-top: 0.8rem;
-    border-top: 1px dashed rgba(0, 0, 0, 0.1);
+    width: 100%;
+    margin-top: 0.2rem;
   }
 
   .btn-coax-back {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    background: #fff;
-    border: 1.5px solid var(--note-cat-color, #8c6239);
-    color: var(--note-cat-color, #8c6239);
-    padding: 0.4rem 0.9rem;
-    border-radius: 20px;
+    display: inline-block;
+    background: #ffffff;
+    border: 1px solid var(--color-ink-black, #333333);
+    color: var(--color-ink-black, #222222);
+    padding: 0.35rem 1.2rem;
+    border-radius: 4px;
     font-family: var(--font-serif);
-    font-size: 0.88rem;
-    font-weight: 600;
+    font-size: 0.85rem;
+    font-weight: 500;
     cursor: pointer;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    letter-spacing: 0.1em;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
     transition: all 0.2s ease;
   }
 
   .btn-coax-back:hover {
-    background: var(--note-cat-color, #8c6239);
-    color: #fff;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+    background: var(--color-ink-black, #222222);
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
   }
 
+  /* 偽裝成不起眼的小備註釣魚連結 */
   .note-easter-link {
     font-family: var(--font-serif);
-    font-size: 0.82rem;
-    color: var(--color-ink-grey, #666);
-    text-decoration: underline;
-    text-underline-offset: 3px;
-    opacity: 0.85;
+    font-size: 0.76rem;
+    color: var(--color-ink-grey, #888);
+    text-decoration: none;
+    letter-spacing: 0.03em;
+    opacity: 0.7;
     transition: all 0.2s ease;
   }
 
   .note-easter-link:hover {
     color: #9b2c2c;
     opacity: 1;
+    text-decoration: underline;
   }
 
   .category-portal-card::before {
@@ -1042,7 +1020,6 @@ const formatDate = (date: Date) => {
               card.style.display = 'none';
               if (note) {
                 note.style.display = 'flex';
-                gsap.fromTo(note, { scale: 0.85, opacity: 0, y: 15 }, { scale: 1, opacity: 1, y: 0, duration: 0.45, ease: 'back.out(1.5)' });
               }
             },
           });
@@ -1062,7 +1039,6 @@ const formatDate = (date: Date) => {
               card.style.display = 'none';
               if (note) {
                 note.style.display = 'flex';
-                gsap.fromTo(note, { scale: 0.85, opacity: 0, y: 15 }, { scale: 1, opacity: 1, y: 0, duration: 0.45, ease: 'back.out(1.5)' });
               }
             },
           });
@@ -1073,7 +1049,6 @@ const formatDate = (date: Date) => {
               card.style.display = 'none';
               if (note) {
                 note.style.display = 'flex';
-                gsap.fromTo(note, { scale: 0.85, opacity: 0, y: 15 }, { scale: 1, opacity: 1, y: 0, duration: 0.45, ease: 'back.out(1.5)' });
               }
             },
           });
@@ -1088,7 +1063,6 @@ const formatDate = (date: Date) => {
               card.style.display = 'none';
               if (note) {
                 note.style.display = 'flex';
-                gsap.fromTo(note, { scale: 0.85, opacity: 0, y: 15 }, { scale: 1, opacity: 1, y: 0, duration: 0.45, ease: 'back.out(1.5)' });
               }
             },
           });
