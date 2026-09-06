@@ -95,8 +95,8 @@ export function DeployStatusIndicator() {
     <div
       style={{
         position: 'fixed',
-        top: '1.25rem',
-        right: '1.5rem',
+        bottom: '2rem',
+        right: '2rem',
         zIndex: 9999,
         display: 'flex',
         alignItems: 'center',

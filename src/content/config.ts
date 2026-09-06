@@ -2,7 +2,7 @@ import { defineCollection, z } from "astro:content";
 
 // 部落格文章分類
 const categories = defineCollection({
-  type: "content",
+  type: "data",
   schema: z.object({
     title: z.string(), // 分類名稱
     description: z.string().optional(), // 說明
