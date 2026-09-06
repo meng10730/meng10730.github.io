@@ -784,6 +784,15 @@ const formatDate = (date: Date) => {
     overflow: hidden;
     pointer-events: auto;
     backdrop-filter: blur(10px);
+    cursor: pointer;
+    text-decoration: none;
+    transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.25s, box-shadow 0.25s;
+  }
+
+  :global(.steam-toast-card:hover) {
+    transform: translateY(-3px) scale(1.02);
+    border-color: rgba(212, 163, 89, 0.95);
+    box-shadow: 0 14px 35px rgba(0, 0, 0, 0.45), 0 0 22px rgba(212, 163, 89, 0.35);
   }
 
   :global(.steam-toast-shimmer) {
@@ -845,6 +854,17 @@ const formatDate = (date: Date) => {
     font-size: 0.8rem;
     color: rgba(255, 255, 255, 0.75);
     line-height: 1.35;
+  }
+
+  :global(.steam-toast-hint) {
+    font-family: var(--font-serif);
+    font-size: 0.7rem;
+    color: #d4a359;
+    margin-top: 4px;
+    opacity: 0.9;
+    display: flex;
+    align-items: center;
+    gap: 2px;
   }
 
   /* 行動端適配 */

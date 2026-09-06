@@ -150,8 +150,13 @@ class AchievementManager {
       document.body.appendChild(container);
     }
 
-    const toast = document.createElement('div');
+    const toast = document.createElement('a');
     toast.className = 'steam-toast-card';
+    const unlockedList = ['single10', 'all10'].filter((id) => this.isUnlocked(id)).join(',');
+    toast.href = `/achievements?unlocked=${encodeURIComponent(unlockedList)}&highlight=${encodeURIComponent(achievement.id)}`;
+    toast.target = '_blank';
+    toast.rel = 'noopener noreferrer';
+    toast.title = '點擊於新分頁查看成就殿堂';
     toast.innerHTML = `
       <div class="steam-toast-shimmer"></div>
       <div class="steam-toast-left">
@@ -161,6 +166,7 @@ class AchievementManager {
         <div class="steam-toast-tag">成就解鎖！</div>
         <div class="steam-toast-title">${achievement.title}</div>
         <div class="steam-toast-desc">${achievement.description}</div>
+        <div class="steam-toast-hint">點擊於新分頁查看成就殿堂 ↗</div>
       </div>
     `;
 

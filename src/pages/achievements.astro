@@ -1,0 +1,627 @@
+---
+import Layout from '../layouts/Layout.astro';
+import InkButton from '../components/ui/InkButton.astro';
+
+const breadcrumbs = [
+  { name: '首頁', url: '/' },
+  { name: '觀其文', url: '/blog' },
+  { name: '成就殿堂', url: '/achievements' },
+];
+---
+
+<Layout
+  title="成就殿堂 | 晚餐後的書桌"
+  description="解鎖探索晚餐後的書桌各項彩蛋與殿堂榮譽。"
+  breadcrumbs={breadcrumbs}
+>
+  <main class="achievements-container ink-fade-in">
+    <!-- 頂部水墨標題區 -->
+    <header class="achievements-header">
+      <div class="achievements-badge">
+        <span class="badge-dot"></span>
+        <span class="badge-text">彩蛋紀錄 · 會話殿堂</span>
+      </div>
+      <h1 class="achievements-title">成就殿堂</h1>
+      <p class="achievements-subtitle">
+        漫步於墨痕書卷之間，若能悉心探幽，諸般隱密機巧自當現於眼前。
+      </p>
+
+      <!-- 進度狀態概覽 -->
+      <div class="progress-card">
+        <div class="progress-info">
+          <span class="progress-label">當前達成進度</span>
+          <span class="progress-count" id="achievements-count">0 / 2</span>
+        </div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" id="achievements-bar-fill" style="width: 0%;"></div>
+        </div>
+        <p class="progress-note">※ 本殿堂採會話探索彩蛋機制，刷新或重新開啟瀏覽器即可重新探尋。</p>
+      </div>
+    </header>
+
+    <!-- 成就卡片列表 -->
+    <section class="achievements-grid">
+      <!-- 成就 1: 別再戳了啦！ -->
+      <div class="achievement-card is-locked" id="card-single10" data-id="single10">
+        <div class="card-glow-border"></div>
+        <div class="card-inner">
+          <div class="achievement-icon-wrapper">
+            <div class="achievement-icon-frame">
+              <span class="achievement-icon-char">戳</span>
+            </div>
+            <span class="status-pill">尚未解鎖</span>
+          </div>
+          <div class="achievement-details">
+            <div class="achievement-meta">
+              <span class="achievement-category">探索趣味</span>
+              <span class="achievement-rarity">精巧彩蛋</span>
+            </div>
+            <h2 class="achievement-name">別再戳了啦！</h2>
+            <p class="achievement-desc">
+              在「觀其文」專欄分類中，執著於單一卷軸，連續點擊達 10 次。
+            </p>
+            <div class="achievement-hint">
+              解鎖途徑：至「觀其文」分類頁連續點擊同一分類標籤十次。
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 成就 2: 全專欄戳透透！ -->
+      <div class="achievement-card is-locked" id="card-all10" data-id="all10">
+        <div class="card-glow-border"></div>
+        <div class="card-inner">
+          <div class="achievement-icon-wrapper">
+            <div class="achievement-icon-frame">
+              <span class="achievement-icon-char">通</span>
+            </div>
+            <span class="status-pill">尚未解鎖</span>
+          </div>
+          <div class="achievement-details">
+            <div class="achievement-meta">
+              <span class="achievement-category">博覽通達</span>
+              <span class="achievement-rarity">稀世奇緣</span>
+            </div>
+            <h2 class="achievement-name">全專欄戳透透！</h2>
+            <p class="achievement-desc">
+              不偏不倚，博覽四方。將四大分類專欄皆點閱敲擊達 10 次以上。
+            </p>
+            <div class="achievement-hint">
+              解鎖途徑：四大專欄分類各敲擊點選達十次以上。
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 成就 3: 隱藏彩蛋槽位（敬請期待） -->
+      <div class="achievement-card is-mysterious">
+        <div class="card-glow-border"></div>
+        <div class="card-inner">
+          <div class="achievement-icon-wrapper">
+            <div class="achievement-icon-frame mysterious-frame">
+              <span class="achievement-icon-char">？</span>
+            </div>
+            <span class="status-pill mysterious-pill">隱匿機緣</span>
+          </div>
+          <div class="achievement-details">
+            <div class="achievement-meta">
+              <span class="achievement-category">墨意未盡</span>
+              <span class="achievement-rarity">未來機巧</span>
+            </div>
+            <h2 class="achievement-name">幽潭微波</h2>
+            <p class="achievement-desc">
+              書桌案前仍有未著筆之機巧，靜候諸位墨客於日後續探新章。
+            </p>
+            <div class="achievement-hint">
+              敬請期待日後更多互動彩蛋。
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 底部導航返回區 -->
+    <div class="achievements-actions">
+      <a href="/blog" class="nav-btn primary-btn">
+        <span>← 返回觀其文</span>
+      </a>
+      <a href="/" class="nav-btn secondary-btn">
+        <span>返回書桌首頁</span>
+      </a>
+    </div>
+  </main>
+</Layout>
+
+<script>
+  function setupAchievementsPage() {
+    const params = new URLSearchParams(window.location.search);
+    const queryUnlocked = params.get('unlocked');
+    const highlightId = params.get('highlight');
+
+    // 取得當前已解鎖集合
+    const unlockedSet = new Set();
+
+    // 1. 從 sessionStorage 讀取
+    try {
+      const stored = sessionStorage.getItem('desk_achievements');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          parsed.forEach((id) => unlockedSet.add(id));
+        }
+      }
+    } catch (e) {
+      console.warn('無法讀取 sessionStorage', e);
+    }
+
+    // 2. 從 query params 讀取（支援跨分頁攜帶）
+    if (queryUnlocked) {
+      queryUnlocked.split(',').forEach((id) => {
+        const trimmed = id.trim();
+        if (trimmed) unlockedSet.add(trimmed);
+      });
+      // 同步回寫至當前分頁的 sessionStorage
+      try {
+        sessionStorage.setItem('desk_achievements', JSON.stringify(Array.from(unlockedSet)));
+      } catch (e) {
+        console.warn('無法寫入 sessionStorage', e);
+      }
+    }
+
+    // 更新各卡片狀態
+    const supportedIds = ['single10', 'all10'];
+    let unlockedCount = 0;
+
+    supportedIds.forEach((id) => {
+      const card = document.getElementById('card-' + id);
+      if (!card) return;
+
+      if (unlockedSet.has(id)) {
+        unlockedCount++;
+        card.classList.remove('is-locked');
+        card.classList.add('is-unlocked');
+        const pill = card.querySelector('.status-pill');
+        if (pill) {
+          pill.textContent = '已達成';
+        }
+      }
+    });
+
+    // 更新進度條
+    const countElem = document.getElementById('achievements-count');
+    const fillElem = document.getElementById('achievements-bar-fill');
+    if (countElem) {
+      countElem.textContent = unlockedCount + ' / ' + supportedIds.length;
+    }
+    if (fillElem) {
+      const pct = (unlockedCount / supportedIds.length) * 100;
+      fillElem.style.width = pct + '%';
+    }
+
+    // 若有特定目標高亮
+    if (highlightId) {
+      const targetCard = document.getElementById('card-' + highlightId);
+      if (targetCard) {
+        targetCard.classList.add('is-highlighted');
+        setTimeout(() => {
+          targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 150);
+      }
+    }
+  }
+
+  // 支援 Astro 視圖過渡與直接載入
+  document.addEventListener('astro:page-load', setupAchievementsPage);
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupAchievementsPage);
+  } else {
+    setupAchievementsPage();
+  }
+</script>
+
+<style>
+  .achievements-container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 5rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  .achievements-header {
+    text-align: center;
+    margin-bottom: 3.5rem;
+  }
+
+  .achievements-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 1rem;
+    border-radius: 9999px;
+    background: rgba(212, 163, 89, 0.12);
+    border: 1px solid rgba(212, 163, 89, 0.35);
+    margin-bottom: 1.25rem;
+  }
+
+  .badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #d4a359;
+    box-shadow: 0 0 8px rgba(212, 163, 89, 0.8);
+  }
+
+  .badge-text {
+    font-family: var(--font-serif);
+    font-size: 0.85rem;
+    color: #d4a359;
+    letter-spacing: 0.15em;
+  }
+
+  .achievements-title {
+    font-family: var(--font-serif);
+    font-size: 2.75rem;
+    font-weight: 700;
+    color: var(--text-primary, #2d261e);
+    letter-spacing: 0.12em;
+    margin-bottom: 1rem;
+  }
+
+  :global(.dark) .achievements-title {
+    color: #e6dfd3;
+  }
+
+  .achievements-subtitle {
+    font-family: var(--font-serif);
+    font-size: 1.05rem;
+    color: var(--text-secondary, #756a5d);
+    max-width: 600px;
+    margin: 0 auto 2.5rem;
+    line-height: 1.8;
+  }
+
+  :global(.dark) .achievements-subtitle {
+    color: #a39887;
+  }
+
+  /* 進度儀表板 */
+  .progress-card {
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 1.5rem 1.75rem;
+    background: rgba(255, 255, 255, 0.65);
+    border: 1px solid rgba(212, 163, 89, 0.3);
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.04);
+    backdrop-filter: blur(8px);
+  }
+
+  :global(.dark) .progress-card {
+    background: rgba(30, 26, 22, 0.7);
+    border-color: rgba(212, 163, 89, 0.25);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  }
+
+  .progress-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+
+  .progress-label {
+    font-family: var(--font-serif);
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary, #2d261e);
+    letter-spacing: 0.05em;
+  }
+
+  :global(.dark) .progress-label {
+    color: #e6dfd3;
+  }
+
+  .progress-count {
+    font-family: monospace;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #d4a359;
+  }
+
+  .progress-bar-track {
+    height: 8px;
+    background: rgba(0, 0, 0, 0.06);
+    border-radius: 9999px;
+    overflow: hidden;
+  }
+
+  :global(.dark) .progress-bar-track {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #b88636, #e4ba6f);
+    border-radius: 9999px;
+    transition: width 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+    box-shadow: 0 0 10px rgba(212, 163, 89, 0.5);
+  }
+
+  .progress-note {
+    margin-top: 0.75rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary, #756a5d);
+    opacity: 0.85;
+    text-align: left;
+  }
+
+  :global(.dark) .progress-note {
+    color: #8c8170;
+  }
+
+  /* 成就網格 */
+  .achievements-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 4rem;
+  }
+
+  .achievement-card {
+    position: relative;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(212, 163, 89, 0.2);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+    padding: 1.75rem;
+    transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    backdrop-filter: blur(8px);
+    overflow: hidden;
+  }
+
+  :global(.dark) .achievement-card {
+    background: rgba(28, 24, 20, 0.75);
+    border-color: rgba(212, 163, 89, 0.18);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  }
+
+  /* 鎖定狀態 */
+  .achievement-card.is-locked {
+    opacity: 0.65;
+    filter: grayscale(0.55);
+  }
+
+  .achievement-card.is-locked:hover {
+    opacity: 0.85;
+    filter: grayscale(0.2);
+    transform: translateY(-2px);
+  }
+
+  /* 已解鎖狀態 */
+  .achievement-card.is-unlocked {
+    opacity: 1;
+    filter: none;
+    border-color: rgba(212, 163, 89, 0.6);
+    background: linear-gradient(135deg, rgba(212, 163, 89, 0.08), rgba(255, 255, 255, 0.85));
+    box-shadow: 0 8px 24px rgba(212, 163, 89, 0.15), 0 2px 6px rgba(0, 0, 0, 0.05);
+  }
+
+  :global(.dark) .achievement-card.is-unlocked {
+    background: linear-gradient(135deg, rgba(212, 163, 89, 0.12), rgba(35, 30, 25, 0.85));
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.3), 0 0 15px rgba(212, 163, 89, 0.15);
+  }
+
+  .achievement-card.is-unlocked:hover {
+    transform: translateY(-4px);
+    border-color: rgba(212, 163, 89, 0.9);
+    box-shadow: 0 14px 32px rgba(212, 163, 89, 0.25);
+  }
+
+  /* 高亮聚焦動效 (由 Toast 跳轉過來) */
+  .achievement-card.is-highlighted {
+    animation: highlightPulse 2.5s ease-in-out infinite alternate;
+  }
+
+  @keyframes highlightPulse {
+    0% {
+      box-shadow: 0 0 0 2px rgba(212, 163, 89, 0.8), 0 0 25px rgba(212, 163, 89, 0.5);
+    }
+    100% {
+      box-shadow: 0 0 0 4px rgba(212, 163, 89, 1), 0 0 35px rgba(212, 163, 89, 0.8);
+    }
+  }
+
+  /* 神秘卡片 */
+  .achievement-card.is-mysterious {
+    border-style: dashed;
+    opacity: 0.55;
+  }
+
+  .card-inner {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  .achievement-icon-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+  }
+
+  .achievement-icon-frame {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(212, 163, 89, 0.15);
+    border: 1px solid rgba(212, 163, 89, 0.4);
+    box-shadow: inset 0 0 10px rgba(212, 163, 89, 0.2);
+  }
+
+  .is-unlocked .achievement-icon-frame {
+    background: linear-gradient(135deg, #b88636, #e4ba6f);
+    border-color: #f7d594;
+    box-shadow: 0 4px 12px rgba(212, 163, 89, 0.4);
+  }
+
+  .achievement-icon-char {
+    font-family: var(--font-serif);
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #b88636;
+  }
+
+  .is-unlocked .achievement-icon-char {
+    color: #1a1612;
+  }
+
+  .mysterious-frame {
+    background: rgba(120, 110, 100, 0.1);
+    border-color: rgba(120, 110, 100, 0.3);
+  }
+
+  .status-pill {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 9999px;
+    background: rgba(0, 0, 0, 0.05);
+    color: var(--text-secondary, #756a5d);
+    font-family: var(--font-serif);
+  }
+
+  :global(.dark) .status-pill {
+    background: rgba(255, 255, 255, 0.08);
+    color: #a39887;
+  }
+
+  .is-unlocked .status-pill {
+    background: rgba(212, 163, 89, 0.2);
+    color: #b88636;
+    font-weight: 600;
+    border: 1px solid rgba(212, 163, 89, 0.4);
+  }
+
+  :global(.dark) .is-unlocked .status-pill {
+    color: #e4ba6f;
+  }
+
+  .achievement-meta {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .achievement-category {
+    font-family: var(--font-serif);
+    font-size: 0.8rem;
+    color: #d4a359;
+    font-weight: 600;
+  }
+
+  .achievement-rarity {
+    font-size: 0.75rem;
+    color: var(--text-secondary, #756a5d);
+    opacity: 0.8;
+  }
+
+  .achievement-name {
+    font-family: var(--font-serif);
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--text-primary, #2d261e);
+    margin: 0 0 0.5rem 0;
+  }
+
+  :global(.dark) .achievement-name {
+    color: #e6dfd3;
+  }
+
+  .achievement-desc {
+    font-size: 0.92rem;
+    line-height: 1.6;
+    color: var(--text-secondary, #5c5245);
+    margin-bottom: 1rem;
+    flex-grow: 1;
+  }
+
+  :global(.dark) .achievement-desc {
+    color: #b5a999;
+  }
+
+  .achievement-hint {
+    font-size: 0.78rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.03);
+    color: var(--text-secondary, #756a5d);
+    line-height: 1.4;
+    border-left: 3px solid rgba(212, 163, 89, 0.5);
+  }
+
+  :global(.dark) .achievement-hint {
+    background: rgba(255, 255, 255, 0.03);
+    color: #8c8170;
+  }
+
+  /* 底部按鈕區 */
+  .achievements-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+    margin-top: 2rem;
+  }
+
+  .nav-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 1.75rem;
+    border-radius: 8px;
+    font-family: var(--font-serif);
+    font-size: 0.95rem;
+    text-decoration: none;
+    transition: all 0.25s ease;
+  }
+
+  .primary-btn {
+    background: linear-gradient(135deg, #2d261e, #1a1612);
+    color: #e6dfd3;
+    border: 1px solid rgba(212, 163, 89, 0.4);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+  }
+
+  :global(.dark) .primary-btn {
+    background: linear-gradient(135deg, #3d3429, #252019);
+    border-color: rgba(212, 163, 89, 0.6);
+  }
+
+  .primary-btn:hover {
+    background: linear-gradient(135deg, #b88636, #9c6e26);
+    color: #ffffff;
+    box-shadow: 0 6px 18px rgba(212, 163, 89, 0.35);
+    transform: translateY(-2px);
+  }
+
+  .secondary-btn {
+    background: transparent;
+    color: var(--text-secondary, #5c5245);
+    border: 1px solid rgba(0, 0, 0, 0.15);
+  }
+
+  :global(.dark) .secondary-btn {
+    color: #a39887;
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+
+  .secondary-btn:hover {
+    border-color: rgba(212, 163, 89, 0.6);
+    color: #b88636;
+    transform: translateY(-2px);
+  }
+</style>
