@@ -2,7 +2,7 @@
 import { getCollection } from 'astro:content';
 import Layout from '../../layouts/Layout.astro';
 import BookmarkPagination from '../../components/ui/BookmarkPagination.astro';
-import { getCategoryInfo } from '../../utils/blogCategories';
+import { getCategoryInfo, getArticleExcerpt } from '../../utils/blogCategories';
 
 // 定義靜態路由路徑
 export async function getStaticPaths() {
@@ -44,7 +44,7 @@ const breadcrumbs = [
 
 <Layout 
   title={`${post.data.title} · ${categoryInfo.name} | 晚餐後的書桌`} 
-  description={post.data.description}
+  description={getArticleExcerpt(post)}
   type="article"
   articleDate={post.data.pubDate}
   breadcrumbs={breadcrumbs}

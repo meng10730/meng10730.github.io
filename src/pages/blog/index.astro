@@ -2,7 +2,7 @@
 import { getCollection } from 'astro:content';
 import Layout from '../../layouts/Layout.astro';
 import ShimmerBadge from '../../components/ui/ShimmerBadge.astro';
-import { BLOG_CATEGORY_LIST, getCategoryInfo } from '../../utils/blogCategories';
+import { BLOG_CATEGORY_LIST, getCategoryInfo, getArticleExcerpt } from '../../utils/blogCategories';
 import { BLOG_DIALOGUES } from '../../data/blogDialogues';
 
 // 獲取所有部落格文章並按發布日期排序 (降序)
@@ -174,7 +174,7 @@ const formatDate = (date: Date) => {
                         </div>
 
                         <h3 class="post-title">{post.data.title}</h3>
-                        <p class="post-description">{post.data.description}</p>
+                        <p class="post-description">{getArticleExcerpt(post)}</p>
                         
                         <div class="post-meta">
                           <!-- 標籤 -->

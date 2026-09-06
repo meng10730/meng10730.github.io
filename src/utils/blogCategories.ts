@@ -60,3 +60,42 @@ export function getCategoryInfo(categoryId?: string): BlogCategoryInfo {
   }
   return BLOG_CATEGORIES.daily;
 }
+
+/**
+ * 自動內文摘要兜底函式 (Auto-excerpt)
+ * 若文章未手動填寫 description，則自動自 Markdown 正文中擷取前 maxLen 個字
+ */
+export function getArticleExcerpt(post: { body?: string; data?: { description?: string } }, maxLen = 110): string {
+  if (post?.data?.description && post.data.description.trim().length > 0) {
+    return post.data.description.trim();
+  }
+
+  if (!post?.body) {
+    return '';
+  }
+
+  // 清洗 Markdown 標記
+  let clean = post.body
+    .replace(/^---[\s\S]*?---/, '') // 移除 frontmatter
+    .replace(/```[\s\S]*?```/g, '') // 移除代碼塊
+    .replace(/`([^`]+)`/g, '$1') // 移除行內代碼標記
+    .replace(/!\[.*?\]\(.*?\)/g, '') // 移除圖片
+    .replace(/\[([^\]]+)\]\(.*?\)/g, '$1') // 移除超連結，保留錨文字
+    .replace(/#{1,6}\s+[^\n]+/g, '') // 移除標題行
+    .replace(/>\s+[^\n]+/g, '') // 移除引用行
+    .replace(/[*_~=]/g, '') // 移除粗體、斜體、刪除線符號
+    .replace(/\\/g, '') // 移除編輯器殘留之換行反斜線
+    .replace(/\s+/g, ' ') // 合併多餘空白與換行
+    .trim();
+
+  if (!clean) {
+    return '';
+  }
+
+  if (clean.length <= maxLen) {
+    return clean;
+  }
+
+  return clean.slice(0, maxLen) + '…';
+}
+

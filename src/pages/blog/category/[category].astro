@@ -2,7 +2,7 @@
 import { getCollection } from 'astro:content';
 import Layout from '../../../layouts/Layout.astro';
 import ShimmerBadge from '../../../components/ui/ShimmerBadge.astro';
-import { BLOG_CATEGORIES, BLOG_CATEGORY_LIST, getCategoryInfo } from '../../../utils/blogCategories';
+import { BLOG_CATEGORY_LIST, getArticleExcerpt } from '../../../utils/blogCategories';
 
 export async function getStaticPaths() {
   const allPosts = await getCollection('blog');
@@ -128,7 +128,7 @@ const breadcrumbs = [
                     )}
 
                     <h2 class="post-title">{post.data.title}</h2>
-                    <p class="post-description">{post.data.description}</p>
+                    <p class="post-description">{getArticleExcerpt(post)}</p>
                     
                     <div class="post-meta">
                       <!-- 標籤 -->
