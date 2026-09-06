@@ -182,6 +182,7 @@ async function run() {
     pageFileBackup = await fs.readFile(pathPageFile, 'utf8');
     const productionContent = `---
 import { KeystaticApp } from '../../components/KeystaticApp.tsx';
+import { DeployStatusIndicator } from '../../components/DeployStatusIndicator.tsx';
 
 export const prerender = true;
 
@@ -260,6 +261,9 @@ export function getStaticPaths() {
   </style>
 </head>
 <body>
+  <!-- 即時部署狀態指示燈 -->
+  <DeployStatusIndicator client:only="react" />
+
   <!-- 返回前台水墨圓章按鈕 -->
   <a href="/" class="back-to-site-btn" id="back-to-site-btn" title="返回晚餐後的書桌">
     <span class="btn-stamp-text">返回書桌</span>
