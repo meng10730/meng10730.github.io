@@ -135,7 +135,7 @@ const breadcrumbs = [
                       {post.data.tags && post.data.tags.length > 0 && (
                         <div class="post-tags">
                           {post.data.tags.map((tag) => (
-                            <ShimmerBadge text={`# ${tag}`} variant="default" />
+                            <ShimmerBadge variant="default"># {tag}</ShimmerBadge>
                           ))}
                         </div>
                       )}
