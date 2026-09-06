@@ -15,7 +15,7 @@ const blog = defineCollection({
   type: "content",
   schema: z.object({
     title: z.string(),
-    description: z.string(),
+    description: z.string().default(""),
     category: z.string().default("daily"),
     topic: z.string().optional(), // 文章核心主題或主要內容簡述
     pubDate: z.coerce.date(),
