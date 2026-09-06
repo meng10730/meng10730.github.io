@@ -94,7 +94,7 @@ const breadcrumbs = [
           {post.data.tags && post.data.tags.length > 0 && (
             <div class="post-detail-tags">
               {post.data.tags.map((tag) => (
-                <span class="detail-tag"># {tag}</span>
+                <a href={`${import.meta.env.BASE_URL}blog/tag/${encodeURIComponent(tag)}/`} class="detail-tag"># {tag}</a>
               ))}
             </div>
           )}
@@ -269,6 +269,14 @@ const breadcrumbs = [
 
   .detail-tag {
     color: var(--color-mountain-cyan);
+    text-decoration: none;
+    transition: var(--transition-fast);
+  }
+
+  .detail-tag:hover {
+    color: var(--color-ink-black);
+    text-decoration: underline;
+    text-underline-offset: 4px;
   }
 
   /* Markdown 本文排版樣式優化，保障極佳閱讀感 */

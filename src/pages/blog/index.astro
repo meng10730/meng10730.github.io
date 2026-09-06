@@ -181,7 +181,12 @@ const formatDate = (date: Date) => {
                           {post.data.tags && post.data.tags.length > 0 && (
                             <div class="post-tags">
                               {post.data.tags.map((tag) => (
-                                <ShimmerBadge variant="default"># {tag}</ShimmerBadge>
+                                <ShimmerBadge 
+                                  variant="default"
+                                  href={`${import.meta.env.BASE_URL}blog/tag/${encodeURIComponent(tag)}/`}
+                                >
+                                  # {tag}
+                                </ShimmerBadge>
                               ))}
                             </div>
                           )}
@@ -736,6 +741,8 @@ const formatDate = (date: Date) => {
     display: flex;
     gap: 0.8rem;
     flex-wrap: wrap;
+    position: relative;
+    z-index: 5;
   }
 
   .read-more-link {

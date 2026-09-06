@@ -2,28 +2,42 @@
 import { getCollection } from 'astro:content';
 import Layout from '../../../layouts/Layout.astro';
 import ShimmerBadge from '../../../components/ui/ShimmerBadge.astro';
-import { BLOG_CATEGORY_LIST, getArticleExcerpt } from '../../../utils/blogCategories';
+import { getCategoryInfo, getArticleExcerpt } from '../../../utils/blogCategories';
 
 export async function getStaticPaths() {
   const allPosts = await getCollection('blog');
   
-  return BLOG_CATEGORY_LIST.map((category) => {
-    const categoryPosts = allPosts
-      .filter((post) => (post.data.category || 'daily') === category.id)
-      .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+  // 收集全站所有出現過的標籤
+  const tagMap = new Map<string, typeof allPosts>();
+  allPosts.forEach((post) => {
+    if (post.data.tags && Array.isArray(post.data.tags)) {
+      post.data.tags.forEach((rawTag: string) => {
+        const tag = rawTag.trim();
+        if (!tag) return;
+        if (!tagMap.has(tag)) {
+          tagMap.set(tag, []);
+        }
+        tagMap.get(tag)!.push(post);
+      });
+    }
+  });
 
+  return Array.from(tagMap.entries()).map(([tag, posts]) => {
+    const sortedPosts = posts.sort(
+      (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
+    );
     return {
-      params: { category: category.id },
+      params: { tag },
       props: {
-        currentCategory: category,
-        posts: categoryPosts,
+        currentTag: tag,
+        posts: sortedPosts,
         totalPostCount: allPosts.length,
       },
     };
   });
 }
 
-const { currentCategory, posts } = Astro.props;
+const { currentTag, posts } = Astro.props;
 
 // 格式化日期
 const formatDate = (date: Date) => {
@@ -37,51 +51,34 @@ const formatDate = (date: Date) => {
 const breadcrumbs = [
   { name: '首頁', url: '/' },
   { name: '觀其文', url: '/blog' },
-  { name: currentCategory.name, url: `/blog/category/${currentCategory.id}` },
+  { name: `# ${currentTag}`, url: `/blog/tag/${encodeURIComponent(currentTag)}` },
 ];
 ---
 
 <Layout
-  title={`${currentCategory.name} · 觀其文 | 晚餐後的書桌`}
-  description={`觀其文專欄之「${currentCategory.name}」分類：${currentCategory.description}`}
+  title={`# ${currentTag} · 文章標籤 | 觀其文 · 晚餐後的書桌`}
+  description={`觀其文專欄標籤「${currentTag}」相關文章索引，共收錄 ${posts.length} 篇作品。`}
   breadcrumbs={breadcrumbs}
 >
-  <div class="blog-category-container">
+  <div class="blog-tag-container">
     
-    <!-- 返回分類入口按鈕 -->
+    <!-- 返回導覽列 -->
     <div class="nav-top-bar ink-fade-in">
       <a href={`${import.meta.env.BASE_URL}blog/`} class="ink-link back-link">
-        ← 返回文章分類總覽
+        ← 返回觀其文文章總覽
       </a>
     </div>
 
-    <!-- 頁面標題與分類導覽標籤 -->
-    <header class="category-header ink-fade-in" style="animation-delay: 0.1s;">
-      <div class="category-badge-seal" style={`background-color: ${currentCategory.color};`}>
-        {currentCategory.badgeText}
+    <!-- 頁面標題與標籤印章 -->
+    <header class="tag-header ink-fade-in" style="animation-delay: 0.1s;">
+      <div class="tag-badge-seal">
+        #
       </div>
-      <h1 class="cursive-title page-title">{currentCategory.name}</h1>
-      <p class="category-desc">{currentCategory.description}</p>
-      
-      <!-- 分類快速切換 Tab -->
-      <nav class="category-tabs" aria-label="文章專欄切換">
-        <a 
-          href={`${import.meta.env.BASE_URL}blog/`}
-          class="cat-tab"
-        >
-          全覽總覽
-        </a>
-        {BLOG_CATEGORY_LIST.map((cat) => (
-          <a
-            href={`${import.meta.env.BASE_URL}blog/category/${cat.id}/`}
-            class={`cat-tab ${cat.id === currentCategory.id ? 'active' : ''}`}
-            style={cat.id === currentCategory.id ? `--active-color: ${cat.color};` : ''}
-          >
-            <span class="cat-tab-icon">{cat.icon}</span>
-            <span>{cat.name}</span>
-          </a>
-        ))}
-      </nav>
+
+      <h1 class="cursive-title page-title">#{currentTag}</h1>
+      <p class="tag-desc">
+        共檢索得 <strong>{posts.length}</strong> 篇標註此標籤之墨痕文章
+      </p>
 
       <div class="mountain-line"></div>
     </header>
@@ -90,64 +87,72 @@ const breadcrumbs = [
     <div class="posts-timeline ink-fade-in" style="animation-delay: 0.2s;">
       {posts.length === 0 ? (
         <div class="paper-card no-posts">
-          <div class="empty-icon">{currentCategory.icon}</div>
-          <h3 class="empty-title">此卷暫無存墨</h3>
-          <p class="empty-desc">本分類目前尚未收錄文章，敬請期待後續更新。</p>
-          <a href={`${import.meta.env.BASE_URL}blog/`} class="ink-button empty-btn">
-            探索其他分類
+          <span class="empty-icon">📭</span>
+          <h3 class="empty-title">暫無相關文章</h3>
+          <p class="empty-desc">此標籤下目前尚無登錄文章。</p>
+          <a href={`${import.meta.env.BASE_URL}blog/`} class="ink-link empty-btn">
+            ← 返回觀其文
           </a>
         </div>
       ) : (
         <div class="timeline-wrapper">
-          <!-- 時間軸垂直線 -->
           <div class="timeline-line"></div>
           
-          {posts.map((post, index) => (
-            <article class="timeline-item" style={`animation-delay: ${0.08 * index}s;`}>
-              <!-- 時間軸墨滴錨點 -->
-              <div class="timeline-dot" style={`--dot-color: ${currentCategory.color};`}></div>
-              
-              <!-- 文章發布時間 -->
-              <div class="post-date">
-                <time datetime={post.data.pubDate.toISOString()}>
-                  {formatDate(post.data.pubDate)}
-                </time>
-              </div>
+          {posts.map((post, index) => {
+            const catInfo = getCategoryInfo(post.data.category);
+            return (
+              <article class="timeline-item" style={`animation-delay: ${0.08 * index}s;`}>
+                <div class="timeline-dot" style={`--dot-color: ${catInfo.color};`}></div>
+                
+                <div class="post-date">
+                  <time datetime={post.data.pubDate.toISOString()}>
+                    {formatDate(post.data.pubDate)}
+                  </time>
+                </div>
 
-              <!-- 文章卡片內容 -->
-              <div class="post-card-wrapper">
-                <a href={`${import.meta.env.BASE_URL}blog/${post.slug}/`} class="post-link-card" data-astro-prefetch="hover">
-                  <div class="paper-card post-card">
-                    
-                    <!-- 主題標註 (Topic) -->
-                    {post.data.topic && (
-                      <div class="post-topic-tag">
-                        <span class="topic-indicator" style={`background-color: ${currentCategory.color};`}></span>
-                        <span class="topic-text">{post.data.topic}</span>
-                      </div>
-                    )}
-
-                    <h2 class="post-title">{post.data.title}</h2>
-                    <p class="post-description">{getArticleExcerpt(post)}</p>
-                    
-                    <div class="post-meta">
-                      <!-- 標籤 -->
-                      {post.data.tags && post.data.tags.length > 0 && (
-                        <div class="post-tags">
-                          {post.data.tags.map((tag) => (
-                            <ShimmerBadge href={`${import.meta.env.BASE_URL}blog/tag/${encodeURIComponent(tag)}/`} variant="default"># {tag}</ShimmerBadge>
-                          ))}
-                        </div>
-                      )}
+                <div class="post-card-wrapper">
+                  <a href={`${import.meta.env.BASE_URL}blog/${post.slug}/`} class="post-link-card" data-astro-prefetch="hover">
+                    <div class="paper-card post-card" style={`--card-cat-color: ${catInfo.color};`}>
                       
-                      <!-- 閱讀更多 -->
-                      <span class="read-more-link ink-link">閱全文 →</span>
+                      <!-- 分類與主題 -->
+                      <div class="post-top-meta">
+                        <span class="category-pill" style={`background-color: ${catInfo.color};`}>
+                          {catInfo.name}
+                        </span>
+                        {post.data.topic && (
+                          <span class="topic-label">
+                            <span class="topic-dot"></span>
+                            {post.data.topic}
+                          </span>
+                        )}
+                      </div>
+
+                      <h2 class="post-title">{post.data.title}</h2>
+                      <p class="post-description">{getArticleExcerpt(post)}</p>
+                      
+                      <div class="post-meta">
+                        <!-- 標籤列表 -->
+                        {post.data.tags && post.data.tags.length > 0 && (
+                          <div class="post-tags">
+                            {post.data.tags.map((tag: string) => (
+                              <ShimmerBadge 
+                                variant={tag === currentTag ? 'cyan' : 'default'}
+                                href={`${import.meta.env.BASE_URL}blog/tag/${encodeURIComponent(tag)}/`}
+                              >
+                                # {tag}
+                              </ShimmerBadge>
+                            ))}
+                          </div>
+                        )}
+                        
+                        <span class="read-more-link ink-link">閱全文 →</span>
+                      </div>
                     </div>
-                  </div>
-                </a>
-              </div>
-            </article>
-          ))}
+                  </a>
+                </div>
+              </article>
+            );
+          })}
         </div>
       )}
     </div>
@@ -156,7 +161,7 @@ const breadcrumbs = [
 </Layout>
 
 <style>
-  .blog-category-container {
+  .blog-tag-container {
     display: flex;
     flex-direction: column;
     gap: 2.5rem;
@@ -178,17 +183,18 @@ const breadcrumbs = [
     color: var(--color-mountain-cyan);
   }
 
-  .category-header {
+  .tag-header {
     text-align: center;
     display: flex;
     flex-direction: column;
     align-items: center;
   }
 
-  .category-badge-seal {
+  .tag-badge-seal {
     width: 44px;
     height: 44px;
     border-radius: 6px;
+    background-color: var(--color-mountain-cyan, #2d5f5a);
     color: #fff;
     font-family: var(--font-cursive);
     font-size: 1.6rem;
@@ -206,56 +212,13 @@ const breadcrumbs = [
     margin-bottom: 0.5rem;
   }
 
-  .category-desc {
+  .tag-desc {
     font-family: var(--font-serif);
     font-size: 1.15rem;
     color: var(--color-ink-grey);
     letter-spacing: 0.08em;
     max-width: 600px;
     margin-bottom: 2rem;
-  }
-
-  /* 分類切換 Tab 列 */
-  .category-tabs {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.75rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .cat-tab {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.5rem 1.1rem;
-    font-family: var(--font-serif);
-    font-size: 0.95rem;
-    color: var(--color-ink-text);
-    background: rgba(255, 255, 255, 0.6);
-    border: 1px solid var(--color-border);
-    border-radius: 20px;
-    text-decoration: none;
-    transition: all 0.25s ease;
-    backdrop-filter: blur(4px);
-  }
-
-  .cat-tab:hover {
-    border-color: var(--color-ink-black);
-    color: var(--color-ink-black);
-    transform: translateY(-1px);
-  }
-
-  .cat-tab.active {
-    background: var(--active-color, var(--color-ink-black));
-    color: #ffffff;
-    border-color: transparent;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
-    font-weight: 600;
-  }
-
-  .cat-tab-icon {
-    font-size: 1rem;
   }
 
   /* 時間軸架構 */
@@ -331,31 +294,44 @@ const breadcrumbs = [
 
   .post-card {
     padding: 1.8rem 2rem;
-    border-left: 3px solid var(--color-border);
+    border-left: 3px solid var(--card-cat-color, var(--color-border));
     transition: all 0.3s ease;
   }
 
   .post-card:hover {
-    border-left-color: var(--color-mountain-cyan);
     transform: translateX(4px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
   }
 
-  .post-topic-tag {
+  .post-top-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-bottom: 0.8rem;
+  }
+
+  .category-pill {
+    font-size: 0.85rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    color: #fff;
+    font-family: var(--font-serif);
+  }
+
+  .topic-label {
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
-    margin-bottom: 0.6rem;
+    gap: 0.35rem;
     font-family: var(--font-serif);
     font-size: 0.85rem;
     color: var(--color-ink-grey);
-    letter-spacing: 0.05em;
   }
 
-  .topic-indicator {
-    width: 6px;
-    height: 6px;
+  .topic-dot {
+    width: 4px;
+    height: 4px;
     border-radius: 50%;
-    display: inline-block;
+    background: var(--color-ink-grey);
   }
 
   .post-title {
@@ -375,7 +351,7 @@ const breadcrumbs = [
     font-size: 1rem;
     line-height: 1.7;
     color: var(--color-ink-text);
-    margin-bottom: 1.3rem;
+    margin-bottom: 1.5rem;
     text-align: justify;
   }
 
@@ -408,7 +384,6 @@ const breadcrumbs = [
     color: var(--color-mountain-cyan);
   }
 
-  /* 空狀態 Empty State */
   .no-posts {
     text-align: center;
     padding: 3.5rem 2rem;
@@ -442,7 +417,6 @@ const breadcrumbs = [
     padding: 0.5rem 1.4rem;
   }
 
-  /* 行動端自適應 */
   @media (max-width: 768px) {
     .timeline-line {
       left: 15px;

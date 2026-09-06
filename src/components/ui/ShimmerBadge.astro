@@ -5,6 +5,7 @@ interface Props {
   interactive?: boolean;
   class?: string;
   title?: string;
+  href?: string;
 }
 
 const {
@@ -13,13 +14,17 @@ const {
   interactive = true,
   class: className = '',
   title,
+  href,
   ...rest
 } = Astro.props;
+
+const Tag = href ? 'a' : 'div';
 ---
 
-<div
+<Tag
   class={`shimmer-badge shimmer-${variant} ${interactive ? 'is-interactive' : ''} ${className}`}
   title={title}
+  href={href}
   {...rest}
 >
   <span class="shimmer-streamer" aria-hidden="true"></span>
@@ -30,7 +35,7 @@ const {
       <slot />
     </span>
   </div>
-</div>
+</Tag>
 
 <style>
   .shimmer-badge {
@@ -45,6 +50,7 @@ const {
     background: var(--color-paper-light, #fdfcf7);
     border: 1px solid var(--color-border, #e6dfcc);
     color: var(--color-ink-text, #2c2c2c);
+    text-decoration: none;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
     overflow: hidden;
     transition: transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1),
