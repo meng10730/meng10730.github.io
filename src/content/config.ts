@@ -1,12 +1,22 @@
 import { defineCollection, z } from "astro:content";
 
+// 部落格文章分類
+const categories = defineCollection({
+  type: "content",
+  schema: z.object({
+    title: z.string(), // 分類名稱
+    description: z.string().optional(), // 說明
+    order: z.number().default(99), // 排序
+  }),
+});
+
 // 部落格文章
 const blog = defineCollection({
   type: "content",
   schema: z.object({
     title: z.string(),
     description: z.string(),
-    category: z.enum(["tech", "daily", "thinking", "reading"]).default("daily"),
+    category: z.string().default("daily"),
     topic: z.string().optional(), // 文章核心主題或主要內容簡述
     pubDate: z.coerce.date(),
     tags: z.array(z.string()).default([]),
@@ -209,6 +219,7 @@ const novel_chapters = defineCollection({
 // [ADD_NEW_COLLECTION_DEFINITION_HERE]
 
 export const collections = {
+  categories,
   blog,
   works,
   novels,

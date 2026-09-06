@@ -179,6 +179,23 @@ export default config({
     : { kind: "cloud" as const },
   cloud: { project: "meng10730/meng10730-github-io" },
   collections: {
+    categories: collection({
+      label: "文章分類專欄",
+      slugField: "title",
+      path: "src/content/categories/*",
+      schema: {
+        title: fields.slug({
+          name: { label: "分類名稱 (中文)" },
+          slug: {
+            label: "分類網址別名 (Slug)",
+            description: "若留空將自動轉為拼音代碼（如 tech, daily）",
+            slugify: pinyinSlugify,
+          },
+        }),
+        description: fields.text({ label: "專欄簡短說明", multiline: true }),
+        order: fields.integer({ label: "排序權重", defaultValue: 99 }),
+      },
+    }),
     blog: collection({
       label: "部落格文章",
       slugField: "title",
@@ -194,22 +211,19 @@ export default config({
           },
         }),
         description: fields.text({ label: "簡介", multiline: true }),
-        category: fields.select({
+        category: fields.relationship({
           label: "文章分類",
-          description: "選擇文章所屬的主要分類專欄",
-          options: [
-            { label: "技術筆記", value: "tech" },
-            { label: "日常心得", value: "daily" },
-            { label: "思考練習", value: "thinking" },
-            { label: "閱讀心得", value: "reading" },
-          ],
-          defaultValue: "daily",
+          description: "選擇文章所屬的分類專欄（可至「文章分類專欄」新增自訂分類）",
+          collection: "categories",
         }),
         topic: fields.text({
           label: "文章主要主題",
           description: "簡短一句話說明本文探討的核心主題或關鍵領域（例如：Astro 靜態渲染、心理學筆記）",
         }),
-        pubDate: fields.date({ label: "發布日期" }),
+        pubDate: fields.date({
+          label: "發布日期",
+          defaultValue: { kind: "today" },
+        }),
         tags: fields.array(fields.text({ label: "標籤" }), {
           label: "標籤",
           itemLabel: (props) => props.value,
