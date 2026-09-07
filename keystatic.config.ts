@@ -204,7 +204,7 @@ export default config({
           name: { label: "分類名稱 (中文)" },
           slug: {
             label: "分類網址別名 (Slug)",
-            description: "若留空將自動轉為拼音代碼（如 tech, daily）",
+            description: "輸入標題時將自動轉為拼音代碼（亦可點擊右側按鈕重新生成或自訂英文代碼）",
             slugify: pinyinSlugify,
           },
         }),
@@ -222,7 +222,7 @@ export default config({
           name: { label: "標題" },
           slug: {
             label: "網址別名 (Slug)",
-            description: "此欄位若留空，純中文標題會自動轉為拼音",
+            description: "輸入標題時將自動轉為拼音（亦可點擊右側按鈕重新生成或自訂英文代碼）",
             slugify: pinyinSlugify,
           },
         }),
@@ -257,7 +257,7 @@ export default config({
           name: { label: "專案名稱" },
           slug: {
             label: "網址別名 (Slug)",
-            description: "此欄位若留空，純中文標題會自動轉為拼音",
+            description: "輸入專案名稱時將自動轉為拼音（亦可點擊右側按鈕重新生成或自訂英文代碼）",
             slugify: pinyinSlugify,
           },
         }),
@@ -311,7 +311,7 @@ export default config({
           name: { label: "小說標題" },
           slug: {
             label: "網址別名 (Slug)",
-            description: "此欄位若留空，純中文標題會自動轉為拼音",
+            description: "輸入小說標題時將自動轉為拼音（亦可點擊右側按鈕重新生成或自訂英文代碼）",
             slugify: pinyinSlugify,
           },
         }),
@@ -348,7 +348,7 @@ export default config({
           name: { label: "小節標題 (如：破廟殘燈)" },
           slug: {
             label: "網址別名 (Slug)",
-            description: "小節別名，若留空自動轉為拼音",
+            description: "輸入小節標題時將自動轉為拼音（亦可點擊右側按鈕重新生成或自訂英文代碼）",
             slugify: pinyinSlugify,
           },
         }),
@@ -384,7 +384,7 @@ export default config({
           name: { label: "人物名稱" },
           slug: {
             label: "網址別名 (Slug)",
-            description: "此欄位若留空，純中文標題會自動轉為拼音",
+            description: "輸入人物名稱時將自動轉為拼音（亦可點擊右側按鈕重新生成或自訂英文代碼）",
             slugify: pinyinSlugify,
           },
         }),
@@ -448,7 +448,7 @@ export default config({
           name: { label: "設定標題" },
           slug: {
             label: "網址別名 (Slug)",
-            description: "此欄位若留空，純中文標題會自動轉為拼音",
+            description: "輸入設定標題時將自動轉為拼音（亦可點擊右側按鈕重新生成或自訂英文代碼）",
             slugify: pinyinSlugify,
           },
         }),
@@ -471,7 +471,7 @@ export default config({
           name: { label: "勢力名稱" },
           slug: {
             label: "網址別名 (Slug)",
-            description: "此欄位若留空，純中文標題會自動轉為拼音",
+            description: "輸入勢力名稱時將自動轉為拼音（亦可點擊右側按鈕重新生成或自訂英文代碼）",
             slugify: pinyinSlugify,
           },
         }),
@@ -494,7 +494,7 @@ export default config({
           name: { label: "筆記標題" },
           slug: {
             label: "網址別名 (Slug)",
-            description: "此欄位若留空，純中文標題會自動轉為拼音",
+            description: "輸入筆記標題時將自動轉為拼音（亦可點擊右側按鈕重新生成或自訂英文代碼）",
             slugify: pinyinSlugify,
           },
         }),
@@ -527,7 +527,11 @@ export default config({
       schema: {
         title: fields.slug({
           name: { label: "法寶名稱" },
-          slug: { label: "網址別名 (Slug)", slugify: pinyinSlugify },
+          slug: {
+            label: "網址別名 (Slug)",
+            description: "輸入法寶名稱時將自動轉為拼音（亦可點擊右側按鈕重新生成或自訂英文代碼）",
+            slugify: pinyinSlugify,
+          },
         }),
         description: fields.text({ label: "簡介", multiline: true }),
         novel: fields.text({ label: "所屬作品 (預設: 長生劫)" }),
@@ -544,7 +548,11 @@ export default config({
       schema: {
         title: fields.slug({
           name: { label: "功法名稱" },
-          slug: { label: "網址別名 (Slug)", slugify: pinyinSlugify },
+          slug: {
+            label: "網址別名 (Slug)",
+            description: "輸入功法名稱時將自動轉為拼音（亦可點擊右側按鈕重新生成或自訂英文代碼）",
+            slugify: pinyinSlugify,
+          },
         }),
         description: fields.text({ label: "簡介", multiline: true }),
         novel: fields.text({ label: "所屬作品 (預設: 長生劫)" }),
@@ -561,7 +569,11 @@ export default config({
       schema: {
         title: fields.slug({
           name: { label: "名稱" },
-          slug: { label: "網址別名 (Slug)", slugify: pinyinSlugify },
+          slug: {
+            label: "網址別名 (Slug)",
+            description: "輸入名稱時將自動轉為拼音（亦可點擊右側按鈕重新生成或自訂英文代碼）",
+            slugify: pinyinSlugify,
+          },
         }),
         description: fields.text({ label: "簡介", multiline: true }),
         novel: fields.text({ label: "所屬作品 (預設: 長生劫)" }),
