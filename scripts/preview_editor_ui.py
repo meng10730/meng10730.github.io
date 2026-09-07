@@ -30,12 +30,12 @@ except ImportError:
     subprocess.run([sys.executable, "-m", "pip", "install", "PySide6"])
 
 from PySide6.QtCore import Qt, QSize, QTimer
-from PySide6.QtGui import QFont, QTextCursor, QColor, QKeySequence, QShortcut
+from PySide6.QtGui import QFont, QTextCursor, QColor, QKeySequence, QShortcut, QClipboard, QGuiApplication
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QListWidget, QListWidgetItem, QLabel, QLineEdit,
     QPlainTextEdit, QPushButton, QFrame, QSplitter,
-    QStatusBar, QMessageBox
+    QStatusBar, QMessageBox, QInputDialog
 )
 
 PREVIEW_QSS = """
@@ -321,6 +321,11 @@ class PreviewEditorWindow(QMainWindow):
         self.lbl_save_status.setStyleSheet("color: #6edb8f; font-size: 12px; margin-right: 8px;")
         editor_top_bar.addWidget(self.lbl_save_status)
         
+        self.btn_convert_slug = QPushButton("🔤 標題轉 Slug")
+        self.btn_convert_slug.setToolTip("自動將中文標題轉譯為符合 SEO 規範的純小寫英文拼音 Slug")
+        self.btn_convert_slug.clicked.connect(self.open_slug_converter)
+        editor_top_bar.addWidget(self.btn_convert_slug)
+
         self.btn_save = QPushButton("儲存變更 (Ctrl+S)")
         self.btn_save.setObjectName("primaryBtn")
         self.btn_save.clicked.connect(self.simulate_save)
@@ -429,6 +434,37 @@ class PreviewEditorWindow(QMainWindow):
             self.sidebar_widget.show()
             self.btn_toggle_sidebar.setText("📁 收合側欄 (Ctrl+B)")
             
+    def open_slug_converter(self):
+        title, ok = QInputDialog.getText(self, "標題轉譯為 Slug", "請輸入中文標題（將自動轉為全小寫英文拼音 Slug）：")
+        if not ok or not title.strip():
+            return
+        
+        try:
+            # 呼叫專案既有的 gui-helper.js 執行全字典拼音轉譯（超過 15 字自動安全截取）
+            script_path = os.path.join(os.path.dirname(__file__), "gui-helper.js")
+            result = subprocess.run(
+                ["node", script_path, "--slugify", title.strip()],
+                capture_output=True,
+                text=True,
+                encoding="utf-8"
+            )
+            slug = result.stdout.strip()
+            if not slug:
+                slug = "entry-" + str(int(os.path.getmtime(__file__)))
+        except Exception as e:
+            slug = "error-slug"
+
+        # 自動複製至作業系統剪貼簿
+        clipboard = QGuiApplication.clipboard()
+        clipboard.setText(slug)
+
+        QMessageBox.information(
+            self,
+            "轉譯成功",
+            f"原始標題：{title.strip()}\n\n生成的 Slug：\n{slug}\n\n✓ 已自動複製至剪貼簿，可直接至檔案或後台貼上！"
+        )
+        self.status_bar.showMessage(f"【轉譯完成】已複製 Slug 至剪貼簿：{slug}", 5000)
+
     def filter_files(self, text):
         keyword = text.strip().lower()
         for i in range(self.file_list.count()):

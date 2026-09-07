@@ -40,21 +40,29 @@ function convertToTraditional(text) {
 
 import { pinyin } from "pinyin-pro";
 
-// 拼音網址別名 (使用 pinyin-pro 支援 20,000+ 繁簡體與罕見字全字典覆蓋)
+// 拼音網址別名 (使用 pinyin-pro 支援 20,000+ 繁簡體與罕見字全字典覆蓋，超過 15 字自動安全截取)
 function pinyinSlugify(text) {
   if (!text || typeof text !== "string") return "entry-" + Date.now();
+  
+  // 若標題超過 15 個字，先截取前 15 個字元進行拼音轉換，避免 URL 冗長
+  const normalizedInput = text.trim().length > 15 ? text.trim().slice(0, 15) : text.trim();
+
   try {
-    const py = pinyin(text, { toneType: "none", type: "array" });
+    const py = pinyin(normalizedInput, { toneType: "none", type: "array" });
     const slug = py
       .join("-")
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)/g, "");
-    if (slug) return slug;
+    if (slug) {
+      // 若分詞段落仍過多，收斂最多保留 10 個連字段
+      const segments = slug.split("-").filter(Boolean);
+      return segments.slice(0, 10).join("-");
+    }
   } catch (e) {
     // 降級防護
   }
-  const cleanText = text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  const cleanText = normalizedInput.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
   return cleanText || ("entry-" + Date.now());
 }
 

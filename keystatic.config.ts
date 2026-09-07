@@ -153,21 +153,29 @@ const PINYIN_MAP: Record<string, string> = {
   閣: "ge",
 };
 
-// 全自動拼音轉譯函式：採用 pinyin-pro 支援 20,000+ 繁簡漢字全字典解析，英數混排全面轉為小寫與單一連字號
+// 全自動拼音轉譯函式：採用 pinyin-pro 支援 20,000+ 繁簡漢字全字典解析，英數混排全面轉為小寫、單一連字號，超過 15 字自動安全截取
 function pinyinSlugify(text: string): string {
   if (!text || typeof text !== "string") return "";
+  
+  // 若標題超過 15 個字，先截取前 15 個字元進行拼音轉換，避免 URL 冗長
+  const normalizedInput = text.trim().length > 15 ? text.trim().slice(0, 15) : text.trim();
+
   try {
-    const py = pinyin(text, { toneType: "none", nonZh: "consecutive" });
+    const py = pinyin(normalizedInput, { toneType: "none", nonZh: "consecutive" });
     const slug = py
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)/g, "");
-    if (slug) return slug;
+    if (slug) {
+      // 若分詞段落仍過多，收斂最多保留 10 個連字段
+      const segments = slug.split("-").filter(Boolean);
+      return segments.slice(0, 10).join("-");
+    }
   } catch (e) {
     // 若套件例外，使用備用對照表降級防護
   }
 
-  const chars = Array.from(text);
+  const chars = Array.from(normalizedInput);
   const fallback = chars
     .map((char) => {
       if (/[a-zA-Z0-9]/.test(char)) return char.toLowerCase();
@@ -177,7 +185,8 @@ function pinyinSlugify(text: string): string {
     .filter(Boolean)
     .join("-");
 
-  return fallback.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  const fallbackSlug = fallback.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  return fallbackSlug.split("-").filter(Boolean).slice(0, 10).join("-");
 }
 
 export default config({

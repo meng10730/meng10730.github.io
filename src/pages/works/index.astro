@@ -276,14 +276,16 @@ const statusMap = {
 
   .card-links {
     display: flex;
+    flex-wrap: wrap;
     gap: 0.8rem;
     border-top: 1px dashed var(--color-border);
     padding-top: 1rem;
   }
 
   .card-links :global(.ink-btn) {
-    flex: 1;
+    flex: 1 1 110px;
     text-align: center;
+    min-width: 100px;
   }
 
   .link-btn {
@@ -348,7 +350,8 @@ const statusMap = {
 
   /* 試聽曲目專屬按鈕 (水墨青綠) */
   .ink-button-preview {
-    flex: 1;
+    flex: 1 1 110px;
+    min-width: 100px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
