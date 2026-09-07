@@ -1,6 +1,7 @@
 ---
-title: 剛剛好的距離，最暖。《體貼是練出來的》．上篇
+title: 剛剛好的距離，最暖。
 category: reading
+topic: 《體貼是練出來的》．上篇
 pubDate: 2026-09-06
 tags:
   - 人際關係
