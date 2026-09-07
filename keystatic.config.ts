@@ -1,6 +1,7 @@
 import { config, fields, collection } from "@keystatic/core";
+import { pinyin } from "pinyin-pro";
 
-// 常用小說與設定集漢字拼音對照表，供自動 Slugify 使用
+// 常用小說與設定集漢字拼音對照表，供備用與特殊字覆蓋使用
 const PINYIN_MAP: Record<string, string> = {
   不: "bu",
   夜: "ye",
@@ -152,17 +153,22 @@ const PINYIN_MAP: Record<string, string> = {
   閣: "ge",
 };
 
+// 全自動拼音轉譯函式：採用 pinyin-pro 支援 20,000+ 繁簡漢字全字典解析，英數混排全面轉為小寫與單一連字號
 function pinyinSlugify(text: string): string {
-  if (!text) return "";
-  const hasChinese = /[\u4e00-\u9fa5]/.test(text);
-  if (!hasChinese) {
-    return text
+  if (!text || typeof text !== "string") return "";
+  try {
+    const py = pinyin(text, { toneType: "none", nonZh: "consecutive" });
+    const slug = py
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)/g, "");
+    if (slug) return slug;
+  } catch (e) {
+    // 若套件例外，使用備用對照表降級防護
   }
+
   const chars = Array.from(text);
-  const result = chars
+  const fallback = chars
     .map((char) => {
       if (/[a-zA-Z0-9]/.test(char)) return char.toLowerCase();
       if (PINYIN_MAP[char]) return PINYIN_MAP[char];
@@ -170,7 +176,8 @@ function pinyinSlugify(text: string): string {
     })
     .filter(Boolean)
     .join("-");
-  return result.replace(/-+/g, "-").replace(/(^-|-$)/g, "");
+
+  return fallback.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
 
 export default config({
