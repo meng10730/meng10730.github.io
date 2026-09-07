@@ -33,7 +33,7 @@
     <span class="motion-status-text" id="motion-status-text">動</span>
   </button>
   
-  <!-- 隱藏的 audio 元素，預設 data-astro-transition-persist 以確保跨頁跳轉不中斷 -->
+  <!-- 隱藏的背景音樂音訊元素 -->
   <audio 
     id="main-bgm" 
     src="/audio/子夜寄君書木管重奏.ogg" 
@@ -41,6 +41,42 @@
     preload="none"
     data-astro-transition-persist="main-bgm-player"
   ></audio>
+
+  <!-- 隱藏的作品試聽音訊元素 -->
+  <audio 
+    id="preview-audio" 
+    preload="none"
+    data-astro-transition-persist="preview-audio-player"
+  ></audio>
+
+  <!-- 全站常駐底欄試聽播放條 (Dock Player) -->
+  <div class="music-dock-bar" id="music-dock-bar">
+    <div class="dock-inner">
+      <div class="dock-info">
+        <span class="dock-badge">試聽</span>
+        <div class="dock-text-group">
+          <div class="dock-title-row">
+            <span class="dock-song-title" id="dock-song-title">曲目名稱</span>
+            <span class="dock-origin-source" id="dock-origin-source"></span>
+          </div>
+          <div class="dock-progress-wrapper">
+            <div class="dock-progress-bar" id="dock-progress-bar">
+              <div class="dock-progress-fill" id="dock-progress-fill"></div>
+            </div>
+            <span class="dock-time-text" id="dock-time-text">00:00 / 00:00</span>
+          </div>
+        </div>
+      </div>
+      <div class="dock-actions">
+        <button class="dock-btn play-pause-btn" id="dock-play-pause-btn" aria-label="播放或暫停試聽">
+          <span class="dock-btn-icon" id="dock-play-icon">▶</span>
+        </button>
+        <button class="dock-btn close-btn" id="dock-close-btn" aria-label="關閉試聽列" title="關閉試聽">
+          ✕
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- 《活俠傳》背景音樂自訂教學 (註解形式，供使用者查閱) -->
@@ -303,6 +339,175 @@
     border-color: rgba(180, 50, 50, 0.6);
     color: rgba(180, 50, 50, 0.95) !important;
   }
+
+  /* 全站常駐底欄試聽播放列 (Dock Player) - 宣紙底色、水墨青綠、古雅陰影 */
+  .music-dock-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(253, 252, 247, 0.96);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-top: 1.5px solid var(--color-ink-black);
+    box-shadow: 0 -4px 25px rgba(0, 0, 0, 0.08);
+    transform: translateY(105%);
+    transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+    z-index: 1000;
+    padding: 0.6rem 1.5rem;
+  }
+
+  .music-dock-bar.active {
+    transform: translateY(0);
+  }
+
+  .dock-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+  }
+
+  .dock-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .dock-badge {
+    background: var(--color-mountain-cyan);
+    color: #fff;
+    font-family: var(--font-serif);
+    font-size: 0.75rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+  }
+
+  .dock-text-group {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .dock-title-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .dock-song-title {
+    font-family: var(--font-serif);
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--color-ink-black);
+  }
+
+  .dock-origin-source {
+    font-family: var(--font-serif);
+    font-size: 0.82rem;
+    color: var(--color-ink-grey);
+  }
+
+  .dock-progress-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+  }
+
+  .dock-progress-bar {
+    flex: 1;
+    height: 5px;
+    background: rgba(0, 0, 0, 0.08);
+    border-radius: 3px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .dock-progress-fill {
+    width: 0%;
+    height: 100%;
+    background: var(--color-mountain-cyan);
+    border-radius: 3px;
+    transition: width 0.1s linear;
+  }
+
+  .dock-time-text {
+    font-family: var(--font-serif);
+    font-size: 0.75rem;
+    color: var(--color-ink-grey);
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+  }
+
+  .dock-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    flex-shrink: 0;
+  }
+
+  .dock-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: #fff;
+    border: 1px solid var(--color-border);
+    cursor: pointer;
+    transition: var(--transition-fast);
+    color: var(--color-ink-black);
+  }
+
+  .dock-btn.play-pause-btn {
+    width: 38px;
+    height: 38px;
+    border-color: var(--color-mountain-cyan);
+    background: var(--color-paper-light);
+    color: var(--color-mountain-cyan);
+    font-size: 0.95rem;
+  }
+
+  .dock-btn.play-pause-btn:hover {
+    background: var(--color-mountain-cyan);
+    color: #fff;
+    transform: scale(1.06);
+  }
+
+  .dock-btn.close-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 0.85rem;
+    color: var(--color-ink-grey);
+  }
+
+  .dock-btn.close-btn:hover {
+    color: var(--color-ink-black);
+    border-color: var(--color-ink-black);
+  }
+
+  @media (max-width: 768px) {
+    .music-dock-bar {
+      padding: 0.6rem 1rem;
+    }
+    .dock-origin-source {
+      display: none;
+    }
+    .dock-inner {
+      gap: 0.8rem;
+    }
+  }
 </style>
 
 <script>
@@ -485,6 +690,118 @@
       motionBtn.addEventListener('mouseenter', handleMotionTooltip);
     }
 
+    // 5. 作品集音樂試聽常駐底欄播放器邏輯 (Preview Audio & Dock Player)
+    const previewAudio = document.getElementById('preview-audio') as HTMLAudioElement;
+    const dockBar = document.getElementById('music-dock-bar');
+    const dockTitle = document.getElementById('dock-song-title');
+    const dockOrigin = document.getElementById('dock-origin-source');
+    const dockPlayPauseBtn = document.getElementById('dock-play-pause-btn');
+    const dockPlayIcon = document.getElementById('dock-play-icon');
+    const dockCloseBtn = document.getElementById('dock-close-btn');
+    const dockProgressFill = document.getElementById('dock-progress-fill');
+    const dockProgressBar = document.getElementById('dock-progress-bar');
+    const dockTimeText = document.getElementById('dock-time-text');
+
+    const formatTime = (seconds: number) => {
+      if (isNaN(seconds) || !isFinite(seconds)) return '00:00';
+      const mins = Math.floor(seconds / 60);
+      const secs = Math.floor(seconds % 60);
+      return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    const updateDockTime = () => {
+      if (!previewAudio || !dockProgressFill || !dockTimeText) return;
+      const cur = previewAudio.currentTime || 0;
+      const dur = previewAudio.duration || 0;
+      const percent = dur > 0 ? (cur / dur) * 100 : 0;
+      dockProgressFill.style.width = `${percent}%`;
+      dockTimeText.textContent = `${formatTime(cur)} / ${formatTime(dur)}`;
+    };
+
+    const updateDockUI = () => {
+      if (!previewAudio || !dockPlayIcon) return;
+      if (previewAudio.paused) {
+        dockPlayIcon.textContent = '▶';
+      } else {
+        dockPlayIcon.textContent = '⏸';
+      }
+    };
+
+    // 播放指定作品試聽曲目（若背景音樂正在播放，自動暫停背景音樂，避免雜音）
+    const playSongPreview = (audioUrl: string, title: string, original?: string) => {
+      if (!previewAudio || !dockBar) return;
+      
+      // 暫停全站背景音樂
+      if (!audio.paused) {
+        audio.pause();
+      }
+
+      if (dockTitle) dockTitle.textContent = title;
+      if (dockOrigin) {
+        dockOrigin.textContent = original ? `原曲：${original}` : '';
+        dockOrigin.style.display = original ? 'inline' : 'none';
+      }
+
+      dockBar.classList.add('active');
+
+      // 若為同一首曲子且已暫停，直接恢復播放
+      const targetSrc = new URL(audioUrl, window.location.href).href;
+      if (previewAudio.src === targetSrc && previewAudio.paused) {
+        previewAudio.play().catch(console.error);
+        return;
+      }
+
+      previewAudio.src = audioUrl;
+      previewAudio.load();
+      previewAudio.play().catch(console.error);
+    };
+
+    const toggleDockPlay = () => {
+      if (!previewAudio) return;
+      if (previewAudio.paused) {
+        // 若背景音樂在播放，先關閉
+        if (!audio.paused) audio.pause();
+        previewAudio.play().catch(console.error);
+      } else {
+        previewAudio.pause();
+      }
+    };
+
+    const closeDock = () => {
+      if (!previewAudio || !dockBar) return;
+      previewAudio.pause();
+      previewAudio.currentTime = 0;
+      dockBar.classList.remove('active');
+    };
+
+    const handleProgressClick = (e: MouseEvent) => {
+      if (!previewAudio || !dockProgressBar) return;
+      const rect = dockProgressBar.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const width = rect.width;
+      if (width > 0 && previewAudio.duration > 0) {
+        const ratio = Math.max(0, Math.min(1, clickX / width));
+        previewAudio.currentTime = ratio * previewAudio.duration;
+      }
+    };
+
+    if (dockPlayPauseBtn) dockPlayPauseBtn.addEventListener('click', toggleDockPlay);
+    if (dockCloseBtn) dockCloseBtn.addEventListener('click', closeDock);
+    if (dockProgressBar) dockProgressBar.addEventListener('click', handleProgressClick);
+
+    if (previewAudio) {
+      previewAudio.addEventListener('timeupdate', updateDockTime);
+      previewAudio.addEventListener('play', updateDockUI);
+      previewAudio.addEventListener('pause', updateDockUI);
+      previewAudio.addEventListener('ended', () => {
+        updateDockUI();
+        if (dockProgressFill) dockProgressFill.style.width = '0%';
+      });
+    }
+
+    // 註冊全域事件供作品卡片觸發試聽
+    (window as any).__playSiteMusic = playSongPreview;
+
     // 初始狀態同步
     updateMusicUI();
     updateSfxUI();
@@ -501,6 +818,14 @@
       if (motionBtn) {
         motionBtn.removeEventListener('click', toggleMotion);
         motionBtn.removeEventListener('mouseenter', handleMotionTooltip);
+      }
+      if (dockPlayPauseBtn) dockPlayPauseBtn.removeEventListener('click', toggleDockPlay);
+      if (dockCloseBtn) dockCloseBtn.removeEventListener('click', closeDock);
+      if (dockProgressBar) dockProgressBar.removeEventListener('click', handleProgressClick);
+      if (previewAudio) {
+        previewAudio.removeEventListener('timeupdate', updateDockTime);
+        previewAudio.removeEventListener('play', updateDockUI);
+        previewAudio.removeEventListener('pause', updateDockUI);
       }
     };
   }

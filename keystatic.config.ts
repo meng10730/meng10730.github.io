@@ -249,14 +249,23 @@ export default config({
         category: fields.select({
           label: "分類",
           options: [
-            { label: "Web", value: "web" },
-            { label: "Game", value: "game" },
-            { label: "Other", value: "other" },
+            { label: "網頁開發 (Web)", value: "web" },
+            { label: "遊戲作品 (Game)", value: "game" },
+            { label: "音樂創作與改編 (Music)", value: "music" },
+            { label: "其他創作 (Other)", value: "other" },
           ],
           defaultValue: "web",
         }),
-        techs: fields.array(fields.text({ label: "使用技術標籤" }), {
-          label: "技術標籤",
+        originalSource: fields.text({
+          label: "原曲出處 / 原作者 (選填)",
+          description: "若是改編曲目可在此填寫，例如：周杰倫《青花瓷》",
+        }),
+        audio: fields.text({
+          label: "音訊檔案路徑 (選填)",
+          description: "音樂類專用，例如：/audio/your-song.mp3（請放於 public/audio 資料夾）",
+        }),
+        techs: fields.array(fields.text({ label: "標籤 (技術 / 樂器 / 編曲工具 / 曲風)" }), {
+          label: "標籤 (技術 / 樂器 / 編曲工具 / 曲風)",
           itemLabel: (props) => props.value,
         }),
         status: fields.select({
@@ -268,8 +277,10 @@ export default config({
           ],
           defaultValue: "completed",
         }),
-        github: fields.url({ label: "GitHub 連結 (選填)" }),
-        demo: fields.url({ label: "Live Demo 連結 (選填)" }),
+        github: fields.url({ label: "GitHub 連結 (選填，程式專案適用)" }),
+        demo: fields.url({ label: "線上預覽連結 (選填，網頁/遊戲專案適用)" }),
+        originalUrl: fields.url({ label: "原曲試聽 / 外部出處連結 (選填，音樂專案適用)" }),
+        sheetUrl: fields.url({ label: "樂譜 / 工程檔案下載連結 (選填，音樂專案適用)" }),
         pubDate: fields.date({ label: "完成或發布日期" }),
         content: fields.mdx({ label: "專案詳細介紹 (內文)", extension: "md" }),
       },

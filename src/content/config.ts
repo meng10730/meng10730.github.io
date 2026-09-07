@@ -29,11 +29,15 @@ const works = defineCollection({
   schema: z.object({
     title: z.string(), // 專案名稱
     description: z.string(), // 一句話描述
-    category: z.enum(["web", "game", "other"]), // 分類：web / game / other
-    techs: z.array(z.string()).default([]), // 使用技術標籤
+    category: z.enum(["web", "game", "other", "music"]), // 分類：web / game / other / music
+    techs: z.array(z.string()).default([]), // 使用技術或樂器/編曲標籤
     status: z.enum(["completed", "ongoing", "archived"]).default("completed"), // 狀態
     github: z.string().url().optional(), // GitHub 連結（選填）
     demo: z.string().url().optional(), // Live Demo 連結（選填）
+    audio: z.string().optional(), // 本地或遠端音訊路徑（選填，如 /audio/xxx.mp3）
+    originalSource: z.string().optional(), // 原曲名稱/作者（選填，改編曲目專用，如：周杰倫《青花瓷》）
+    originalUrl: z.string().url().optional(), // 原曲試聽/外部出處連結（選填）
+    sheetUrl: z.string().url().optional(), // 樂譜/工程檔下載連結（選填）
     pubDate: z.coerce.date(), // 完成或發布日期
   }),
 });

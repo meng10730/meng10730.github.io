@@ -13,11 +13,13 @@ const allWorks = await getCollection("works", (entry) => {
 // 按分類篩選
 const webWorks = allWorks.filter((work) => work.data.category === "web");
 const gameWorks = allWorks.filter((work) => work.data.category === "game");
+const musicWorks = allWorks.filter((work) => work.data.category === "music");
 const otherWorks = allWorks.filter((work) => work.data.category === "other");
 
 const categories = [
   { id: "web", name: "網頁開發", works: webWorks },
   { id: "game", name: "遊戲作品", works: gameWorks },
+  { id: "music", name: "音樂創作與改編", works: musicWorks },
   { id: "other", name: "其他創作", works: otherWorks },
 ];
 
@@ -28,7 +30,7 @@ const statusMap = {
 };
 ---
 
-<Layout title="作品集 | 晚餐後的書桌" description="吃墨水的晚餐之專案作品集，包含網頁開發、遊戲作品與其他技術創作。">
+<Layout title="作品集 | 晚餐後的書桌" description="吃墨水的晚餐之專案作品集，包含網頁開發、遊戲作品、音樂創作與改編及其他創作。">
   <div class="works-container ink-fade-in">
     <h1 class="page-title">作品集</h1>
     <div class="mountain-line"></div>
@@ -47,51 +49,108 @@ const statusMap = {
               <div class="works-grid">
                 {works.map((work) => (
                   <InkCard class="work-card">
-                    <div class="card-header">
-                      <PulseBadge status={work.data.status} />
-                      <span class="pub-date">
-                        {new Date(work.data.pubDate).toLocaleDateString(
-                          "zh-TW",
-                          {
-                            year: "numeric",
-                            month: "long",
-                          },
-                        )}
-                      </span>
-                    </div>
-                    <h3 class="work-title">{work.data.title}</h3>
-                    <p class="work-desc">{work.data.description}</p>
-
-                    {work.data.techs && work.data.techs.length > 0 && (
-                      <div class="tech-tags">
-                        {work.data.techs.map((tech) => (
-                          <ShimmerBadge class="tech-shimmer-tag" interactive={false} variant="default">{tech}</ShimmerBadge>
-                        ))}
+                    <div>
+                      <div class="card-header">
+                        <PulseBadge status={work.data.status} />
+                        <span class="pub-date">
+                          {new Date(work.data.pubDate).toLocaleDateString(
+                            "zh-TW",
+                            {
+                              year: "numeric",
+                              month: "long",
+                            },
+                          )}
+                        </span>
                       </div>
-                    )}
 
-                    <div class="card-links">
-                      {work.data.github && (
-                        <InkButton
-                          href={work.data.github}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          variant="secondary"
-                          size="sm"
-                        >
-                          原始碼
-                        </InkButton>
+                      <!-- 原曲出處標籤 (音樂專屬) -->
+                      {work.data.originalSource && (
+                        <div class="original-source-pill">
+                          <span class="source-prefix">改編自：</span>
+                          <span class="source-text">{work.data.originalSource}</span>
+                        </div>
                       )}
-                      {work.data.demo && (
-                        <InkButton
-                          href={work.data.demo}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          variant="primary"
-                          size="sm"
-                        >
-                          線上預覽
-                        </InkButton>
+
+                      <h3 class="work-title">{work.data.title}</h3>
+                      <p class="work-desc">{work.data.description}</p>
+
+                      {work.data.techs && work.data.techs.length > 0 && (
+                        <div class="tech-tags">
+                          {work.data.techs.map((tech) => (
+                            <ShimmerBadge 
+                              class="tech-shimmer-tag" 
+                              interactive={false} 
+                              variant={work.data.category === 'music' ? 'cyan' : 'default'}
+                            >
+                              {tech}
+                            </ShimmerBadge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <!-- 操作按鈕區 -->
+                    <div class="card-links">
+                      {work.data.category === "music" ? (
+                        <>
+                          {work.data.audio && (
+                            <button
+                              class="ink-button-preview play-music-btn"
+                              data-audio={work.data.audio}
+                              data-title={work.data.title}
+                              data-original={work.data.originalSource || ""}
+                            >
+                              ▶ 試聽曲目
+                            </button>
+                          )}
+                          {work.data.originalUrl && (
+                            <InkButton
+                              href={work.data.originalUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              variant="secondary"
+                              size="sm"
+                            >
+                              原曲出處 ↗
+                            </InkButton>
+                          )}
+                          {work.data.sheetUrl && (
+                            <InkButton
+                              href={work.data.sheetUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              variant="primary"
+                              size="sm"
+                            >
+                              樂譜下載 ↗
+                            </InkButton>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          {work.data.github && (
+                            <InkButton
+                              href={work.data.github}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              variant="secondary"
+                              size="sm"
+                            >
+                              原始碼
+                            </InkButton>
+                          )}
+                          {work.data.demo && (
+                            <InkButton
+                              href={work.data.demo}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              variant="primary"
+                              size="sm"
+                            >
+                              線上預覽
+                            </InkButton>
+                          )}
+                        </>
                       )}
                     </div>
                   </InkCard>
@@ -262,4 +321,80 @@ const statusMap = {
     color: var(--color-ink-grey);
     font-style: italic;
   }
+
+  /* 原曲出處標籤 (音樂專屬) */
+  .original-source-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-bottom: 0.6rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    background: rgba(45, 95, 90, 0.08);
+    border: 1px solid rgba(45, 95, 90, 0.18);
+    font-family: var(--font-serif);
+    font-size: 0.82rem;
+    color: var(--color-mountain-cyan);
+  }
+
+  .source-prefix {
+    font-weight: 600;
+    opacity: 0.85;
+  }
+
+  .source-text {
+    font-weight: 500;
+  }
+
+  /* 試聽曲目專屬按鈕 (水墨青綠) */
+  .ink-button-preview {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.8rem;
+    border-radius: 4px;
+    font-family: var(--font-serif);
+    font-size: 0.88rem;
+    font-weight: 600;
+    background: var(--color-mountain-cyan);
+    color: #fff;
+    border: 1px solid var(--color-mountain-cyan);
+    cursor: pointer;
+    transition: var(--transition-fast);
+    box-shadow: 0 2px 6px rgba(45, 95, 90, 0.2);
+  }
+
+  .ink-button-preview:hover {
+    background: var(--color-mountain-green);
+    border-color: var(--color-mountain-green);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(45, 95, 90, 0.3);
+  }
 </style>
+
+<script>
+  function setupMusicPlayButtons() {
+    const playBtns = document.querySelectorAll('.play-music-btn');
+    playBtns.forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const target = e.currentTarget as HTMLElement;
+        const audioUrl = target.getAttribute('data-audio');
+        const title = target.getAttribute('data-title') || '曲目試聽';
+        const original = target.getAttribute('data-original') || '';
+
+        if (audioUrl && (window as any).__playSiteMusic) {
+          (window as any).__playSiteMusic(audioUrl, title, original);
+        } else if (audioUrl) {
+          // 降級處理
+          const audio = new Audio(audioUrl);
+          audio.play().catch(console.error);
+        }
+      });
+    });
+  }
+
+  document.addEventListener('astro:page-load', setupMusicPlayButtons);
+</script>
