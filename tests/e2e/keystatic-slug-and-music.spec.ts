@@ -23,7 +23,7 @@ test.describe('Keystatic Slug 轉譯與作品集音樂播放器驗收測試', ()
     await page.screenshot({ path: 'tests/e2e/screenshots/works-music-dock-verified.png' });
   });
 
-  test('2. 驗證 Keystatic 後台新增文章頁面之 Slug 必填標記與提示文案', async ({ page }) => {
+  test('2. 驗證 Keystatic 後台新增文章頁面之 Slug 必填標記、輸入標題自動轉譯與 Regenerate 按鈕', async ({ page }) => {
     await page.goto('/keystatic/collection/blog/create');
     await page.waitForSelector('text=部落格文章', { timeout: 20000 });
 
@@ -32,6 +32,28 @@ test.describe('Keystatic Slug 轉譯與作品集音樂播放器驗收測試', ()
 
     const slugLabel = page.locator('text=網址別名 (Slug)');
     await expect(slugLabel.first()).toBeVisible();
+
+    // 驗證輸入標題即時自動生成 Slug
+    const inputs = page.locator('input');
+    const titleInput = inputs.nth(0);
+    const slugInput = inputs.nth(1);
+
+    await titleInput.fill('測試標題自動生成拼音別名');
+    await page.waitForTimeout(1000);
+
+    const slugVal = await slugInput.inputValue();
+    console.log('E2E 生成的 Slug:', slugVal);
+    expect(slugVal).toBe('ce-shi-biao-ti-zi-dong-sheng-cheng-pin-yin');
+
+    // 驗證點擊 Regenerate 按鈕能隨時重新生成
+    await slugInput.fill('');
+    const regenBtn = page.locator('button:has-text("Regenerate")');
+    await regenBtn.first().click();
+    await page.waitForTimeout(1000);
+
+    const regeneratedVal = await slugInput.inputValue();
+    console.log('E2E Regenerate 後的 Slug:', regeneratedVal);
+    expect(regeneratedVal).toBe('ce-shi-biao-ti-zi-dong-sheng-cheng-pin-yin');
 
     await page.screenshot({ path: 'tests/e2e/screenshots/keystatic-slug-verified.png' });
   });

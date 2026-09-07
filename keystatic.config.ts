@@ -172,7 +172,7 @@ function pinyinSlugify(text: string): string {
       return segments.slice(0, 10).join("-");
     }
   } catch (e) {
-    // 若套件例外，使用備用對照表降級防護
+    // 降級防護
   }
 
   const chars = Array.from(normalizedInput);
@@ -205,7 +205,7 @@ export default config({
           slug: {
             label: "分類網址別名 (Slug)",
             description: "輸入標題時將自動轉為拼音代碼（亦可點擊右側按鈕重新生成或自訂英文代碼）",
-            slugify: pinyinSlugify,
+            generate: pinyinSlugify,
           },
         }),
         description: fields.text({ label: "專欄簡短說明", multiline: true }),
@@ -223,7 +223,7 @@ export default config({
           slug: {
             label: "網址別名 (Slug)",
             description: "輸入標題時將自動轉為拼音（亦可點擊右側按鈕重新生成或自訂英文代碼）",
-            slugify: pinyinSlugify,
+            generate: pinyinSlugify,
           },
         }),
         description: fields.text({ label: "簡介", multiline: true }),
@@ -258,7 +258,7 @@ export default config({
           slug: {
             label: "網址別名 (Slug)",
             description: "輸入專案名稱時將自動轉為拼音（亦可點擊右側按鈕重新生成或自訂英文代碼）",
-            slugify: pinyinSlugify,
+            generate: pinyinSlugify,
           },
         }),
         description: fields.text({ label: "一句話描述" }),
@@ -312,7 +312,7 @@ export default config({
           slug: {
             label: "網址別名 (Slug)",
             description: "輸入小說標題時將自動轉為拼音（亦可點擊右側按鈕重新生成或自訂英文代碼）",
-            slugify: pinyinSlugify,
+            generate: pinyinSlugify,
           },
         }),
         description: fields.text({ label: "簡介", multiline: true }),
@@ -349,7 +349,7 @@ export default config({
           slug: {
             label: "網址別名 (Slug)",
             description: "輸入小節標題時將自動轉為拼音（亦可點擊右側按鈕重新生成或自訂英文代碼）",
-            slugify: pinyinSlugify,
+            generate: pinyinSlugify,
           },
         }),
         book: fields.text({ label: "所屬小說 Slug (如：tianxia 或 長生劫(暫名))", defaultValue: "tianxia" }),
@@ -385,7 +385,7 @@ export default config({
           slug: {
             label: "網址別名 (Slug)",
             description: "輸入人物名稱時將自動轉為拼音（亦可點擊右側按鈕重新生成或自訂英文代碼）",
-            slugify: pinyinSlugify,
+            generate: pinyinSlugify,
           },
         }),
         description: fields.text({
@@ -449,7 +449,7 @@ export default config({
           slug: {
             label: "網址別名 (Slug)",
             description: "輸入設定標題時將自動轉為拼音（亦可點擊右側按鈕重新生成或自訂英文代碼）",
-            slugify: pinyinSlugify,
+            generate: pinyinSlugify,
           },
         }),
         description: fields.text({
@@ -472,7 +472,7 @@ export default config({
           slug: {
             label: "網址別名 (Slug)",
             description: "輸入勢力名稱時將自動轉為拼音（亦可點擊右側按鈕重新生成或自訂英文代碼）",
-            slugify: pinyinSlugify,
+            generate: pinyinSlugify,
           },
         }),
         description: fields.text({
@@ -495,7 +495,7 @@ export default config({
           slug: {
             label: "網址別名 (Slug)",
             description: "輸入筆記標題時將自動轉為拼音（亦可點擊右側按鈕重新生成或自訂英文代碼）",
-            slugify: pinyinSlugify,
+            generate: pinyinSlugify,
           },
         }),
         source: fields.text({ label: "出處 (論語、道德經…)" }),
@@ -530,7 +530,7 @@ export default config({
           slug: {
             label: "網址別名 (Slug)",
             description: "輸入法寶名稱時將自動轉為拼音（亦可點擊右側按鈕重新生成或自訂英文代碼）",
-            slugify: pinyinSlugify,
+            generate: pinyinSlugify,
           },
         }),
         description: fields.text({ label: "簡介", multiline: true }),
@@ -551,7 +551,7 @@ export default config({
           slug: {
             label: "網址別名 (Slug)",
             description: "輸入功法名稱時將自動轉為拼音（亦可點擊右側按鈕重新生成或自訂英文代碼）",
-            slugify: pinyinSlugify,
+            generate: pinyinSlugify,
           },
         }),
         description: fields.text({ label: "簡介", multiline: true }),
@@ -572,7 +572,7 @@ export default config({
           slug: {
             label: "網址別名 (Slug)",
             description: "輸入名稱時將自動轉為拼音（亦可點擊右側按鈕重新生成或自訂英文代碼）",
-            slugify: pinyinSlugify,
+            generate: pinyinSlugify,
           },
         }),
         description: fields.text({ label: "簡介", multiline: true }),
