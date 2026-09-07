@@ -55,9 +55,9 @@ function pinyinSlugify(text) {
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)/g, "");
     if (slug) {
-      // 若分詞段落仍過多，收斂最多保留 10 個連字段
+      // 若分詞段落仍過多，收斂最多保留 10 個連字段，並強制去除頭尾連字號
       const segments = slug.split("-").filter(Boolean);
-      return segments.slice(0, 10).join("-");
+      return segments.slice(0, 10).join("-").replace(/(^-|-$)/g, "");
     }
   } catch (e) {
     // 降級防護
