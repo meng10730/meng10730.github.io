@@ -14,14 +14,27 @@ export function getStaticPaths() {
 <html>
 <head>
   <meta charset="utf-8" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <title>管理後台 | 晚餐後的書桌</title>
   <script is:inline>
     (function() {
+      // 1. 處理 OAuth 回調跳轉
       var params = new URLSearchParams(window.location.search);
       var redirectUrl = params.get('redirect');
       if (redirectUrl) {
         window.history.replaceState(null, '', redirectUrl);
       }
+
+      // 2. 檢測動態 Chunk 載入失敗（如部署更新後的舊快取衝突），自動執行乾淨重載
+      window.addEventListener('error', function(e) {
+        var msg = (e && e.message) ? e.message : '';
+        if (msg.indexOf('Failed to fetch dynamically imported module') !== -1 || msg.indexOf('Error hydrating') !== -1) {
+          console.warn('[Keystatic] 檢測到舊版快取衝突，自動為您刷新載入最新版本...');
+          window.location.reload();
+        }
+      }, true);
     })();
   </script>
   <style>
