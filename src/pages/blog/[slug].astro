@@ -288,7 +288,40 @@ const breadcrumbs = [
 
   .post-markdown-body p {
     margin-bottom: 1.6rem;
-    text-align: justify;
+    text-align: left;
+    text-indent: 2em;
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+
+  /* 排除非正文段落的縮排污染 */
+  .post-markdown-body blockquote p {
+    text-indent: 0;
+  }
+
+  .post-markdown-body li p {
+    text-indent: 0;
+    margin-bottom: 0.4rem;
+  }
+
+  /* 圖片容器水平置中並取消縮排 */
+  .post-markdown-body img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 1.5rem auto;
+    border-radius: 4px;
+  }
+
+  .post-markdown-body p:has(> img) {
+    text-indent: 0;
+    text-align: center;
+  }
+
+  .post-markdown-body figure,
+  .post-markdown-body figcaption,
+  .post-markdown-body .no-indent {
+    text-indent: 0;
   }
 
   .post-markdown-body h2 {
